@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Stock Opname — DBS</title>
+<meta name="description" content="Cek & koreksi stok gudang saat stock opname" />
+<meta name="theme-color" content="#12161B" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="offline-banner" class="offline-banner hidden">Tidak ada koneksi internet — pencarian &amp; simpan butuh koneksi</div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-eyebrow">PT Karya Indah Multiguna</span>
+    <h1 class="brand-title">STOCK<span class="accent">OPNAME</span></h1>
+  </div>
+  <button id="btn-settings" class="icon-btn" aria-label="Pengaturan" title="Pengaturan">
+    <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19.14 12.94a7.14 7.14 0 000-1.88l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.3 7.3 0 00-1.63-.94l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.59.24-1.14.56-1.63.94l-2.39-.96a.5.5 0 00-.6.22L2.71 8.84a.5.5 0 00.12.64l2.03 1.58a7.14 7.14 0 000 1.88l-2.03 1.58a.5.5 0 00-.12.64l1.92 3.32c.13.22.4.31.6.22l2.39-.96c.49.38 1.04.7 1.63.94l.36 2.54c.05.24.26.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.54c.59-.24 1.14-.56 1.63-.94l2.39.96c.2.09.47 0 .6-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/></svg>
+  </button>
+</header>
+
+<main class="main">
+
+  <section class="search-panel">
+    <div class="search-row">
+      <input id="search-input" type="text" inputmode="search" placeholder="Cari MCS#, SO#, REF#, atau LOC#…" autocomplete="off" />
+      <button id="btn-search" class="btn-primary">Cari</button>
+    </div>
+    <div class="field-chips" id="field-chips">
+      <button class="chip active" data-field="ALL">Semua</button>
+      <button class="chip" data-field="MCS">MCS#</button>
+      <button class="chip" data-field="SO">SO#</button>
+      <button class="chip" data-field="REF">REF#</button>
+      <button class="chip" data-field="LOC">LOC#</button>
+    </div>
+  </section>
+
+  <section class="status-row">
+    <span id="result-summary" class="muted">Ketik kata kunci lalu tekan Cari</span>
+  </section>
+
+  <section id="results" class="results" aria-live="polite"></section>
+
+  <template id="card-template">
+    <article class="item-card" tabindex="0">
+      <div class="card-strip"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="mono mcs"></span>
+          <span class="badge sts"></span>
+        </div>
+        <div class="model"></div>
+        <div class="card-grid">
+          <div><span class="k">LOC#</span><span class="v mono loc"></span></div>
+          <div><span class="k">C#</span><span class="v mono c"></span></div>
+          <div><span class="k">SO#</span><span class="v mono so"></span></div>
+          <div><span class="k">REF#</span><span class="v mono ref"></span></div>
+        </div>
+        <div class="card-bottom">
+          <div class="bal-block">
+            <span class="k">BAL</span>
+            <span class="bal-num mono bal"></span>
+          </div>
+          <div class="inout">
+            <span class="mono inv">IN <b class="in"></b></span>
+            <span class="mono outv">OUT <b class="out"></b></span>
+          </div>
+        </div>
+        <div class="card-meta muted">
+          <span class="date"></span> · <span class="customer"></span>
+        </div>
+      </div>
+      <div class="card-edit-hint">Ketuk untuk koreksi ›</div>
+    </article>
+  </template>
+
+</main>
+
+<!-- Bottom sheet: edit item -->
+<div id="sheet-overlay" class="sheet-overlay hidden">
+  <div id="edit-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <span class="sheet-eyebrow">KOREKSI STOCK OPNAME</span>
+        <h2 id="sheet-title" class="mono"></h2>
+      </div>
+      <button id="btn-close-sheet" class="icon-btn" aria-label="Tutup">✕</button>
+    </div>
+
+    <div class="sheet-refinfo muted" id="sheet-refinfo"></div>
+
+    <form id="edit-form" class="edit-form">
+      <label class="field">
+        <span class="field-label">LOC# <em>lokasi rak</em></span>
+        <input type="text" id="edit-loc" class="mono" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span class="field-label">C# <em>carton/nomor</em></span>
+        <input type="text" id="edit-c" class="mono" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span class="field-label">REF# <em>nomor referensi</em></span>
+        <input type="text" id="edit-ref" class="mono" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span class="field-label">BAL <em>jumlah fisik aktual</em></span>
+        <input type="number" id="edit-bal" class="mono" inputmode="numeric" autocomplete="off" />
+      </label>
+
+      <div id="edit-diffs" class="edit-diffs"></div>
+
+      <button type="submit" id="btn-save" class="btn-primary btn-full">Simpan Koreksi</button>
+      <div id="save-status" class="save-status" role="status"></div>
+    </form>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div id="settings-overlay" class="sheet-overlay hidden">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <span class="sheet-eyebrow">PENGATURAN</span>
+        <h2 id="settings-title">Koneksi ke Google Sheet</h2>
+      </div>
+      <button id="btn-close-settings" class="icon-btn" aria-label="Tutup">✕</button>
+    </div>
+
+    <form id="settings-form" class="edit-form">
+      <label class="field">
+        <span class="field-label">URL Web App (Apps Script)</span>
+        <input type="url" id="set-url" placeholder="https://script.google.com/macros/s/…/exec" required />
+      </label>
+      <label class="field">
+        <span class="field-label">Token Akses</span>
+        <input type="text" id="set-token" placeholder="Token dari CONFIG.ACCESS_TOKEN" required />
+      </label>
+      <label class="field">
+        <span class="field-label">Nama Admin <em>(tercatat di log perubahan)</em></span>
+        <input type="text" id="set-editor" placeholder="Nama Anda" required />
+      </label>
+      <button type="submit" class="btn-primary btn-full">Simpan Pengaturan</button>
+      <div id="settings-status" class="save-status" role="status"></div>
+    </form>
+    <p class="muted small">Pengaturan disimpan hanya di perangkat ini. Lihat PANDUAN.md untuk cara mendapatkan URL &amp; token.</p>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
