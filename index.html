@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Stock Opname — DBS</title>
-<meta name="description" content="Cek & koreksi stok gudang saat stock opname" />
+<meta name="description" content="Cek stok gudang & simpan koreksi saat stock opname" />
 <meta name="theme-color" content="#12161B" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/icon-192.png" />
@@ -12,20 +12,204 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css" />
+
+<style>
+/* =========================================================
+   SEMUA CSS ADA DI SINI — biar gampang direvisi di satu file
+   ========================================================= */
+:root{
+  --bg: #12161B;
+  --surface: #1B2129;
+  --surface-2: #212831;
+  --border: #2A323C;
+  --text: #EDEFF2;
+  --muted: #8B95A1;
+  --amber: #FFB020;
+  --green: #34D399;
+  --red: #F45B69;
+  --gray-badge: #4B5563;
+  --radius: 14px;
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+*{ box-sizing: border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.hidden{ display:none !important; }
+.muted{ color: var(--muted); }
+.small{ font-size: 12px; }
+.mono{ font-family: var(--font-mono); }
+
+.offline-banner{
+  background: var(--red); color:#fff; text-align:center;
+  font-size:13px; font-weight:600; padding:8px 12px;
+  position: sticky; top:0; z-index:50;
+}
+.data-banner{
+  background: var(--surface-2); color: var(--muted); text-align:center;
+  font-size:12.5px; padding:7px 12px; border-bottom:1px solid var(--border);
+}
+.data-banner button{
+  background:none; border:1px solid var(--border); color:var(--amber);
+  border-radius:6px; padding:2px 8px; margin-left:8px; cursor:pointer; font-size:12px;
+}
+
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 18px 12px; border-bottom:1px solid var(--border);
+  position: sticky; top:0; background: var(--bg); z-index:40;
+}
+.brand-eyebrow{
+  display:block; font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color: var(--muted); margin-bottom:2px;
+}
+.brand-title{
+  font-family: var(--font-display); font-weight:700; font-size:26px;
+  letter-spacing:.02em; text-transform:uppercase; margin:0; line-height:1;
+}
+.brand-title .accent{ color: var(--amber); }
+.topbar-actions{ display:flex; gap:8px; }
+.icon-btn{
+  background: var(--surface); border:1px solid var(--border); color: var(--text);
+  width:42px; height:42px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.icon-btn:active{ background: var(--surface-2); }
+
+.main{ padding:16px 16px 80px; max-width:720px; margin:0 auto; }
+.search-panel{ margin-bottom:10px; }
+.search-row{ display:flex; gap:8px; }
+#search-input{
+  flex:1; background: var(--surface); border:1px solid var(--border); color: var(--text);
+  font-family: var(--font-mono); font-size:15px; padding:13px 14px; border-radius:10px; outline:none;
+}
+#search-input:focus{ border-color: var(--amber); }
+
+.btn-primary{
+  background: var(--amber); color:#1A1300; border:none; font-weight:700;
+  font-family: var(--font-display); letter-spacing:.03em; text-transform:uppercase;
+  font-size:15px; padding:0 20px; border-radius:10px; cursor:pointer;
+}
+.btn-primary:active{ transform: translateY(1px); }
+.btn-primary:disabled{ opacity:.5; cursor:not-allowed; }
+.btn-full{ width:100%; padding:14px; margin-top:6px; }
+
+.field-chips{ display:flex; gap:8px; margin-top:10px; overflow-x:auto; padding-bottom:2px; }
+.chip{
+  flex:none; background:transparent; border:1px solid var(--border); color: var(--muted);
+  font-family: var(--font-mono); font-size:12.5px; padding:7px 12px; border-radius:999px; cursor:pointer;
+}
+.chip.active{ border-color: var(--amber); color: var(--amber); background: rgba(255,176,32,0.08); }
+
+.status-row{ margin:10px 2px 12px; font-size:13px; }
+.results{ display:flex; flex-direction:column; gap:10px; }
+
+.item-card{
+  display:flex; background: var(--surface); border:1px solid var(--border);
+  border-radius: var(--radius); overflow:hidden; cursor:pointer; position:relative;
+}
+.item-card:active{ background: var(--surface-2); }
+.card-strip{ width:6px; flex:none; background: var(--gray-badge); }
+.item-card.act .card-strip{ background: var(--green); }
+.item-card.obs .card-strip{ background: var(--red); }
+.card-body{ flex:1; padding:12px 14px; min-width:0; }
+.card-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.card-top .mcs{ font-size:15px; font-weight:600; color: var(--amber); }
+.badge{
+  font-size:10.5px; font-weight:700; letter-spacing:.04em; padding:3px 8px;
+  border-radius:999px; background: var(--gray-badge); color:#fff; text-transform:uppercase; flex:none;
+}
+.item-card.act .badge{ background: rgba(52,211,153,0.15); color: var(--green); }
+.item-card.obs .badge{ background: rgba(244,91,105,0.15); color: var(--red); }
+.saved-tag{
+  font-size:10.5px; font-weight:700; color: var(--green);
+  background: rgba(52,211,153,0.12); padding:3px 8px; border-radius:999px; flex:none;
+}
+.model{ font-size:13px; color: var(--text); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.card-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:10px; }
+.card-grid > div{ display:flex; justify-content:space-between; font-size:12.5px; }
+.k{ color: var(--muted); }
+.v{ color: var(--text); }
+.card-bottom{
+  display:flex; align-items:flex-end; justify-content:space-between; gap:10px;
+  margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);
+}
+.bal-block .k{ display:block; font-size:10.5px; letter-spacing:.06em; }
+.bal-num{ font-size:22px; font-weight:700; color: var(--text); }
+.inout{ display:flex; flex-direction:column; gap:2px; align-items:flex-end; font-size:11.5px; }
+.inout b{ color: var(--text); font-weight:600; }
+.card-meta{ font-size:11px; margin-top:8px; }
+.card-edit-hint{ position:absolute; right:12px; bottom:10px; font-size:10.5px; color: var(--muted); display:none; }
+
+.sheet-overlay{
+  position:fixed; inset:0; background: rgba(0,0,0,0.55); z-index:100; display:flex; align-items:flex-end;
+}
+.sheet{
+  background: var(--surface); border-top:1px solid var(--border); border-radius:18px 18px 0 0;
+  width:100%; max-width:720px; margin:0 auto; padding:10px 20px calc(20px + env(safe-area-inset-bottom));
+  max-height:88vh; overflow-y:auto;
+}
+.sheet-handle{ width:40px; height:4px; background: var(--border); border-radius:999px; margin:6px auto 14px; }
+.sheet-header{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+.sheet-eyebrow{ font-size:10.5px; letter-spacing:.1em; color: var(--amber); text-transform:uppercase; font-weight:700; }
+.sheet-header h2{ margin:2px 0 0; font-size:18px; }
+.sheet-refinfo{ font-size:12.5px; margin-bottom:14px; }
+.edit-form{ display:flex; flex-direction:column; gap:12px; }
+.field{ display:flex; flex-direction:column; gap:6px; }
+.field-label{ font-size:12.5px; color: var(--muted); }
+.field-label em{ font-style:normal; color:#5C6673; }
+.field input{
+  background: var(--surface-2); border:1px solid var(--border); color: var(--text);
+  font-size:16px; padding:12px 12px; border-radius:10px; outline:none;
+}
+.field input:focus{ border-color: var(--amber); }
+.readonly-field .readonly-value{
+  background: var(--surface); border:1px dashed var(--border); color: var(--muted);
+  font-size:16px; padding:12px 12px; border-radius:10px;
+}
+.selisih-preview{ font-size:12.5px; font-family: var(--font-mono); min-height:16px; }
+.selisih-preview.pos{ color: var(--green); }
+.selisih-preview.neg{ color: var(--red); }
+.selisih-preview.zero{ color: var(--muted); }
+.save-status{ font-size:13px; text-align:center; min-height:18px; }
+.save-status.ok{ color: var(--green); }
+.save-status.err{ color: var(--red); }
+.info-note{ font-size:12px; color: var(--muted); background: var(--surface-2); border-radius:8px; padding:8px 10px; }
+
+.toast{
+  position:fixed; bottom:24px; left:50%; transform: translateX(-50%);
+  background: var(--surface-2); border:1px solid var(--border); color: var(--text);
+  padding:12px 18px; border-radius:10px; font-size:13.5px; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,0.4);
+}
+@media (min-width:720px){ .card-edit-hint{ display:block; } }
+</style>
 </head>
 <body>
 
-<div id="offline-banner" class="offline-banner hidden">Tidak ada koneksi internet — pencarian &amp; simpan butuh koneksi</div>
+<div id="offline-banner" class="offline-banner hidden">Tidak ada koneksi internet — cari &amp; simpan butuh koneksi</div>
+<div id="data-banner" class="data-banner hidden"></div>
 
 <header class="topbar">
   <div class="brand">
     <span class="brand-eyebrow">PT Karya Indah Multiguna</span>
     <h1 class="brand-title">STOCK<span class="accent">OPNAME</span></h1>
   </div>
-  <button id="btn-settings" class="icon-btn" aria-label="Pengaturan" title="Pengaturan">
-    <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19.14 12.94a7.14 7.14 0 000-1.88l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.3 7.3 0 00-1.63-.94l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.59.24-1.14.56-1.63.94l-2.39-.96a.5.5 0 00-.6.22L2.71 8.84a.5.5 0 00.12.64l2.03 1.58a7.14 7.14 0 000 1.88l-2.03 1.58a.5.5 0 00-.12.64l1.92 3.32c.13.22.4.31.6.22l2.39-.96c.49.38 1.04.7 1.63.94l.36 2.54c.05.24.26.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.54c.59-.24 1.14-.56 1.63-.94l2.39.96c.2.09.47 0 .6-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/></svg>
-  </button>
+  <div class="topbar-actions">
+    <button id="btn-refresh" class="icon-btn" aria-label="Refresh data" title="Muat ulang data">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0012 4a8 8 0 108 8h-2a6 6 0 11-1.76-4.24L13 11h7V4l-2.35 2.35z"/></svg>
+    </button>
+    <button id="btn-settings" class="icon-btn" aria-label="Pengaturan" title="Pengaturan">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19.14 12.94a7.14 7.14 0 000-1.88l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.3 7.3 0 00-1.63-.94l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.59.24-1.14.56-1.63.94l-2.39-.96a.5.5 0 00-.6.22L2.71 8.84a.5.5 0 00.12.64l2.03 1.58a7.14 7.14 0 000 1.88l-2.03 1.58a.5.5 0 00-.12.64l1.92 3.32c.13.22.4.31.6.22l2.39-.96c.49.38 1.04.7 1.63.94l.36 2.54c.05.24.26.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.54c.59-.24 1.14-.56 1.63-.94l2.39.96c.2.09.47 0 .6-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/></svg>
+    </button>
+  </div>
 </header>
 
 <main class="main">
@@ -45,7 +229,7 @@
   </section>
 
   <section class="status-row">
-    <span id="result-summary" class="muted">Ketik kata kunci lalu tekan Cari</span>
+    <span id="result-summary" class="muted">Memuat data…</span>
   </section>
 
   <section id="results" class="results" aria-live="polite"></section>
@@ -56,6 +240,7 @@
       <div class="card-body">
         <div class="card-top">
           <span class="mono mcs"></span>
+          <span class="saved-tag hidden">✓ Tersimpan sesi ini</span>
           <span class="badge sts"></span>
         </div>
         <div class="model"></div>
@@ -98,6 +283,7 @@
     </div>
 
     <div class="sheet-refinfo muted" id="sheet-refinfo"></div>
+    <div class="info-note">Koreksi disimpan sebagai <b>data baru</b> di sheet terpisah (tidak mengubah data sumber).</div>
 
     <form id="edit-form" class="edit-form">
       <label class="field">
@@ -112,12 +298,17 @@
         <span class="field-label">REF# <em>nomor referensi</em></span>
         <input type="text" id="edit-ref" class="mono" autocomplete="off" />
       </label>
+
+      <div class="field readonly-field">
+        <span class="field-label">BAL SISTEM <em>angka dari data sumber, tidak bisa diubah</em></span>
+        <div id="edit-bal-sistem" class="mono readonly-value">—</div>
+      </div>
+
       <label class="field">
-        <span class="field-label">BAL <em>jumlah fisik aktual</em></span>
+        <span class="field-label">QTY BARU <em>hasil hitung fisik saat opname</em></span>
         <input type="number" id="edit-bal" class="mono" inputmode="numeric" autocomplete="off" />
       </label>
-
-      <div id="edit-diffs" class="edit-diffs"></div>
+      <div id="edit-selisih-preview" class="selisih-preview"></div>
 
       <button type="submit" id="btn-save" class="btn-primary btn-full">Simpan Koreksi</button>
       <div id="save-status" class="save-status" role="status"></div>
@@ -132,14 +323,18 @@
     <div class="sheet-header">
       <div>
         <span class="sheet-eyebrow">PENGATURAN</span>
-        <h2 id="settings-title">Koneksi ke Google Sheet</h2>
+        <h2 id="settings-title">Sumber Data &amp; Koneksi Simpan</h2>
       </div>
       <button id="btn-close-settings" class="icon-btn" aria-label="Tutup">✕</button>
     </div>
 
     <form id="settings-form" class="edit-form">
       <label class="field">
-        <span class="field-label">URL Web App (Apps Script)</span>
+        <span class="field-label">Link CSV (data untuk dicari) <em>sudah diisi default</em></span>
+        <input type="url" id="set-csv" placeholder="https://docs.google.com/…/pub?output=csv" required />
+      </label>
+      <label class="field">
+        <span class="field-label">URL Web App (Apps Script, untuk simpan)</span>
         <input type="url" id="set-url" placeholder="https://script.google.com/macros/s/…/exec" required />
       </label>
       <label class="field">
@@ -147,7 +342,7 @@
         <input type="text" id="set-token" placeholder="Token dari CONFIG.ACCESS_TOKEN" required />
       </label>
       <label class="field">
-        <span class="field-label">Nama Admin <em>(tercatat di log perubahan)</em></span>
+        <span class="field-label">Nama Admin <em>(tercatat di sheet KOREKSI)</em></span>
         <input type="text" id="set-editor" placeholder="Nama Anda" required />
       </label>
       <button type="submit" class="btn-primary btn-full">Simpan Pengaturan</button>
@@ -159,6 +354,480 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js"></script>
+<script>
+/* =========================================================
+   SEMUA JAVASCRIPT ADA DI SINI — biar gampang direvisi di satu file
+   ========================================================= */
+
+// ---------- konfigurasi default ----------
+// Link CSV publik yang jadi SUMBER INFORMASI untuk pencarian (read-only).
+// Bisa diganti lewat menu Pengaturan tanpa perlu edit kode ini.
+const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=0&single=true&output=csv';
+
+const STORAGE_KEY = 'stockopname.settings.v2';
+const CSV_CACHE_KEY = 'stockopname.csvcache.v1';
+
+const state = {
+  field: 'ALL',
+  allRows: [],       // seluruh data dari CSV (sumber informasi)
+  results: [],        // hasil pencarian saat ini
+  activeItem: null,
+  savedThisSession: new Set(), // nomor baris (NO) yang sudah disimpan koreksinya sesi ini
+  settings: loadSettings(),
+};
+
+// ---------- settings ----------
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const s = raw ? JSON.parse(raw) : {};
+    return {
+      csvUrl: s.csvUrl || DEFAULT_CSV_URL,
+      url: s.url || '',
+      token: s.token || '',
+      editor: s.editor || '',
+    };
+  } catch (e) {
+    return { csvUrl: DEFAULT_CSV_URL, url: '', token: '', editor: '' };
+  }
+}
+function saveSettings(s) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  state.settings = s;
+}
+function saveReady() {
+  return !!(state.settings.url && state.settings.token && state.settings.editor);
+}
+
+// ---------- CSV parser (menangani koma/kutip/baris baru di dalam kutip) ----------
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ',') {
+      row.push(field); field = '';
+    } else if (c === '\r') {
+      // dilewati, ditangani oleh \n
+    } else if (c === '\n') {
+      row.push(field); rows.push(row); row = []; field = '';
+    } else {
+      field += c;
+    }
+  }
+  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+// Susunan kolom tetap (sesuai laporan gudang):
+// 0 NO, 1 LOC#, 2 AC#, 3 STS, 4 MCS#, 5 MC MODEL, 6 C#, 7 PD, 8 SET, 9 PART#,
+// 10 ED, 11 SO#, 12 SO PO#, 13 WO#, 14 DATE, 15 TRAN, 16 GRX, 17 REF#,
+// 18 ALT REF#, 19 IN, 20 OUT, 21 BAL, 22 CUSTOMER
+function extractRecords(rows) {
+  let headerIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].includes('LOC#') && rows[i].includes('MCS#')) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) throw new Error('Header data tidak ditemukan di CSV (kolom LOC#/MCS# tidak ada).');
+
+  let dataStart = headerIdx + 1;
+  const nextRow = rows[dataStart] || [];
+  const nextRowEmpty = nextRow.every((cell) => String(cell || '').trim() === '');
+  if (nextRowEmpty) dataStart += 1; // lewati baris pemisah kosong kalau ada
+
+  const records = [];
+  for (let i = dataStart; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 5) continue;
+    const no = String(r[0] || '').trim();
+    const mcs = String(r[4] || '').trim();
+    if (no === '' && mcs === '') continue; // baris kosong/#N/A di akhir laporan, berhenti anggap selesai
+
+    records.push({
+      no: r[0] || '', loc: r[1] || '', ac: r[2] || '', sts: r[3] || '',
+      mcs: r[4] || '', model: r[5] || '', c: r[6] || '', part: r[9] || '',
+      so: r[11] || '', sopo: r[12] || '', wo: r[13] || '', date: r[14] || '',
+      ref: r[17] || '', altref: r[18] || '', in: r[19] || '', out: r[20] || '',
+      bal: r[21] || '', customer: r[22] || '',
+    });
+  }
+  return records;
+}
+
+// ---------- dom refs ----------
+
+const el = {
+  searchInput: document.getElementById('search-input'),
+  btnSearch: document.getElementById('btn-search'),
+  fieldChips: document.getElementById('field-chips'),
+  results: document.getElementById('results'),
+  summary: document.getElementById('result-summary'),
+  cardTemplate: document.getElementById('card-template'),
+
+  sheetOverlay: document.getElementById('sheet-overlay'),
+  sheetTitle: document.getElementById('sheet-title'),
+  sheetRefinfo: document.getElementById('sheet-refinfo'),
+  btnCloseSheet: document.getElementById('btn-close-sheet'),
+  editForm: document.getElementById('edit-form'),
+  editLoc: document.getElementById('edit-loc'),
+  editC: document.getElementById('edit-c'),
+  editRef: document.getElementById('edit-ref'),
+  editBalSistem: document.getElementById('edit-bal-sistem'),
+  editBal: document.getElementById('edit-bal'),
+  editSelisihPreview: document.getElementById('edit-selisih-preview'),
+  saveStatus: document.getElementById('save-status'),
+
+  btnSettings: document.getElementById('btn-settings'),
+  btnRefresh: document.getElementById('btn-refresh'),
+  settingsOverlay: document.getElementById('settings-overlay'),
+  btnCloseSettings: document.getElementById('btn-close-settings'),
+  settingsForm: document.getElementById('settings-form'),
+  setCsv: document.getElementById('set-csv'),
+  setUrl: document.getElementById('set-url'),
+  setToken: document.getElementById('set-token'),
+  setEditor: document.getElementById('set-editor'),
+  settingsStatus: document.getElementById('settings-status'),
+
+  offlineBanner: document.getElementById('offline-banner'),
+  dataBanner: document.getElementById('data-banner'),
+  toast: document.getElementById('toast'),
+};
+
+// ---------- offline banner ----------
+
+function updateOnlineStatus() {
+  el.offlineBanner.classList.toggle('hidden', navigator.onLine);
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+// ---------- toast ----------
+
+let toastTimer = null;
+function showToast(msg) {
+  el.toast.textContent = msg;
+  el.toast.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.toast.classList.add('hidden'), 2600);
+}
+
+// ---------- muat data CSV ----------
+
+async function loadData(forceRefresh) {
+  el.summary.textContent = 'Memuat data…';
+  el.dataBanner.classList.add('hidden');
+
+  const url = state.settings.csvUrl + (forceRefresh ? (state.settings.csvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now() : '');
+
+  try {
+    const res = await fetch(url, { cache: forceRefresh ? 'no-store' : 'default' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+
+    const rows = parseCSV(text);
+    const records = extractRecords(rows);
+
+    state.allRows = records;
+    localStorage.setItem(CSV_CACHE_KEY, JSON.stringify({ text, ts: Date.now() }));
+
+    el.summary.textContent = records.length + ' data siap dicari. Ketik kata kunci lalu tekan Cari.';
+    showToast('Data dimuat: ' + records.length + ' baris');
+  } catch (err) {
+    console.error(err);
+    // fallback ke cache lokal kalau ada
+    try {
+      const cached = JSON.parse(localStorage.getItem(CSV_CACHE_KEY) || 'null');
+      if (cached) {
+        const records = extractRecords(parseCSV(cached.text));
+        state.allRows = records;
+        const waktu = new Date(cached.ts).toLocaleString('id-ID');
+        el.dataBanner.classList.remove('hidden');
+        el.dataBanner.innerHTML = 'Gagal ambil data terbaru — memakai cache ' + waktu
+          + ' <button id="btn-retry-load">Coba lagi</button>';
+        document.getElementById('btn-retry-load').addEventListener('click', () => loadData(true));
+        el.summary.textContent = records.length + ' data (dari cache) siap dicari.';
+        return;
+      }
+    } catch (e2) { /* abaikan */ }
+
+    el.summary.textContent = 'Gagal memuat data CSV. Cek link CSV di Pengaturan & koneksi internet.';
+  }
+}
+
+// ---------- field chips ----------
+
+el.fieldChips.addEventListener('click', (e) => {
+  const btn = e.target.closest('.chip');
+  if (!btn) return;
+  el.fieldChips.querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
+  btn.classList.add('active');
+  state.field = btn.dataset.field;
+});
+
+// ---------- pencarian (client-side, instan karena data sudah di memori) ----------
+
+el.btnSearch.addEventListener('click', runSearch);
+el.searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
+
+function runSearch() {
+  const q = el.searchInput.value.trim().toLowerCase();
+
+  if (q.length < 2) {
+    el.summary.textContent = 'Ketik minimal 2 karakter';
+    el.results.innerHTML = '';
+    return;
+  }
+  if (state.allRows.length === 0) {
+    el.summary.textContent = 'Data belum siap. Tunggu sebentar atau tekan tombol refresh.';
+    return;
+  }
+
+  const field = state.field;
+  const MAX_RESULTS = 300;
+
+  const matches = state.allRows.filter((r) => {
+    if (field === 'MCS') return String(r.mcs).toLowerCase().includes(q);
+    if (field === 'SO') return String(r.so).toLowerCase().includes(q);
+    if (field === 'REF') return String(r.ref).toLowerCase().includes(q);
+    if (field === 'LOC') return String(r.loc).toLowerCase().includes(q);
+    return String(r.mcs).toLowerCase().includes(q)
+        || String(r.so).toLowerCase().includes(q)
+        || String(r.ref).toLowerCase().includes(q)
+        || String(r.loc).toLowerCase().includes(q)
+        || String(r.c).toLowerCase().includes(q);
+  });
+
+  const truncated = matches.length > MAX_RESULTS;
+  state.results = matches.slice(0, MAX_RESULTS);
+  renderResults(truncated, matches.length);
+}
+
+function renderResults(truncated, totalCount) {
+  el.results.innerHTML = '';
+
+  if (state.results.length === 0) {
+    el.summary.textContent = 'Tidak ada hasil';
+    return;
+  }
+
+  el.summary.textContent = totalCount + ' hasil ditemukan' + (truncated ? ' (ditampilkan 300 pertama, persempit pencarian)' : '');
+
+  state.results.forEach((item) => {
+    const node = el.cardTemplate.content.cloneNode(true);
+    const card = node.querySelector('.item-card');
+
+    const sts = String(item.sts || '').toUpperCase();
+    card.classList.add(sts === 'ACT' ? 'act' : sts === 'OBS' ? 'obs' : '');
+
+    node.querySelector('.mcs').textContent = 'MCS# ' + item.mcs;
+    node.querySelector('.sts').textContent = sts || '—';
+    if (state.savedThisSession.has(String(item.no))) {
+      node.querySelector('.saved-tag').classList.remove('hidden');
+    }
+
+    node.querySelector('.model').textContent = item.model || '';
+    node.querySelector('.loc').textContent = item.loc || '—';
+    node.querySelector('.c').textContent = item.c || '—';
+    node.querySelector('.so').textContent = item.so || '—';
+    node.querySelector('.ref').textContent = item.ref || '—';
+    node.querySelector('.bal').textContent = item.bal;
+    node.querySelector('.in').textContent = item.in;
+    node.querySelector('.out').textContent = item.out;
+    node.querySelector('.date').textContent = formatDate(item.date);
+    node.querySelector('.customer').textContent = item.customer || '';
+
+    card.addEventListener('click', () => openEditSheet(item));
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter') openEditSheet(item); });
+
+    el.results.appendChild(node);
+  });
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  try {
+    const dt = new Date(d);
+    if (isNaN(dt)) return String(d);
+    return dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch (e) {
+    return String(d);
+  }
+}
+
+// ---------- refresh data manual ----------
+
+el.btnRefresh.addEventListener('click', () => loadData(true));
+
+// ---------- edit sheet (form koreksi) ----------
+
+function openEditSheet(item) {
+  state.activeItem = item;
+  el.sheetTitle.textContent = 'MCS# ' + item.mcs;
+  el.sheetRefinfo.textContent = 'NO ' + item.no + ' · SO# ' + (item.so || '-') + ' · ' + (item.model || '');
+
+  el.editLoc.value = item.loc || '';
+  el.editC.value = item.c || '';
+  el.editRef.value = item.ref || '';
+  el.editBalSistem.textContent = item.bal;
+  el.editBal.value = '';
+
+  el.saveStatus.textContent = '';
+  el.saveStatus.className = 'save-status';
+  updateSelisihPreview();
+
+  el.sheetOverlay.classList.remove('hidden');
+}
+
+function updateSelisihPreview() {
+  const item = state.activeItem;
+  if (!item) return;
+  const val = el.editBal.value.trim();
+  if (val === '') {
+    el.editSelisihPreview.textContent = '';
+    el.editSelisihPreview.className = 'selisih-preview';
+    return;
+  }
+  const sel = Number(val) - Number(item.bal || 0);
+  el.editSelisihPreview.textContent = 'Selisih dari BAL sistem: ' + (sel > 0 ? '+' : '') + sel;
+  el.editSelisihPreview.className = 'selisih-preview ' + (sel > 0 ? 'pos' : sel < 0 ? 'neg' : 'zero');
+}
+el.editBal.addEventListener('input', updateSelisihPreview);
+
+function closeEditSheet() {
+  el.sheetOverlay.classList.add('hidden');
+  state.activeItem = null;
+}
+el.btnCloseSheet.addEventListener('click', closeEditSheet);
+el.sheetOverlay.addEventListener('click', (e) => { if (e.target === el.sheetOverlay) closeEditSheet(); });
+
+el.editForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!state.activeItem) return;
+  const item = state.activeItem;
+
+  if (!saveReady()) {
+    closeEditSheet();
+    openSettings();
+    showToast('Atur koneksi simpan (Apps Script) dulu ya');
+    return;
+  }
+
+  const edits = {};
+  const newLoc = el.editLoc.value.trim();
+  const newC = el.editC.value.trim();
+  const newRef = el.editRef.value.trim();
+  const newBal = el.editBal.value.trim();
+
+  if (newLoc !== String(item.loc || '')) edits.loc = newLoc;
+  if (newC !== String(item.c || '')) edits.c = newC;
+  if (newRef !== String(item.ref || '')) edits.ref = newRef;
+  if (newBal !== '') edits.bal = Number(newBal);
+
+  if (Object.keys(edits).length === 0) {
+    el.saveStatus.textContent = 'Isi minimal satu koreksi dulu.';
+    el.saveStatus.className = 'save-status';
+    return;
+  }
+  if (!navigator.onLine) {
+    el.saveStatus.textContent = 'Tidak ada koneksi internet.';
+    el.saveStatus.className = 'save-status err';
+    return;
+  }
+
+  el.saveStatus.textContent = 'Menyimpan…';
+  el.saveStatus.className = 'save-status';
+
+  const payload = {
+    action: 'save',
+    token: state.settings.token,
+    editor: state.settings.editor,
+    item: { no: item.no, mcs: item.mcs, so: item.so, ref: item.ref, model: item.model, loc: item.loc, c: item.c, bal: item.bal },
+    edits: edits,
+  };
+
+  try {
+    const res = await fetch(state.settings.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari CORS preflight ke Apps Script
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (!data.ok) {
+      el.saveStatus.textContent = 'Gagal: ' + (data.error || 'error tidak diketahui');
+      el.saveStatus.className = 'save-status err';
+      return;
+    }
+
+    state.savedThisSession.add(String(item.no));
+    el.saveStatus.textContent = 'Tersimpan sebagai data baru ✓';
+    el.saveStatus.className = 'save-status ok';
+    showToast('Koreksi tersimpan');
+    renderResults(false, state.results.length);
+    setTimeout(closeEditSheet, 700);
+  } catch (err) {
+    el.saveStatus.textContent = 'Gagal menyimpan. Coba lagi.';
+    el.saveStatus.className = 'save-status err';
+    console.error(err);
+  }
+});
+
+// ---------- settings ----------
+
+function openSettings() {
+  el.setCsv.value = state.settings.csvUrl || DEFAULT_CSV_URL;
+  el.setUrl.value = state.settings.url || '';
+  el.setToken.value = state.settings.token || '';
+  el.setEditor.value = state.settings.editor || '';
+  el.settingsStatus.textContent = '';
+  el.settingsOverlay.classList.remove('hidden');
+}
+function closeSettings() { el.settingsOverlay.classList.add('hidden'); }
+el.btnSettings.addEventListener('click', openSettings);
+el.btnCloseSettings.addEventListener('click', closeSettings);
+el.settingsOverlay.addEventListener('click', (e) => { if (e.target === el.settingsOverlay) closeSettings(); });
+
+el.settingsForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const csvChanged = el.setCsv.value.trim() !== state.settings.csvUrl;
+  saveSettings({
+    csvUrl: el.setCsv.value.trim(),
+    url: el.setUrl.value.trim(),
+    token: el.setToken.value.trim(),
+    editor: el.setEditor.value.trim(),
+  });
+  el.settingsStatus.textContent = 'Tersimpan ✓';
+  el.settingsStatus.className = 'save-status ok';
+  setTimeout(closeSettings, 500);
+  if (csvChanged) loadData(true);
+});
+
+// ---------- inisialisasi ----------
+
+if (!saveReady()) {
+  setTimeout(openSettings, 400);
+}
+loadData(false);
+
+// ---------- service worker ----------
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW gagal:', e));
+  });
+}
+</script>
 </body>
 </html>
