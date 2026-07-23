@@ -94,6 +94,15 @@ body{
 }
 #search-input:focus{ border-color: var(--amber); }
 
+.master-search-row{ margin-top:14px; gap:10px; }
+#master-search-input{
+  flex:1; background: var(--surface); border:1px solid var(--border); color: var(--text);
+  font-family: var(--font-mono); font-size:16px; padding:16px 16px; border-radius:12px; outline:none;
+  min-width:0;
+}
+#master-search-input:focus{ border-color: var(--amber); }
+.master-search-row .btn-primary{ padding:0 22px; }
+
 .btn-primary{
   background: var(--amber); color:#1A1300; border:none; font-weight:700;
   font-family: var(--font-display); letter-spacing:.03em; text-transform:uppercase;
@@ -392,9 +401,7 @@ body{
       <button id="btn-close-master" class="icon-btn" aria-label="Tutup">✕</button>
     </div>
 
-    <div class="info-note">Data Master MC hanya untuk <b>ditampilkan</b>. Kalau ketemu, informasinya diisi otomatis ke form input — koreksi tetap tersimpan di sheet KOREKSI.</div>
-
-    <div class="search-row" style="margin-top:12px;">
+    <div class="search-row master-search-row">
       <input id="master-search-input" type="text" inputmode="search" placeholder="Cari MC#, nama barang, atau customer…" autocomplete="off" />
       <button id="btn-master-search" class="btn-primary">Cari</button>
     </div>
