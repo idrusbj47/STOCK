@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
 /* =========================================================
@@ -203,6 +204,9 @@ body{
     <h1 class="brand-title">STOCK<span class="accent">OPNAME</span></h1>
   </div>
   <div class="topbar-actions">
+    <button id="btn-download" class="icon-btn" aria-label="Unduh Excel" title="Unduh hasil koreksi (Excel)">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M5 20h14v-2H5v2zm7-18v12.17l3.59-3.58L17 12l-5 5-5-5 1.41-1.41L12 14.17V2h0z"/></svg>
+    </button>
     <button id="btn-refresh" class="icon-btn" aria-label="Refresh data" title="Muat ulang data">
       <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0012 4a8 8 0 108 8h-2a6 6 0 11-1.76-4.24L13 11h7V4l-2.35 2.35z"/></svg>
     </button>
@@ -287,16 +291,12 @@ body{
 
     <form id="edit-form" class="edit-form">
       <label class="field">
-        <span class="field-label">LOC# <em>lokasi rak</em></span>
-        <input type="text" id="edit-loc" class="mono" autocomplete="off" />
+        <span class="field-label">REF# <em>nomor referensi</em></span>
+        <input type="text" id="edit-ref" class="mono" autocomplete="off" />
       </label>
       <label class="field">
         <span class="field-label">C# <em>carton/nomor</em></span>
         <input type="text" id="edit-c" class="mono" autocomplete="off" />
-      </label>
-      <label class="field">
-        <span class="field-label">REF# <em>nomor referensi</em></span>
-        <input type="text" id="edit-ref" class="mono" autocomplete="off" />
       </label>
 
       <div class="field readonly-field">
@@ -309,6 +309,13 @@ body{
         <input type="number" id="edit-bal" class="mono" inputmode="numeric" autocomplete="off" />
       </label>
       <div id="edit-selisih-preview" class="selisih-preview"></div>
+
+      <label class="field">
+        <span class="field-label">LOC# <em>lokasi rak</em></span>
+        <input type="text" id="edit-loc" class="mono" autocomplete="off" />
+      </label>
+
+      <div class="info-note">Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#).</div>
 
       <button type="submit" id="btn-save" class="btn-primary btn-full">Simpan Koreksi</button>
       <div id="save-status" class="save-status" role="status"></div>
@@ -332,6 +339,10 @@ body{
       <label class="field">
         <span class="field-label">Link CSV (data untuk dicari) <em>sudah diisi default</em></span>
         <input type="url" id="set-csv" placeholder="https://docs.google.com/…/pub?output=csv" required />
+      </label>
+      <label class="field">
+        <span class="field-label">Link CSV KOREKSI <em>untuk tombol Unduh Excel, sudah diisi default</em></span>
+        <input type="url" id="set-koreksi-csv" placeholder="https://docs.google.com/…/pub?gid=…&output=csv" required />
       </label>
       <label class="field">
         <span class="field-label">URL Web App (Apps Script, untuk simpan)</span>
@@ -364,6 +375,9 @@ body{
 // Bisa diganti lewat menu Pengaturan tanpa perlu edit kode ini.
 const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=0&single=true&output=csv';
 
+// Link CSV publik dari sheet KOREKSI (hasil inputan admin), dipakai tombol "Unduh Excel"
+const DEFAULT_KOREKSI_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=1025369816&single=true&output=csv';
+
 const STORAGE_KEY = 'stockopname.settings.v2';
 const CSV_CACHE_KEY = 'stockopname.csvcache.v1';
 
@@ -384,12 +398,13 @@ function loadSettings() {
     const s = raw ? JSON.parse(raw) : {};
     return {
       csvUrl: s.csvUrl || DEFAULT_CSV_URL,
+      koreksiCsvUrl: s.koreksiCsvUrl || DEFAULT_KOREKSI_CSV_URL,
       url: s.url || '',
       token: s.token || '',
       editor: s.editor || '',
     };
   } catch (e) {
-    return { csvUrl: DEFAULT_CSV_URL, url: '', token: '', editor: '' };
+    return { csvUrl: DEFAULT_CSV_URL, koreksiCsvUrl: DEFAULT_KOREKSI_CSV_URL, url: '', token: '', editor: '' };
   }
 }
 function saveSettings(s) {
@@ -490,10 +505,12 @@ const el = {
 
   btnSettings: document.getElementById('btn-settings'),
   btnRefresh: document.getElementById('btn-refresh'),
+  btnDownload: document.getElementById('btn-download'),
   settingsOverlay: document.getElementById('settings-overlay'),
   btnCloseSettings: document.getElementById('btn-close-settings'),
   settingsForm: document.getElementById('settings-form'),
   setCsv: document.getElementById('set-csv'),
+  setKoreksiCsv: document.getElementById('set-koreksi-csv'),
   setUrl: document.getElementById('set-url'),
   setToken: document.getElementById('set-token'),
   setEditor: document.getElementById('set-editor'),
@@ -666,6 +683,42 @@ function formatDate(d) {
   }
 }
 
+// ---------- unduh Excel (hasil koreksi) ----------
+
+el.btnDownload.addEventListener('click', downloadExcel);
+
+async function downloadExcel() {
+  if (!navigator.onLine) {
+    showToast('Tidak ada koneksi internet');
+    return;
+  }
+  if (typeof XLSX === 'undefined') {
+    showToast('Komponen Excel gagal dimuat, cek koneksi & coba lagi');
+    return;
+  }
+
+  showToast('Menyiapkan file Excel…');
+
+  try {
+    const url = state.settings.koreksiCsvUrl + (state.settings.koreksiCsvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now();
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+
+    const rows = parseCSV(text).filter((r) => r.some((cell) => String(cell || '').trim() !== ''));
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'KOREKSI');
+
+    const today = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, 'Koreksi_Stock_Opname_' + today + '.xlsx');
+    showToast('File Excel diunduh');
+  } catch (err) {
+    console.error(err);
+    showToast('Gagal mengunduh. Cek link CSV KOREKSI di Pengaturan.');
+  }
+}
+
 // ---------- refresh data manual ----------
 
 el.btnRefresh.addEventListener('click', () => loadData(true));
@@ -753,7 +806,7 @@ el.editForm.addEventListener('submit', async (e) => {
     action: 'save',
     token: state.settings.token,
     editor: state.settings.editor,
-    item: { no: item.no, mcs: item.mcs, so: item.so, ref: item.ref, model: item.model, loc: item.loc, c: item.c, bal: item.bal },
+    item: { no: item.no, mcs: item.mcs, so: item.so, ref: item.ref, model: item.model, loc: item.loc, c: item.c, bal: item.bal, customer: item.customer },
     edits: edits,
   };
 
@@ -788,6 +841,7 @@ el.editForm.addEventListener('submit', async (e) => {
 
 function openSettings() {
   el.setCsv.value = state.settings.csvUrl || DEFAULT_CSV_URL;
+  el.setKoreksiCsv.value = state.settings.koreksiCsvUrl || DEFAULT_KOREKSI_CSV_URL;
   el.setUrl.value = state.settings.url || '';
   el.setToken.value = state.settings.token || '';
   el.setEditor.value = state.settings.editor || '';
@@ -804,6 +858,7 @@ el.settingsForm.addEventListener('submit', (e) => {
   const csvChanged = el.setCsv.value.trim() !== state.settings.csvUrl;
   saveSettings({
     csvUrl: el.setCsv.value.trim(),
+    koreksiCsvUrl: el.setKoreksiCsv.value.trim(),
     url: el.setUrl.value.trim(),
     token: el.setToken.value.trim(),
     editor: el.setEditor.value.trim(),
