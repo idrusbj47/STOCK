@@ -88,17 +88,28 @@ body{
 .main{ padding:16px 16px 80px; max-width:720px; margin:0 auto; }
 .search-panel{ margin-bottom:10px; }
 .search-row{ display:flex; gap:8px; }
+.search-input-wrap{ position:relative; flex:1; display:flex; min-width:0; }
 #search-input{
   flex:1; background: var(--surface); border:1px solid var(--border); color: var(--text);
-  font-family: var(--font-mono); font-size:15px; padding:13px 14px; border-radius:10px; outline:none;
+  font-family: var(--font-mono); font-size:16px; padding:13px 38px 13px 14px; border-radius:10px; outline:none;
+  width:100%; min-width:0;
 }
 #search-input:focus{ border-color: var(--amber); }
+
+.input-clear-btn{
+  position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  width:26px; height:26px; border-radius:50%; border:none; background: var(--surface-2);
+  color: var(--muted); font-size:15px; line-height:1; cursor:pointer; display:none;
+  align-items:center; justify-content:center; padding:0;
+}
+.input-clear-btn.show{ display:flex; }
+.input-clear-btn:active{ background: var(--border); color: var(--text); }
 
 .master-search-row{ margin-top:14px; gap:10px; }
 #master-search-input{
   flex:1; background: var(--surface); border:1px solid var(--border); color: var(--text);
-  font-family: var(--font-mono); font-size:16px; padding:16px 16px; border-radius:12px; outline:none;
-  min-width:0;
+  font-family: var(--font-mono); font-size:16px; padding:16px 38px 16px 16px; border-radius:12px; outline:none;
+  min-width:0; width:100%;
 }
 #master-search-input:focus{ border-color: var(--amber); }
 .master-search-row .btn-primary{ padding:0 22px; }
@@ -235,7 +246,10 @@ body{
 
   <section class="search-panel">
     <div class="search-row">
-      <input id="search-input" type="text" inputmode="search" placeholder="Cari MCS#, SO#, REF#, atau LOC#…" autocomplete="off" />
+      <div class="search-input-wrap">
+        <input id="search-input" type="text" inputmode="search" placeholder="Cari MCS#, SO#, REF#, atau LOC#…" autocomplete="off" />
+        <button type="button" id="btn-clear-search" class="input-clear-btn" aria-label="Hapus pencarian">✕</button>
+      </div>
       <button id="btn-search" class="btn-primary">Cari</button>
     </div>
     <div class="field-chips" id="field-chips">
@@ -402,7 +416,10 @@ body{
     </div>
 
     <div class="search-row master-search-row">
-      <input id="master-search-input" type="text" inputmode="search" placeholder="Cari MC#, nama barang, atau customer…" autocomplete="off" />
+      <div class="search-input-wrap">
+        <input id="master-search-input" type="text" inputmode="search" placeholder="Cari MC#, nama barang, atau customer…" autocomplete="off" />
+        <button type="button" id="btn-clear-master-search" class="input-clear-btn" aria-label="Hapus pencarian">✕</button>
+      </div>
       <button id="btn-master-search" class="btn-primary">Cari</button>
     </div>
 
@@ -580,6 +597,7 @@ function extractMasterRecords(rows) {
 const el = {
   searchInput: document.getElementById('search-input'),
   btnSearch: document.getElementById('btn-search'),
+  btnClearSearch: document.getElementById('btn-clear-search'),
   fieldChips: document.getElementById('field-chips'),
   results: document.getElementById('results'),
   summary: document.getElementById('result-summary'),
@@ -605,6 +623,7 @@ const el = {
   btnCloseMaster: document.getElementById('btn-close-master'),
   masterSearchInput: document.getElementById('master-search-input'),
   btnMasterSearch: document.getElementById('btn-master-search'),
+  btnClearMasterSearch: document.getElementById('btn-clear-master-search'),
   masterSummary: document.getElementById('master-summary'),
   masterResults: document.getElementById('master-results'),
   masterCardTemplate: document.getElementById('master-card-template'),
@@ -704,6 +723,17 @@ el.fieldChips.addEventListener('click', (e) => {
 
 el.btnSearch.addEventListener('click', runSearch);
 el.searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
+
+function updateClearBtn(input, btn) {
+  btn.classList.toggle('show', input.value.length > 0);
+}
+updateClearBtn(el.searchInput, el.btnClearSearch);
+el.searchInput.addEventListener('input', () => updateClearBtn(el.searchInput, el.btnClearSearch));
+el.btnClearSearch.addEventListener('click', () => {
+  el.searchInput.value = '';
+  updateClearBtn(el.searchInput, el.btnClearSearch);
+  el.searchInput.focus();
+});
 
 function runSearch() {
   const q = el.searchInput.value.trim().toLowerCase();
@@ -965,9 +995,24 @@ el.btnCloseMaster.addEventListener('click', closeMaster);
 el.masterOverlay.addEventListener('click', (e) => { if (e.target === el.masterOverlay) closeMaster(); });
 el.btnMasterSearch.addEventListener('click', runMasterSearch);
 el.masterSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runMasterSearch(); });
+el.masterSearchInput.addEventListener('input', () => updateClearBtn(el.masterSearchInput, el.btnClearMasterSearch));
+el.btnClearMasterSearch.addEventListener('click', () => {
+  el.masterSearchInput.value = '';
+  updateClearBtn(el.masterSearchInput, el.btnClearMasterSearch);
+  el.masterResults.innerHTML = '';
+  el.masterSummary.textContent = state.masterLoaded
+    ? state.masterRows.length + ' item Master MC siap dicari.'
+    : 'Ketik kata kunci lalu tekan Cari';
+  el.masterSearchInput.focus();
+});
 
 async function openMaster() {
   el.masterOverlay.classList.remove('hidden');
+
+  // isi otomatis dari kolom pencarian utama, biar tinggal dihapus kalau tidak dipakai
+  el.masterSearchInput.value = el.searchInput.value.trim();
+  updateClearBtn(el.masterSearchInput, el.btnClearMasterSearch);
+
   if (!state.masterLoaded) {
     el.masterSummary.textContent = 'Memuat data Master MC…';
     try {
@@ -978,12 +1023,14 @@ async function openMaster() {
       state.masterRows = extractMasterRecords(parseCSV(text));
       state.masterLoaded = true;
       el.masterSummary.textContent = state.masterRows.length + ' item Master MC siap dicari.';
+      if (el.masterSearchInput.value.trim().length >= 2) runMasterSearch();
     } catch (err) {
       console.error(err);
       el.masterSummary.textContent = 'Gagal memuat Master MC. Cek link CSV di Pengaturan & koneksi internet.';
     }
   } else {
     el.masterSummary.textContent = state.masterRows.length + ' item Master MC siap dicari.';
+    if (el.masterSearchInput.value.trim().length >= 2) runMasterSearch();
   }
 }
 
