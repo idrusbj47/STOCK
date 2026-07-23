@@ -102,6 +102,12 @@ body{
 .btn-primary:active{ transform: translateY(1px); }
 .btn-primary:disabled{ opacity:.5; cursor:not-allowed; }
 .btn-full{ width:100%; padding:14px; margin-top:6px; }
+.btn-secondary{
+  background: transparent; color: var(--amber); border:1px dashed var(--border);
+  font-weight:600; font-family: var(--font-display); letter-spacing:.03em; text-transform:uppercase;
+  font-size:13.5px; padding:11px 16px; border-radius:10px; cursor:pointer;
+}
+.btn-secondary:active{ background: var(--surface-2); }
 
 .field-chips{ display:flex; gap:8px; margin-top:10px; overflow-x:auto; padding-bottom:2px; }
 .chip{
@@ -230,6 +236,7 @@ body{
       <button class="chip" data-field="REF">REF#</button>
       <button class="chip" data-field="LOC">LOC#</button>
     </div>
+    <button id="btn-open-master" class="btn-secondary btn-full">+ Cari di Master MC (barang baru)</button>
   </section>
 
   <section class="status-row">
@@ -295,6 +302,10 @@ body{
         <input type="text" id="edit-ref" class="mono" autocomplete="off" />
       </label>
       <label class="field">
+        <span class="field-label">SO# <em>nomor SO</em></span>
+        <input type="text" id="edit-so" class="mono" autocomplete="off" />
+      </label>
+      <label class="field">
         <span class="field-label">C# <em>carton/nomor</em></span>
         <input type="text" id="edit-c" class="mono" autocomplete="off" />
       </label>
@@ -315,7 +326,7 @@ body{
         <input type="text" id="edit-loc" class="mono" autocomplete="off" />
       </label>
 
-      <div class="info-note">Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#).</div>
+      <div class="info-note" id="edit-fallback-note">Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#/SO#).</div>
 
       <button type="submit" id="btn-save" class="btn-primary btn-full">Simpan Koreksi</button>
       <div id="save-status" class="save-status" role="status"></div>
@@ -345,6 +356,10 @@ body{
         <input type="url" id="set-koreksi-csv" placeholder="https://docs.google.com/…/pub?gid=…&output=csv" required />
       </label>
       <label class="field">
+        <span class="field-label">Link CSV Master MC <em>untuk tombol Cari di Master MC, sudah diisi default</em></span>
+        <input type="url" id="set-master-csv" placeholder="https://docs.google.com/…/pub?gid=…&output=csv" required />
+      </label>
+      <label class="field">
         <span class="field-label">URL Web App (Apps Script, untuk simpan)</span>
         <input type="url" id="set-url" placeholder="https://script.google.com/macros/s/…/exec" required />
       </label>
@@ -365,6 +380,48 @@ body{
 
 <div id="toast" class="toast hidden"></div>
 
+<!-- Master MC search overlay (untuk barang baru) -->
+<div id="master-overlay" class="sheet-overlay hidden">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="master-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <span class="sheet-eyebrow">BARANG BARU</span>
+        <h2 id="master-title">Cari di Master MC</h2>
+      </div>
+      <button id="btn-close-master" class="icon-btn" aria-label="Tutup">✕</button>
+    </div>
+
+    <div class="info-note">Data Master MC hanya untuk <b>ditampilkan</b>. Kalau ketemu, informasinya diisi otomatis ke form input — koreksi tetap tersimpan di sheet KOREKSI.</div>
+
+    <div class="search-row" style="margin-top:12px;">
+      <input id="master-search-input" type="text" inputmode="search" placeholder="Cari MC#, nama barang, atau customer…" autocomplete="off" />
+      <button id="btn-master-search" class="btn-primary">Cari</button>
+    </div>
+
+    <div class="status-row"><span id="master-summary" class="muted">Ketik kata kunci lalu tekan Cari</span></div>
+    <div id="master-results" class="results"></div>
+  </div>
+</div>
+
+<template id="master-card-template">
+  <article class="item-card master-item-card" tabindex="0">
+    <div class="card-strip"></div>
+    <div class="card-body">
+      <div class="card-top">
+        <span class="mono mc-mc"></span>
+      </div>
+      <div class="model mc-model"></div>
+      <div class="card-grid">
+        <div><span class="k">SO#</span><span class="v mono mc-so"></span></div>
+        <div><span class="k">UKURAN</span><span class="v mono mc-ukuran"></span></div>
+      </div>
+      <div class="card-meta muted mc-customer"></div>
+    </div>
+    <div class="card-edit-hint">Ketuk untuk pakai ›</div>
+  </article>
+</template>
+
 <script>
 /* =========================================================
    SEMUA JAVASCRIPT ADA DI SINI — biar gampang direvisi di satu file
@@ -378,6 +435,9 @@ const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEAL
 // Link CSV publik dari sheet KOREKSI (hasil inputan admin), dipakai tombol "Unduh Excel"
 const DEFAULT_KOREKSI_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=1025369816&single=true&output=csv';
 
+// Link CSV publik Master MC (data acuan barang, dipakai tombol "Cari di Master MC")
+const DEFAULT_MASTER_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=2047780733&single=true&output=csv';
+
 const STORAGE_KEY = 'stockopname.settings.v2';
 const CSV_CACHE_KEY = 'stockopname.csvcache.v1';
 
@@ -386,8 +446,11 @@ const state = {
   allRows: [],       // seluruh data dari CSV (sumber informasi)
   results: [],        // hasil pencarian saat ini
   activeItem: null,
+  isNewItem: false,   // true kalau item sedang diedit berasal dari Master MC (barang baru)
   savedThisSession: new Set(), // nomor baris (NO) yang sudah disimpan koreksinya sesi ini
   settings: loadSettings(),
+  masterRows: [],      // data Master MC, dimuat lazy saat tombol "Cari di Master MC" pertama kali dipakai
+  masterLoaded: false,
 };
 
 // ---------- settings ----------
@@ -399,12 +462,13 @@ function loadSettings() {
     return {
       csvUrl: s.csvUrl || DEFAULT_CSV_URL,
       koreksiCsvUrl: s.koreksiCsvUrl || DEFAULT_KOREKSI_CSV_URL,
+      masterCsvUrl: s.masterCsvUrl || DEFAULT_MASTER_CSV_URL,
       url: s.url || '',
       token: s.token || '',
       editor: s.editor || '',
     };
   } catch (e) {
-    return { csvUrl: DEFAULT_CSV_URL, koreksiCsvUrl: DEFAULT_KOREKSI_CSV_URL, url: '', token: '', editor: '' };
+    return { csvUrl: DEFAULT_CSV_URL, koreksiCsvUrl: DEFAULT_KOREKSI_CSV_URL, masterCsvUrl: DEFAULT_MASTER_CSV_URL, url: '', token: '', editor: '' };
   }
 }
 function saveSettings(s) {
@@ -480,6 +544,30 @@ function extractRecords(rows) {
   return records;
 }
 
+// Kolom Master MC (sesuai file acuan): MC, SO, CUSTOMER, NAMA BARANG, BERAT,
+// SALES, INT'S, C.CODE, PIC, TGL MASUK, UKURAN, FLUTE
+function extractMasterRecords(rows) {
+  let headerIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].includes('MC') && rows[i].includes('NAMA BARANG')) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) throw new Error('Header Master MC tidak ditemukan (kolom MC/NAMA BARANG tidak ada).');
+
+  const records = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 2) continue;
+    const mc = String(r[0] || '').trim();
+    if (mc === '') continue;
+
+    records.push({
+      mc: r[0] || '', so: r[1] || '', customer: r[2] || '', model: r[3] || '',
+      ukuran: r[10] || '', flute: r[11] || '',
+    });
+  }
+  return records;
+}
+
 // ---------- dom refs ----------
 
 const el = {
@@ -498,10 +586,22 @@ const el = {
   editLoc: document.getElementById('edit-loc'),
   editC: document.getElementById('edit-c'),
   editRef: document.getElementById('edit-ref'),
+  editSo: document.getElementById('edit-so'),
   editBalSistem: document.getElementById('edit-bal-sistem'),
   editBal: document.getElementById('edit-bal'),
   editSelisihPreview: document.getElementById('edit-selisih-preview'),
+  editFallbackNote: document.getElementById('edit-fallback-note'),
   saveStatus: document.getElementById('save-status'),
+
+  btnOpenMaster: document.getElementById('btn-open-master'),
+  masterOverlay: document.getElementById('master-overlay'),
+  btnCloseMaster: document.getElementById('btn-close-master'),
+  masterSearchInput: document.getElementById('master-search-input'),
+  btnMasterSearch: document.getElementById('btn-master-search'),
+  masterSummary: document.getElementById('master-summary'),
+  masterResults: document.getElementById('master-results'),
+  masterCardTemplate: document.getElementById('master-card-template'),
+  setMasterCsv: document.getElementById('set-master-csv'),
 
   btnSettings: document.getElementById('btn-settings'),
   btnRefresh: document.getElementById('btn-refresh'),
@@ -725,16 +825,25 @@ el.btnRefresh.addEventListener('click', () => loadData(true));
 
 // ---------- edit sheet (form koreksi) ----------
 
-function openEditSheet(item) {
+function openEditSheet(item, isNewItem) {
   state.activeItem = item;
-  el.sheetTitle.textContent = 'MCS# ' + item.mcs;
-  el.sheetRefinfo.textContent = 'NO ' + item.no + ' · SO# ' + (item.so || '-') + ' · ' + (item.model || '');
+  state.isNewItem = !!isNewItem;
 
-  el.editLoc.value = item.loc || '';
-  el.editC.value = item.c || '';
+  el.sheetTitle.textContent = 'MCS# ' + item.mcs;
+  el.sheetRefinfo.textContent = state.isNewItem
+    ? 'Barang baru · ' + (item.model || '')
+    : 'NO ' + item.no + ' · ' + (item.model || '');
+
   el.editRef.value = item.ref || '';
-  el.editBalSistem.textContent = item.bal;
+  el.editSo.value = item.so || '';
+  el.editC.value = item.c || '';
+  el.editBalSistem.textContent = state.isNewItem ? '0 (barang baru)' : item.bal;
   el.editBal.value = '';
+  el.editLoc.value = item.loc || '';
+
+  el.editFallbackNote.textContent = state.isNewItem
+    ? 'Barang baru akan dicatat sebagai baris baru di sheet KOREKSI (NO baris laporan dikosongkan).'
+    : 'Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#/SO#).';
 
   el.saveStatus.textContent = '';
   el.saveStatus.className = 'save-status';
@@ -761,6 +870,7 @@ el.editBal.addEventListener('input', updateSelisihPreview);
 function closeEditSheet() {
   el.sheetOverlay.classList.add('hidden');
   state.activeItem = null;
+  state.isNewItem = false;
 }
 el.btnCloseSheet.addEventListener('click', closeEditSheet);
 el.sheetOverlay.addEventListener('click', (e) => { if (e.target === el.sheetOverlay) closeEditSheet(); });
@@ -781,11 +891,13 @@ el.editForm.addEventListener('submit', async (e) => {
   const newLoc = el.editLoc.value.trim();
   const newC = el.editC.value.trim();
   const newRef = el.editRef.value.trim();
+  const newSo = el.editSo.value.trim();
   const newBal = el.editBal.value.trim();
 
   if (newLoc !== String(item.loc || '')) edits.loc = newLoc;
   if (newC !== String(item.c || '')) edits.c = newC;
   if (newRef !== String(item.ref || '')) edits.ref = newRef;
+  if (newSo !== String(item.so || '')) edits.so = newSo;
   if (newBal !== '') edits.bal = Number(newBal);
 
   if (Object.keys(edits).length === 0) {
@@ -824,11 +936,13 @@ el.editForm.addEventListener('submit', async (e) => {
       return;
     }
 
-    state.savedThisSession.add(String(item.no));
+    if (!state.isNewItem) {
+      state.savedThisSession.add(String(item.no));
+      renderResults(false, state.results.length);
+    }
     el.saveStatus.textContent = 'Tersimpan sebagai data baru ✓';
     el.saveStatus.className = 'save-status ok';
-    showToast('Koreksi tersimpan');
-    renderResults(false, state.results.length);
+    showToast(state.isNewItem ? 'Barang baru tersimpan ke KOREKSI' : 'Koreksi tersimpan');
     setTimeout(closeEditSheet, 700);
   } catch (err) {
     el.saveStatus.textContent = 'Gagal menyimpan. Coba lagi.';
@@ -837,11 +951,100 @@ el.editForm.addEventListener('submit', async (e) => {
   }
 });
 
+// ---------- Master MC (barang baru) ----------
+
+el.btnOpenMaster.addEventListener('click', openMaster);
+el.btnCloseMaster.addEventListener('click', closeMaster);
+el.masterOverlay.addEventListener('click', (e) => { if (e.target === el.masterOverlay) closeMaster(); });
+el.btnMasterSearch.addEventListener('click', runMasterSearch);
+el.masterSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runMasterSearch(); });
+
+async function openMaster() {
+  el.masterOverlay.classList.remove('hidden');
+  if (!state.masterLoaded) {
+    el.masterSummary.textContent = 'Memuat data Master MC…';
+    try {
+      const url = state.settings.masterCsvUrl;
+      const res = await fetch(url, { cache: 'default' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      state.masterRows = extractMasterRecords(parseCSV(text));
+      state.masterLoaded = true;
+      el.masterSummary.textContent = state.masterRows.length + ' item Master MC siap dicari.';
+    } catch (err) {
+      console.error(err);
+      el.masterSummary.textContent = 'Gagal memuat Master MC. Cek link CSV di Pengaturan & koneksi internet.';
+    }
+  } else {
+    el.masterSummary.textContent = state.masterRows.length + ' item Master MC siap dicari.';
+  }
+}
+
+function closeMaster() {
+  el.masterOverlay.classList.add('hidden');
+}
+
+function runMasterSearch() {
+  const q = el.masterSearchInput.value.trim().toLowerCase();
+  if (q.length < 2) {
+    el.masterSummary.textContent = 'Ketik minimal 2 karakter';
+    el.masterResults.innerHTML = '';
+    return;
+  }
+  if (!state.masterLoaded) {
+    el.masterSummary.textContent = 'Data Master MC belum siap, tunggu sebentar.';
+    return;
+  }
+
+  const MAX_RESULTS = 200;
+  const matches = state.masterRows.filter((r) =>
+    String(r.mc).toLowerCase().includes(q)
+    || String(r.model).toLowerCase().includes(q)
+    || String(r.customer).toLowerCase().includes(q)
+    || String(r.so).toLowerCase().includes(q)
+  );
+
+  const truncated = matches.length > MAX_RESULTS;
+  const shown = matches.slice(0, MAX_RESULTS);
+
+  el.masterResults.innerHTML = '';
+  if (shown.length === 0) {
+    el.masterSummary.textContent = 'Tidak ada hasil';
+    return;
+  }
+  el.masterSummary.textContent = matches.length + ' hasil ditemukan' + (truncated ? ' (ditampilkan 200 pertama)' : '');
+
+  shown.forEach((rec) => {
+    const node = el.masterCardTemplate.content.cloneNode(true);
+    node.querySelector('.mc-mc').textContent = 'MC# ' + rec.mc;
+    node.querySelector('.mc-model').textContent = rec.model || '';
+    node.querySelector('.mc-so').textContent = rec.so || '—';
+    node.querySelector('.mc-ukuran').textContent = rec.ukuran || '—';
+    node.querySelector('.mc-customer').textContent = rec.customer || '';
+
+    const card = node.querySelector('.item-card');
+    card.addEventListener('click', () => useMasterRecord(rec));
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter') useMasterRecord(rec); });
+
+    el.masterResults.appendChild(node);
+  });
+}
+
+function useMasterRecord(rec) {
+  closeMaster();
+  const newItem = {
+    no: '', mcs: rec.mc, so: rec.so, ref: '', model: rec.model,
+    loc: '', c: '', bal: 0, customer: rec.customer,
+  };
+  openEditSheet(newItem, true);
+}
+
 // ---------- settings ----------
 
 function openSettings() {
   el.setCsv.value = state.settings.csvUrl || DEFAULT_CSV_URL;
   el.setKoreksiCsv.value = state.settings.koreksiCsvUrl || DEFAULT_KOREKSI_CSV_URL;
+  el.setMasterCsv.value = state.settings.masterCsvUrl || DEFAULT_MASTER_CSV_URL;
   el.setUrl.value = state.settings.url || '';
   el.setToken.value = state.settings.token || '';
   el.setEditor.value = state.settings.editor || '';
@@ -856,9 +1059,11 @@ el.settingsOverlay.addEventListener('click', (e) => { if (e.target === el.settin
 el.settingsForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const csvChanged = el.setCsv.value.trim() !== state.settings.csvUrl;
+  const masterCsvChanged = el.setMasterCsv.value.trim() !== state.settings.masterCsvUrl;
   saveSettings({
     csvUrl: el.setCsv.value.trim(),
     koreksiCsvUrl: el.setKoreksiCsv.value.trim(),
+    masterCsvUrl: el.setMasterCsv.value.trim(),
     url: el.setUrl.value.trim(),
     token: el.setToken.value.trim(),
     editor: el.setEditor.value.trim(),
@@ -867,6 +1072,7 @@ el.settingsForm.addEventListener('submit', (e) => {
   el.settingsStatus.className = 'save-status ok';
   setTimeout(closeSettings, 500);
   if (csvChanged) loadData(true);
+  if (masterCsvChanged) state.masterLoaded = false; // paksa muat ulang Master MC di kunjungan berikutnya
 });
 
 // ---------- inisialisasi ----------
