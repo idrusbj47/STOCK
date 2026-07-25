@@ -16,9 +16,8 @@
   })();
 </script>
 <link rel="manifest" href="manifest.json" />
-<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png" />
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
-<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<link rel="icon" href="icons/icon.png" />
+<link rel="apple-touch-icon" href="icons/icon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -266,15 +265,20 @@ body{
 .field-input-wrap input{ padding-right:40px; }
 .field-input-wrap .input-clear-btn{ right:8px; }
 
-.kb-toggle{
-  display:flex; background: var(--surface-2); border:1px solid var(--border); border-radius:999px;
-  padding:2px; flex:none;
+/* Tombol tunggal mengambang di atas keyboard hp, mirip tombol 123 di GSheet.
+   Muncul otomatis saat salah satu field .kb-switchable difokus. */
+.kb-float-toggle{
+  position:fixed; right:16px; bottom:20px; z-index:200;
+  min-width:52px; height:38px; padding:0 14px; border-radius:999px;
+  background: var(--surface); border:1px solid var(--border); color: var(--text);
+  font-family: var(--font-mono); font-weight:700; font-size:13px; letter-spacing:.03em;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  box-shadow:0 6px 18px rgba(0,0,0,0.28);
+  opacity:0; pointer-events:none; transform: translateY(6px);
+  transition: opacity .12s ease, transform .12s ease, bottom .08s ease;
 }
-.kb-btn{
-  border:none; background:transparent; color: var(--muted); font-size:10.5px; font-weight:700;
-  padding:4px 10px; border-radius:999px; cursor:pointer; font-family: var(--font-mono); letter-spacing:.03em;
-}
-.kb-btn.active{ background: var(--surface); color: var(--text); box-shadow:0 1px 2px rgba(0,0,0,0.15); }
+.kb-float-toggle.show{ opacity:1; pointer-events:auto; transform: translateY(0); }
+.kb-float-toggle:active{ background: var(--surface-2); }
 
 /* Warna berbeda per jenis form supaya gampang dibedakan sekilas */
 #edit-sheet{ --accent: var(--amber); border-top:3px solid var(--accent); }
@@ -284,7 +288,6 @@ body{
 #edit-sheet .field-input-wrap input:focus,
 #edit-sheet .field input:focus{ border-color: var(--accent); }
 #edit-sheet .btn-primary{ background: var(--accent); }
-#edit-sheet .kb-btn.active{ color: var(--accent); }
 .selisih-preview{ font-size:12.5px; font-family: var(--font-mono); min-height:16px; }
 .selisih-preview.pos{ color: var(--green); }
 .selisih-preview.neg{ color: var(--red); }
@@ -411,41 +414,23 @@ body{
 
     <form id="edit-form" class="edit-form">
       <label class="field field-lg">
-        <div class="field-label-row">
-          <span class="field-label">REF# <em>nomor referensi</em></span>
-          <div class="kb-toggle" data-kb-for="edit-ref">
-            <button type="button" class="kb-btn active" data-mode="text">ABC</button>
-            <button type="button" class="kb-btn" data-mode="numeric">123</button>
-          </div>
-        </div>
+        <span class="field-label">REF# <em>nomor referensi</em></span>
         <div class="field-input-wrap">
-          <input type="text" id="edit-ref" class="mono" autocomplete="off" />
+          <input type="text" id="edit-ref" class="mono kb-switchable" inputmode="text" autocomplete="off" />
           <button type="button" class="input-clear-btn" aria-label="Hapus REF#">✕</button>
         </div>
       </label>
       <label class="field field-lg">
-        <div class="field-label-row">
-          <span class="field-label">SO# <em>nomor SO</em></span>
-          <div class="kb-toggle" data-kb-for="edit-so">
-            <button type="button" class="kb-btn active" data-mode="text">ABC</button>
-            <button type="button" class="kb-btn" data-mode="numeric">123</button>
-          </div>
-        </div>
+        <span class="field-label">SO# <em>nomor SO</em></span>
         <div class="field-input-wrap">
-          <input type="text" id="edit-so" class="mono" autocomplete="off" />
+          <input type="text" id="edit-so" class="mono kb-switchable" inputmode="text" autocomplete="off" />
           <button type="button" class="input-clear-btn" aria-label="Hapus SO#">✕</button>
         </div>
       </label>
       <label class="field field-lg">
-        <div class="field-label-row">
-          <span class="field-label">C# <em>carton/nomor</em></span>
-          <div class="kb-toggle" data-kb-for="edit-c">
-            <button type="button" class="kb-btn active" data-mode="text">ABC</button>
-            <button type="button" class="kb-btn" data-mode="numeric">123</button>
-          </div>
-        </div>
+        <span class="field-label">C# <em>carton/nomor</em></span>
         <div class="field-input-wrap">
-          <input type="text" id="edit-c" class="mono" autocomplete="off" />
+          <input type="text" id="edit-c" class="mono kb-switchable" inputmode="text" autocomplete="off" />
           <button type="button" class="input-clear-btn" aria-label="Hapus C#">✕</button>
         </div>
       </label>
@@ -465,15 +450,9 @@ body{
       <div id="edit-selisih-preview" class="selisih-preview"></div>
 
       <label class="field field-lg">
-        <div class="field-label-row">
-          <span class="field-label">LOC# <em>lokasi rak</em></span>
-          <div class="kb-toggle" data-kb-for="edit-loc">
-            <button type="button" class="kb-btn active" data-mode="text">ABC</button>
-            <button type="button" class="kb-btn" data-mode="numeric">123</button>
-          </div>
-        </div>
+        <span class="field-label">LOC# <em>lokasi rak</em></span>
         <div class="field-input-wrap">
-          <input type="text" id="edit-loc" class="mono" autocomplete="off" />
+          <input type="text" id="edit-loc" class="mono kb-switchable" inputmode="text" autocomplete="off" />
           <button type="button" class="input-clear-btn" aria-label="Hapus LOC#">✕</button>
         </div>
       </label>
@@ -549,6 +528,7 @@ body{
 </div>
 
 <div id="toast" class="toast hidden"></div>
+<button type="button" id="kb-float-toggle" class="kb-float-toggle" aria-label="Ganti jenis keyboard">123</button>
 <button id="btn-scroll-top" class="scroll-top-btn" aria-label="Kembali ke atas" title="Kembali ke atas">
   <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 8l6 6-1.41 1.41L12 10.83l-4.59 4.58L6 14z"/></svg>
 </button>
@@ -981,34 +961,82 @@ function initClearableInputs() {
 }
 initClearableInputs();
 
-// ---------- toggle keyboard ABC / 123 per field ----------
+// ---------- tombol tunggal mengambang ABC/123 (mirip GSheet) ----------
+// Satu tombol saja, muncul menempel di atas keyboard hp saat salah satu
+// field .kb-switchable sedang aktif diketik, lalu ganti posisi otomatis
+// mengikuti tinggi keyboard yang muncul (pakai visualViewport).
 
-function initKeyboardToggles() {
-  document.querySelectorAll('.kb-toggle').forEach((group) => {
-    const targetId = group.dataset.kbFor;
-    const input = targetId ? document.getElementById(targetId) : null;
-    if (!input) return;
-    group.querySelectorAll('.kb-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        group.querySelectorAll('.kb-btn').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
+function initFloatingKeyboardToggle() {
+  const floatBtn = document.getElementById('kb-float-toggle');
+  if (!floatBtn) return;
+  const switchables = Array.from(document.querySelectorAll('.kb-switchable'));
+  if (!switchables.length) return;
 
-        input.setAttribute('inputmode', btn.dataset.mode);
+  let activeInput = null;
+  let hideTimer = null;
 
-        // Sebagian besar browser hp hanya membaca ulang inputmode saat
-        // input di-blur lalu difokuskan lagi (mirip tombol 123 di GSheet).
-        // Blur+focus harus sinkron dalam handler ini supaya keyboard tetap
-        // boleh dimunculkan otomatis oleh browser (aturan "user gesture").
-        input.blur();
-        input.focus();
-        const len = input.value.length;
-        try { input.setSelectionRange(len, len); } catch (err) {}
-      });
-    });
+  function labelFor(input) {
+    // Tombol menampilkan mode TUJUAN kalau ditekan (mirip GSheet):
+    // field masih ABC -> tombol tulis "123", field lagi numeric -> tombol tulis "ABC".
+    return input.getAttribute('inputmode') === 'numeric' ? 'ABC' : '123';
+  }
+
+  function positionFloatBtn() {
+    const vv = window.visualViewport;
+    if (!vv) { floatBtn.style.bottom = '20px'; return; }
+    const keyboardInset = Math.max(window.innerHeight - vv.height - vv.offsetTop, 0);
+    floatBtn.style.bottom = (keyboardInset + 10) + 'px';
+  }
+
+  function showFloatBtn(input) {
+    clearTimeout(hideTimer);
+    activeInput = input;
+    floatBtn.textContent = labelFor(input);
+    floatBtn.classList.add('show');
+    positionFloatBtn();
+  }
+
+  function scheduleHide() {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      if (!switchables.includes(document.activeElement)) {
+        floatBtn.classList.remove('show');
+        activeInput = null;
+      }
+    }, 120);
+  }
+
+  switchables.forEach((input) => {
+    if (!input.getAttribute('inputmode')) input.setAttribute('inputmode', 'text');
+    input.addEventListener('focus', () => showFloatBtn(input));
+    input.addEventListener('blur', scheduleHide);
+  });
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', positionFloatBtn);
+    window.visualViewport.addEventListener('scroll', positionFloatBtn);
+  }
+
+  floatBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!activeInput) return;
+    const input = activeInput;
+    const nextMode = input.getAttribute('inputmode') === 'numeric' ? 'text' : 'numeric';
+    input.setAttribute('inputmode', nextMode);
+
+    // Sebagian besar browser hp hanya membaca ulang inputmode saat input
+    // di-blur lalu difokuskan lagi. Blur+focus harus sinkron dalam handler
+    // klik ini supaya browser tetap mengizinkan keyboard muncul otomatis.
+    input.blur();
+    input.focus();
+    const len = input.value.length;
+    try { input.setSelectionRange(len, len); } catch (err) {}
+
+    floatBtn.textContent = labelFor(input);
+    positionFloatBtn();
   });
 }
-initKeyboardToggles();
+initFloatingKeyboardToggle();
 
 // ---------- offline banner ----------
 
@@ -1267,14 +1295,12 @@ function openEditSheet(item, mode) {
       ? 'Field yang dikosongkan otomatis memakai nilai yang sudah tersimpan sebelumnya.'
       : 'Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#/SO#).';
 
-  // reset toggle keyboard ke ABC & sinkronkan tampilan tombol hapus tiap field
-  el.editForm.querySelectorAll('.kb-toggle').forEach((group) => {
-    const targetId = group.dataset.kbFor;
-    const input = targetId ? document.getElementById(targetId) : null;
-    if (!input) return;
+  // reset keyboard tiap field balik ke mode ABC & sembunyikan tombol mengambang
+  el.editForm.querySelectorAll('.kb-switchable').forEach((input) => {
     input.setAttribute('inputmode', 'text');
-    group.querySelectorAll('.kb-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === 'text'));
   });
+  const kbFloatBtn = document.getElementById('kb-float-toggle');
+  if (kbFloatBtn) kbFloatBtn.classList.remove('show');
   el.editForm.querySelectorAll('.field-input-wrap').forEach((wrap) => {
     const input = wrap.querySelector('input');
     const btn = wrap.querySelector('.input-clear-btn');
