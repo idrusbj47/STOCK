@@ -5,7 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Stock Opname — DBS</title>
 <meta name="description" content="Cek stok gudang & simpan koreksi saat stock opname" />
-<meta name="theme-color" content="#12161B" />
+<meta name="theme-color" content="#12161B" id="meta-theme-color" />
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('stockopname.theme');
+      var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/icon-192.png" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -28,12 +37,31 @@
   --amber: #FFB020;
   --green: #34D399;
   --red: #F45B69;
+  --violet: #A78BFA;
   --gray-badge: #4B5563;
   --radius: 14px;
   --font-display: 'Barlow Condensed', sans-serif;
   --font-body: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+  color-scheme: dark;
+  --on-accent: #1A1300;
 }
+html[data-theme="light"]{
+  --bg: #F3F4F6;
+  --surface: #FFFFFF;
+  --surface-2: #EEF0F3;
+  --border: #DCE0E6;
+  --text: #171B21;
+  --muted: #667085;
+  --amber: #B8770F;
+  --green: #12996B;
+  --red: #DC3E4E;
+  --violet: #7C5CE0;
+  --gray-badge: #6B7280;
+  color-scheme: light;
+  --on-accent: #FFFFFF;
+}
+html, body{ transition: background-color .25s ease, color .25s ease; }
 *{ box-sizing: border-box; }
 html,body{ height:100%; }
 body{
@@ -65,9 +93,32 @@ body{
 
 .topbar{
   display:flex; align-items:center; justify-content:space-between;
-  padding:18px 18px 12px; border-bottom:1px solid var(--border);
+  padding:18px 18px 12px; border-bottom:1px solid transparent;
   position: sticky; top:0; background: var(--bg); z-index:40;
+  transition: background-color .25s ease, border-color .25s ease, backdrop-filter .25s ease, box-shadow .25s ease, padding .2s ease;
 }
+.topbar.scrolled{
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-bottom-color: var(--border);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  padding-top:14px; padding-bottom:10px;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
+  .topbar.scrolled{ background: var(--surface); }
+}
+
+.scroll-top-btn{
+  position:fixed; right:16px; bottom:24px; width:44px; height:44px; border-radius:50%;
+  background: var(--surface); border:1px solid var(--border); color: var(--text);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:90;
+  box-shadow:0 6px 18px rgba(0,0,0,0.28);
+  opacity:0; pointer-events:none; transform: translateY(10px);
+  transition: opacity .2s ease, transform .2s ease;
+}
+.scroll-top-btn.show{ opacity:1; pointer-events:auto; transform: translateY(0); }
+.scroll-top-btn:active{ background: var(--surface-2); }
 .brand-eyebrow{
   display:block; font-size:11px; letter-spacing:.12em; text-transform:uppercase;
   color: var(--muted); margin-bottom:2px;
@@ -115,7 +166,7 @@ body{
 .master-search-row .btn-primary{ padding:0 22px; }
 
 .btn-primary{
-  background: var(--amber); color:#1A1300; border:none; font-weight:700;
+  background: var(--amber); color: var(--on-accent); border:none; font-weight:700;
   font-family: var(--font-display); letter-spacing:.03em; text-transform:uppercase;
   font-size:15px; padding:0 20px; border-radius:10px; cursor:pointer;
 }
@@ -193,15 +244,44 @@ body{
 .field{ display:flex; flex-direction:column; gap:6px; }
 .field-label{ font-size:12.5px; color: var(--muted); }
 .field-label em{ font-style:normal; color:#5C6673; }
+.field-label-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .field input{
   background: var(--surface-2); border:1px solid var(--border); color: var(--text);
-  font-size:16px; padding:12px 12px; border-radius:10px; outline:none;
+  font-size:16px; padding:12px 12px; border-radius:10px; outline:none; width:100%;
 }
 .field input:focus{ border-color: var(--amber); }
 .readonly-field .readonly-value{
   background: var(--surface); border:1px dashed var(--border); color: var(--muted);
   font-size:16px; padding:12px 12px; border-radius:10px;
 }
+
+/* Form utama (koreksi/barang baru/edit) dibesarkan biar lebih nyaman diketik */
+.field-lg input{ font-size:16.5px; padding:15px 14px; border-radius:12px; }
+.field-lg.readonly-field .readonly-value{ font-size:16.5px; padding:15px 14px; border-radius:12px; }
+
+.field-input-wrap{ position:relative; display:flex; }
+.field-input-wrap input{ padding-right:40px; }
+.field-input-wrap .input-clear-btn{ right:8px; }
+
+.kb-toggle{
+  display:flex; background: var(--surface-2); border:1px solid var(--border); border-radius:999px;
+  padding:2px; flex:none;
+}
+.kb-btn{
+  border:none; background:transparent; color: var(--muted); font-size:10.5px; font-weight:700;
+  padding:4px 10px; border-radius:999px; cursor:pointer; font-family: var(--font-mono); letter-spacing:.03em;
+}
+.kb-btn.active{ background: var(--surface); color: var(--text); box-shadow:0 1px 2px rgba(0,0,0,0.15); }
+
+/* Warna berbeda per jenis form supaya gampang dibedakan sekilas */
+#edit-sheet{ --accent: var(--amber); border-top:3px solid var(--accent); }
+#edit-sheet.mode-new{ --accent: var(--green); }
+#edit-sheet.mode-update{ --accent: var(--violet); }
+#edit-sheet .sheet-eyebrow{ color: var(--accent); }
+#edit-sheet .field-input-wrap input:focus,
+#edit-sheet .field input:focus{ border-color: var(--accent); }
+#edit-sheet .btn-primary{ background: var(--accent); }
+#edit-sheet .kb-btn.active{ color: var(--accent); }
 .selisih-preview{ font-size:12.5px; font-family: var(--font-mono); min-height:16px; }
 .selisih-preview.pos{ color: var(--green); }
 .selisih-preview.neg{ color: var(--red); }
@@ -238,6 +318,10 @@ body{
     </button>
     <button id="btn-refresh" class="icon-btn" aria-label="Refresh data" title="Muat ulang data">
       <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0012 4a8 8 0 108 8h-2a6 6 0 11-1.76-4.24L13 11h7V4l-2.35 2.35z"/></svg>
+    </button>
+    <button id="btn-theme-toggle" class="icon-btn" aria-label="Ganti tema terang/gelap" title="Ganti tema terang/gelap">
+      <svg id="theme-icon-moon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12.74 2.02c-4.8.4-8.6 4.46-8.6 9.36 0 5.16 4.24 9.4 9.4 9.4 4.9 0 8.96-3.8 9.36-8.6-1.3 1.02-2.94 1.62-4.72 1.62-4.24 0-7.68-3.44-7.68-7.68 0-1.78.6-3.42 1.62-4.72z"/></svg>
+      <svg id="theme-icon-sun" viewBox="0 0 24 24" width="20" height="20" class="hidden"><path fill="currentColor" d="M12 7a5 5 0 100 10 5 5 0 000-10zm0-5a1 1 0 011 1v2a1 1 0 11-2 0V3a1 1 0 011-1zm0 17a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1zM3.51 4.93a1 1 0 011.41 0l1.41 1.41A1 1 0 114.93 7.76L3.51 6.34a1 1 0 010-1.41zm14.16 14.16a1 1 0 011.41 0l1.41 1.41a1 1 0 11-1.41 1.41l-1.41-1.41a1 1 0 010-1.41zM2 12a1 1 0 011-1h2a1 1 0 110 2H3a1 1 0 01-1-1zm17 0a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zM4.93 19.07a1 1 0 010-1.41l1.41-1.41a1 1 0 111.41 1.41l-1.41 1.41a1 1 0 01-1.41 0zM18.09 6.34l1.41-1.41a1 1 0 111.41 1.41l-1.41 1.42a1 1 0 11-1.41-1.42z"/></svg>
     </button>
     <button id="btn-settings" class="icon-btn" aria-label="Pengaturan" title="Pengaturan">
       <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19.14 12.94a7.14 7.14 0 000-1.88l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.3 7.3 0 00-1.63-.94l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.59.24-1.14.56-1.63.94l-2.39-.96a.5.5 0 00-.6.22L2.71 8.84a.5.5 0 00.12.64l2.03 1.58a7.14 7.14 0 000 1.88l-2.03 1.58a.5.5 0 00-.12.64l1.92 3.32c.13.22.4.31.6.22l2.39-.96c.49.38 1.04.7 1.63.94l.36 2.54c.05.24.26.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.54c.59-.24 1.14-.56 1.63-.94l2.39.96c.2.09.47 0 .6-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/></svg>
@@ -313,7 +397,7 @@ body{
     <div class="sheet-handle"></div>
     <div class="sheet-header">
       <div>
-        <span class="sheet-eyebrow">KOREKSI STOCK OPNAME</span>
+        <span class="sheet-eyebrow" id="sheet-eyebrow">KOREKSI STOCK OPNAME</span>
         <h2 id="sheet-title" class="mono"></h2>
       </div>
       <button id="btn-close-sheet" class="icon-btn" aria-label="Tutup">✕</button>
@@ -323,33 +407,72 @@ body{
     <div class="info-note" id="edit-top-note">Koreksi disimpan sebagai <b>data baru</b> di sheet terpisah (tidak mengubah data sumber).</div>
 
     <form id="edit-form" class="edit-form">
-      <label class="field">
-        <span class="field-label">REF# <em>nomor referensi</em></span>
-        <input type="text" id="edit-ref" class="mono" autocomplete="off" />
+      <label class="field field-lg">
+        <div class="field-label-row">
+          <span class="field-label">REF# <em>nomor referensi</em></span>
+          <div class="kb-toggle" data-kb-for="edit-ref">
+            <button type="button" class="kb-btn active" data-mode="text">ABC</button>
+            <button type="button" class="kb-btn" data-mode="numeric">123</button>
+          </div>
+        </div>
+        <div class="field-input-wrap">
+          <input type="text" id="edit-ref" class="mono" autocomplete="off" />
+          <button type="button" class="input-clear-btn" aria-label="Hapus REF#">✕</button>
+        </div>
       </label>
-      <label class="field">
-        <span class="field-label">SO# <em>nomor SO</em></span>
-        <input type="text" id="edit-so" class="mono" autocomplete="off" />
+      <label class="field field-lg">
+        <div class="field-label-row">
+          <span class="field-label">SO# <em>nomor SO</em></span>
+          <div class="kb-toggle" data-kb-for="edit-so">
+            <button type="button" class="kb-btn active" data-mode="text">ABC</button>
+            <button type="button" class="kb-btn" data-mode="numeric">123</button>
+          </div>
+        </div>
+        <div class="field-input-wrap">
+          <input type="text" id="edit-so" class="mono" autocomplete="off" />
+          <button type="button" class="input-clear-btn" aria-label="Hapus SO#">✕</button>
+        </div>
       </label>
-      <label class="field">
-        <span class="field-label">C# <em>carton/nomor</em></span>
-        <input type="text" id="edit-c" class="mono" autocomplete="off" />
+      <label class="field field-lg">
+        <div class="field-label-row">
+          <span class="field-label">C# <em>carton/nomor</em></span>
+          <div class="kb-toggle" data-kb-for="edit-c">
+            <button type="button" class="kb-btn active" data-mode="text">ABC</button>
+            <button type="button" class="kb-btn" data-mode="numeric">123</button>
+          </div>
+        </div>
+        <div class="field-input-wrap">
+          <input type="text" id="edit-c" class="mono" autocomplete="off" />
+          <button type="button" class="input-clear-btn" aria-label="Hapus C#">✕</button>
+        </div>
       </label>
 
-      <div class="field readonly-field">
+      <div class="field field-lg readonly-field">
         <span class="field-label">BAL SISTEM <em>angka dari data sumber, tidak bisa diubah</em></span>
         <div id="edit-bal-sistem" class="mono readonly-value">—</div>
       </div>
 
-      <label class="field">
+      <label class="field field-lg">
         <span class="field-label">QTY BARU <em>hasil hitung fisik saat opname</em></span>
-        <input type="number" id="edit-bal" class="mono" inputmode="numeric" autocomplete="off" />
+        <div class="field-input-wrap">
+          <input type="number" id="edit-bal" class="mono" inputmode="numeric" autocomplete="off" />
+          <button type="button" class="input-clear-btn" aria-label="Hapus QTY BARU">✕</button>
+        </div>
       </label>
       <div id="edit-selisih-preview" class="selisih-preview"></div>
 
-      <label class="field">
-        <span class="field-label">LOC# <em>lokasi rak</em></span>
-        <input type="text" id="edit-loc" class="mono" autocomplete="off" />
+      <label class="field field-lg">
+        <div class="field-label-row">
+          <span class="field-label">LOC# <em>lokasi rak</em></span>
+          <div class="kb-toggle" data-kb-for="edit-loc">
+            <button type="button" class="kb-btn active" data-mode="text">ABC</button>
+            <button type="button" class="kb-btn" data-mode="numeric">123</button>
+          </div>
+        </div>
+        <div class="field-input-wrap">
+          <input type="text" id="edit-loc" class="mono" autocomplete="off" />
+          <button type="button" class="input-clear-btn" aria-label="Hapus LOC#">✕</button>
+        </div>
       </label>
 
       <div class="info-note" id="edit-fallback-note">Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#/SO#).</div>
@@ -375,27 +498,45 @@ body{
     <form id="settings-form" class="edit-form">
       <label class="field">
         <span class="field-label">Link CSV (data untuk dicari) <em>sudah diisi default</em></span>
-        <input type="url" id="set-csv" placeholder="https://docs.google.com/…/pub?output=csv" required />
+        <div class="field-input-wrap">
+          <input type="url" id="set-csv" placeholder="https://docs.google.com/…/pub?output=csv" required />
+          <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
+        </div>
       </label>
       <label class="field">
         <span class="field-label">Link CSV KOREKSI <em>untuk tombol Unduh Excel, sudah diisi default</em></span>
-        <input type="url" id="set-koreksi-csv" placeholder="https://docs.google.com/…/pub?gid=…&output=csv" required />
+        <div class="field-input-wrap">
+          <input type="url" id="set-koreksi-csv" placeholder="https://docs.google.com/…/pub?gid=…&output=csv" required />
+          <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
+        </div>
       </label>
       <label class="field">
         <span class="field-label">Link CSV Master MC <em>untuk tombol Cari di Master MC, sudah diisi default</em></span>
-        <input type="url" id="set-master-csv" placeholder="https://docs.google.com/…/pub?gid=…&output=csv" required />
+        <div class="field-input-wrap">
+          <input type="url" id="set-master-csv" placeholder="https://docs.google.com/…/pub?gid=…&output=csv" required />
+          <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
+        </div>
       </label>
       <label class="field">
         <span class="field-label">URL Web App (Apps Script, untuk simpan)</span>
-        <input type="url" id="set-url" placeholder="https://script.google.com/macros/s/…/exec" required />
+        <div class="field-input-wrap">
+          <input type="url" id="set-url" placeholder="https://script.google.com/macros/s/…/exec" required />
+          <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
+        </div>
       </label>
       <label class="field">
         <span class="field-label">Token Akses</span>
-        <input type="text" id="set-token" placeholder="Token dari CONFIG.ACCESS_TOKEN" required />
+        <div class="field-input-wrap">
+          <input type="text" id="set-token" placeholder="Token dari CONFIG.ACCESS_TOKEN" required />
+          <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
+        </div>
       </label>
       <label class="field">
         <span class="field-label">Nama Admin <em>(tercatat di sheet KOREKSI)</em></span>
-        <input type="text" id="set-editor" placeholder="Nama Anda" required />
+        <div class="field-input-wrap">
+          <input type="text" id="set-editor" placeholder="Nama Anda" required />
+          <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
+        </div>
       </label>
       <button type="submit" class="btn-primary btn-full">Simpan Pengaturan</button>
       <div id="settings-status" class="save-status" role="status"></div>
@@ -405,6 +546,9 @@ body{
 </div>
 
 <div id="toast" class="toast hidden"></div>
+<button id="btn-scroll-top" class="scroll-top-btn" aria-label="Kembali ke atas" title="Kembali ke atas">
+  <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 8l6 6-1.41 1.41L12 10.83l-4.59 4.58L6 14z"/></svg>
+</button>
 
 <!-- Master MC search overlay (untuk barang baru) -->
 <div id="master-overlay" class="sheet-overlay hidden">
@@ -711,10 +855,12 @@ const el = {
 
   sheetOverlay: document.getElementById('sheet-overlay'),
   sheetTitle: document.getElementById('sheet-title'),
+  sheetEyebrow: document.getElementById('sheet-eyebrow'),
   sheetRefinfo: document.getElementById('sheet-refinfo'),
   editTopNote: document.getElementById('edit-top-note'),
   btnCloseSheet: document.getElementById('btn-close-sheet'),
   editForm: document.getElementById('edit-form'),
+  editSheet: document.getElementById('edit-sheet'),
   editLoc: document.getElementById('edit-loc'),
   editC: document.getElementById('edit-c'),
   editRef: document.getElementById('edit-ref'),
@@ -762,7 +908,93 @@ const el = {
   offlineBanner: document.getElementById('offline-banner'),
   dataBanner: document.getElementById('data-banner'),
   toast: document.getElementById('toast'),
+
+  topbar: document.querySelector('.topbar'),
+  btnThemeToggle: document.getElementById('btn-theme-toggle'),
+  themeIconMoon: document.getElementById('theme-icon-moon'),
+  themeIconSun: document.getElementById('theme-icon-sun'),
+  metaThemeColor: document.getElementById('meta-theme-color'),
+  btnScrollTop: document.getElementById('btn-scroll-top'),
 };
+
+// ---------- tema terang/gelap ----------
+
+const THEME_KEY = 'stockopname.theme';
+const THEME_COLOR = { dark: '#12161B', light: '#F3F4F6' };
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  el.themeIconMoon.classList.toggle('hidden', theme === 'light');
+  el.themeIconSun.classList.toggle('hidden', theme === 'dark');
+  if (el.metaThemeColor) el.metaThemeColor.setAttribute('content', THEME_COLOR[theme] || THEME_COLOR.dark);
+}
+
+function getCurrentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
+
+applyTheme(getCurrentTheme());
+
+el.btnThemeToggle.addEventListener('click', () => {
+  const next = getCurrentTheme() === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+});
+
+// ---------- header kaca (blur) saat scroll & tombol kembali ke atas ----------
+
+const SCROLL_GLASS_THRESHOLD = 8;
+const SCROLL_TOP_THRESHOLD = 360;
+
+function onWindowScroll() {
+  const y = window.scrollY || document.documentElement.scrollTop || 0;
+  el.topbar.classList.toggle('scrolled', y > SCROLL_GLASS_THRESHOLD);
+  el.btnScrollTop.classList.toggle('show', y > SCROLL_TOP_THRESHOLD);
+}
+window.addEventListener('scroll', onWindowScroll, { passive: true });
+onWindowScroll();
+
+el.btnScrollTop.addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ---------- tombol hapus (x) di setiap field isian ----------
+
+function initClearableInputs() {
+  document.querySelectorAll('.field-input-wrap').forEach((wrap) => {
+    const input = wrap.querySelector('input');
+    const btn = wrap.querySelector('.input-clear-btn');
+    if (!input || !btn) return;
+    const update = () => btn.classList.toggle('show', input.value.length > 0);
+    update();
+    input.addEventListener('input', update);
+    btn.addEventListener('click', () => {
+      input.value = '';
+      update();
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+    });
+  });
+}
+initClearableInputs();
+
+// ---------- toggle keyboard ABC / 123 per field ----------
+
+function initKeyboardToggles() {
+  document.querySelectorAll('.kb-toggle').forEach((group) => {
+    const targetId = group.dataset.kbFor;
+    const input = targetId ? document.getElementById(targetId) : null;
+    if (!input) return;
+    group.querySelectorAll('.kb-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        group.querySelectorAll('.kb-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        input.setAttribute('inputmode', btn.dataset.mode);
+      });
+    });
+  });
+}
+initKeyboardToggles();
 
 // ---------- offline banner ----------
 
@@ -985,6 +1217,16 @@ function openEditSheet(item, mode) {
   state.isUpdateMode = mode === 'update';
   state.updateId = state.isUpdateMode ? item.id : null;
 
+  el.editSheet.classList.remove('mode-new', 'mode-update');
+  if (state.isNewItem) el.editSheet.classList.add('mode-new');
+  if (state.isUpdateMode) el.editSheet.classList.add('mode-update');
+
+  el.sheetEyebrow.textContent = state.isNewItem
+    ? 'BARANG BARU'
+    : state.isUpdateMode
+      ? 'EDIT KOREKSI TERSIMPAN'
+      : 'KOREKSI STOCK OPNAME';
+
   el.sheetTitle.textContent = 'MCS# ' + item.mcs;
   el.sheetRefinfo.textContent = state.isNewItem
     ? 'Barang baru · ' + (item.model || '')
@@ -1010,6 +1252,20 @@ function openEditSheet(item, mode) {
     : state.isUpdateMode
       ? 'Field yang dikosongkan otomatis memakai nilai yang sudah tersimpan sebelumnya.'
       : 'Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#/SO#).';
+
+  // reset toggle keyboard ke ABC & sinkronkan tampilan tombol hapus tiap field
+  el.editForm.querySelectorAll('.kb-toggle').forEach((group) => {
+    const targetId = group.dataset.kbFor;
+    const input = targetId ? document.getElementById(targetId) : null;
+    if (!input) return;
+    input.setAttribute('inputmode', 'text');
+    group.querySelectorAll('.kb-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === 'text'));
+  });
+  el.editForm.querySelectorAll('.field-input-wrap').forEach((wrap) => {
+    const input = wrap.querySelector('input');
+    const btn = wrap.querySelector('.input-clear-btn');
+    if (input && btn) btn.classList.toggle('show', input.value.length > 0);
+  });
 
   el.saveStatus.textContent = '';
   el.saveStatus.className = 'save-status';
