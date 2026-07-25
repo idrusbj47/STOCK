@@ -157,12 +157,14 @@ body{
 .input-clear-btn:active{ background: var(--border); color: var(--text); }
 
 .master-search-row{ margin-top:14px; gap:10px; }
-#master-search-input{
+#master-search-input,
+#koreksi-search-input{
   flex:1; background: var(--surface); border:1px solid var(--border); color: var(--text);
   font-family: var(--font-mono); font-size:16px; padding:16px 38px 16px 16px; border-radius:12px; outline:none;
   min-width:0; width:100%;
 }
-#master-search-input:focus{ border-color: var(--amber); }
+#master-search-input:focus,
+#koreksi-search-input:focus{ border-color: var(--amber); }
 .master-search-row .btn-primary{ padding:0 22px; }
 
 .btn-primary{
@@ -986,10 +988,21 @@ function initKeyboardToggles() {
     const input = targetId ? document.getElementById(targetId) : null;
     if (!input) return;
     group.querySelectorAll('.kb-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
         group.querySelectorAll('.kb-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
+
         input.setAttribute('inputmode', btn.dataset.mode);
+
+        // Sebagian besar browser hp hanya membaca ulang inputmode saat
+        // input di-blur lalu difokuskan lagi (mirip tombol 123 di GSheet).
+        // Blur+focus harus sinkron dalam handler ini supaya keyboard tetap
+        // boleh dimunculkan otomatis oleh browser (aturan "user gesture").
+        input.blur();
+        input.focus();
+        const len = input.value.length;
+        try { input.setSelectionRange(len, len); } catch (err) {}
       });
     });
   });
