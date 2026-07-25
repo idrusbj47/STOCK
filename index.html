@@ -1017,16 +1017,26 @@ function initFloatingKeyboardToggle() {
     window.visualViewport.addEventListener('scroll', positionFloatBtn);
   }
 
+  // PENTING: cegah field kehilangan fokus saat tombol disentuh.
+  // Tanpa ini, field ke-blur duluan begitu jari menyentuh tombol, lalu
+  // timer scheduleHide() menyembunyikan/menonaktifkan tombol SEBELUM
+  // event "click" sempat jalan — jadi tap-nya seperti tidak ngefek.
+  const keepFocus = (e) => e.preventDefault();
+  floatBtn.addEventListener('pointerdown', keepFocus);
+  floatBtn.addEventListener('mousedown', keepFocus);
+  floatBtn.addEventListener('touchstart', keepFocus, { passive: false });
+
   floatBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    if (!activeInput) return;
+    if (!activeInput || document.activeElement !== activeInput) return;
     const input = activeInput;
     const nextMode = input.getAttribute('inputmode') === 'numeric' ? 'text' : 'numeric';
     input.setAttribute('inputmode', nextMode);
 
     // Sebagian besar browser hp hanya membaca ulang inputmode saat input
-    // di-blur lalu difokuskan lagi. Blur+focus harus sinkron dalam handler
-    // klik ini supaya browser tetap mengizinkan keyboard muncul otomatis.
+    // di-blur lalu difokuskan lagi. Karena fokus tidak pernah lepas berkat
+    // preventDefault di atas, blur+focus di sini aman dilakukan sinkron
+    // dalam handler klik ini (masih dianggap aksi user oleh browser).
     input.blur();
     input.focus();
     const len = input.value.length;
