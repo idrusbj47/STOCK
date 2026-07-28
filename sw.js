@@ -1,16 +1,26 @@
-const CACHE_NAME = 'stock-opname-shell-v18';
+const CACHE_NAME = 'stock-opname-shell-v19';
 const SHELL_FILES = [
   './',
   './index.html',
   './manifest.json',
-  './icons/icon-192.png',
   './icons/icon.png',
-  './icons/icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_FILES))
+    caches.open(CACHE_NAME).then((cache) =>
+      // Cache tiap file SATU-SATU (bukan cache.addAll) supaya kalau ada 1 file
+      // yang gagal/hilang (mis. 404), instalasi Service Worker tetap SUKSES.
+      // Sebelumnya pakai cache.addAll(): kalau 1 saja file di SHELL_FILES gagal
+      // diambil, seluruh install gagal -> SW tidak pernah aktif -> Chrome tidak
+      // pernah menganggap app ini installable -> tombol "Unduh Aplikasi (PWA)"
+      // tidak akan pernah muncul.
+      Promise.all(
+        SHELL_FILES.map((file) =>
+          cache.add(file).catch((err) => console.warn('SW: gagal cache', file, err))
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
