@@ -72,6 +72,7 @@ body{
   -webkit-font-smoothing: antialiased;
   padding-bottom: env(safe-area-inset-bottom);
 }
+body.overlay-open{ overflow:hidden; }
 /* ===== SPLASH SCREEN (tampilan awal saat halaman/app dimuat) ===== */
 #app-splash{
   position:fixed; inset:0; z-index:5000; display:flex; flex-direction:column;
@@ -117,7 +118,7 @@ body{
 .offline-banner{
   background: var(--red); color:#fff; text-align:center;
   font-size:13px; font-weight:600; padding:8px 12px;
-  position: sticky; top:0; z-index:50;
+  position: sticky; top:0; z-index:65;
 }
 .data-banner{
   background: var(--surface-2); color: var(--muted); text-align:center;
@@ -130,23 +131,24 @@ body{
 
 .topbar{
   display:flex; align-items:center; justify-content:space-between;
-  padding:18px 18px 12px; border-bottom:1px solid transparent;
-  position: relative; background: var(--bg); z-index:40;
-  transition: background-color .25s ease, border-color .25s ease, backdrop-filter .25s ease, box-shadow .25s ease, padding .2s ease;
+  padding:calc(12px + env(safe-area-inset-top)) 18px 12px; border-bottom:1px solid transparent;
+  position: sticky; top:0; background: var(--bg); z-index:60;
+  transition: background-color .3s ease, border-color .3s ease, backdrop-filter .3s ease, box-shadow .3s ease, padding .25s ease;
 }
-/* Header sengaja TIDAK sticky: saat daftar hasil pencarian panjang lalu discroll
-   ke bawah, header ikut tersekrol keluar layar (tidak freeze/menempel di atas).
-   Efek kaca/blur di bawah ini hanya kosmetik selagi header masih terlihat. */
+/* Header sekarang STICKY: tetap menempel di atas layar saat daftar hasil discroll,
+   supaya aksi (cari/pengaturan/tema) selalu bisa dijangkau. Saat halaman discroll,
+   ditambahkan efek kaca (glassmorphism) yang elegan: blur + saturasi + garis tipis
+   + bayangan lembut, dan header sedikit menyusut biar hemat ruang. */
 .topbar.scrolled{
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  border-bottom-color: var(--border);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-  padding-top:14px; padding-bottom:10px;
+  background: color-mix(in srgb, var(--surface) 68%, transparent);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border-bottom-color: color-mix(in srgb, var(--border) 80%, transparent);
+  box-shadow: 0 10px 30px -8px rgba(0,0,0,0.35), inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+  padding-top:calc(9px + env(safe-area-inset-top)); padding-bottom:9px;
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
-  .topbar.scrolled{ background: var(--surface); }
+  .topbar.scrolled{ background: color-mix(in srgb, var(--surface) 96%, transparent); }
 }
 
 .scroll-top-btn{
@@ -277,7 +279,13 @@ body{
 .sheet{
   background: var(--surface); border-top:1px solid var(--border); border-radius:18px 18px 0 0;
   width:100%; max-width:720px; margin:0 auto; padding:10px 20px calc(20px + env(safe-area-inset-bottom));
-  max-height:88vh; overflow-y:auto;
+  /* min() dengan "100% - 24px" (relatif ke .sheet-overlay yang tingginya sudah
+     pasti = viewport nyata) mencegah sheet lebih tinggi dari layar yang benar-
+     benar terlihat. Ini yang bikin bagian atas sheet (judul) sempat kepotong/
+     tidak kebaca di Chrome HP saat address bar masih penuh saat halaman baru
+     dibuka — 88vh saat itu bisa dihitung lebih tinggi dari area yang terlihat. */
+  max-height:88vh; max-height:min(88vh, calc(100% - 24px));
+  overflow-y:auto; scroll-behavior:auto;
 }
 .sheet-handle{ width:40px; height:4px; background: var(--border); border-radius:999px; margin:6px auto 14px; }
 .sheet-header{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
@@ -1011,10 +1019,10 @@ el.btnThemeToggle.addEventListener('click', () => {
   try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
 });
 
-// ---------- efek kaca (blur) header saat scroll & tombol kembali ke atas ----------
-// Header TIDAK sticky (lihat CSS .topbar), jadi dia tetap ikut tersekrol keluar
-// layar seperti konten biasa. Class .scrolled cuma kosmetik (blur/bayangan)
-// selagi header masih terlihat di layar saat awal-awal discroll.
+// ---------- header sticky + efek kaca (glassmorphism) saat scroll ----------
+// Header kini STICKY (lihat CSS .topbar: position:sticky) sehingga selalu
+// menempel di atas layar walau daftar hasil discroll panjang. Class .scrolled
+// menambahkan efek blur/saturasi/bayangan begitu halaman mulai discroll.
 
 const SCROLL_GLASS_THRESHOLD = 8;
 const SCROLL_TOP_THRESHOLD = 360;
@@ -1051,6 +1059,45 @@ function initClearableInputs() {
   });
 }
 initClearableInputs();
+
+// Dipanggil setelah kita mengisi input lewat JS (mis. buka form Pengaturan atau
+// buka form Koreksi dengan data lama) — soalnya set .value lewat JS TIDAK memicu
+// event 'input', jadi tombol ✕ tidak akan muncul kalau tidak di-refresh manual.
+function refreshClearButtons(scopeEl) {
+  const root = scopeEl || document;
+  root.querySelectorAll('.field-input-wrap').forEach((wrap) => {
+    const inputs = Array.from(wrap.querySelectorAll('input'));
+    const btn = wrap.querySelector('.input-clear-btn');
+    if (!inputs.length || !btn) return;
+    const visibleInput = inputs.find((i) => !i.classList.contains('hidden')) || inputs[0];
+    btn.classList.toggle('show', visibleInput.value.length > 0);
+  });
+}
+
+// ---------- buka/tutup overlay (bottom sheet) ----------
+// Dipakai untuk semua overlay (Pengaturan, Koreksi, Master MC, Edit item).
+// Ada 2 perbaikan di sini khusus untuk Chrome di HP:
+// 1) scrollTop bagian dalam sheet dipaksa ke 0 tiap dibuka, supaya judul di
+//    baris paling atas selalu langsung kelihatan (tidak nyangkut di posisi
+//    scroll form sebelumnya).
+// 2) scroll body dikunci selama overlay terbuka (lihat class body.overlay-open
+//    di CSS) supaya address bar Chrome tidak ikut collapse/expand saat overlay
+//    dibuka, yang sebelumnya bikin bagian atas sheet kepotong/tidak terbaca.
+let openOverlayCount = 0;
+function showOverlay(overlayEl) {
+  if (!overlayEl) return;
+  overlayEl.classList.remove('hidden');
+  const sheetEl = overlayEl.querySelector('.sheet');
+  if (sheetEl) sheetEl.scrollTop = 0;
+  openOverlayCount++;
+  document.body.classList.add('overlay-open');
+}
+function hideOverlay(overlayEl) {
+  if (!overlayEl) return;
+  overlayEl.classList.add('hidden');
+  openOverlayCount = Math.max(0, openOverlayCount - 1);
+  if (openOverlayCount === 0) document.body.classList.remove('overlay-open');
+}
 
 // ---------- tombol tunggal mengambang ABC/123 (mirip GSheet) ----------
 // Tiap field REF#/SO#/C#/LOC# sebenarnya punya 2 input yang saling
@@ -1412,17 +1459,13 @@ function openEditSheet(item, mode) {
   });
   const kbFloatBtn = document.getElementById('kb-float-toggle');
   if (kbFloatBtn) kbFloatBtn.classList.remove('show');
-  el.editForm.querySelectorAll('.field-input-wrap').forEach((wrap) => {
-    const input = wrap.querySelector('input');
-    const btn = wrap.querySelector('.input-clear-btn');
-    if (input && btn) btn.classList.toggle('show', input.value.length > 0);
-  });
+  refreshClearButtons(el.editForm);
 
   el.saveStatus.textContent = '';
   el.saveStatus.className = 'save-status';
   updateSelisihPreview();
 
-  el.sheetOverlay.classList.remove('hidden');
+  showOverlay(el.sheetOverlay);
 }
 
 function updateSelisihPreview() {
@@ -1441,7 +1484,7 @@ function updateSelisihPreview() {
 el.editBal.addEventListener('input', updateSelisihPreview);
 
 function closeEditSheet() {
-  el.sheetOverlay.classList.add('hidden');
+  hideOverlay(el.sheetOverlay);
   state.activeItem = null;
   state.isNewItem = false;
   state.isUpdateMode = false;
@@ -1553,7 +1596,7 @@ el.btnClearMasterSearch.addEventListener('click', () => {
 });
 
 async function openMaster() {
-  el.masterOverlay.classList.remove('hidden');
+  showOverlay(el.masterOverlay);
 
   // isi otomatis dari kolom pencarian utama, biar tinggal dihapus kalau tidak dipakai
   el.masterSearchInput.value = el.searchInput.value.trim();
@@ -1581,7 +1624,7 @@ async function openMaster() {
 }
 
 function closeMaster() {
-  el.masterOverlay.classList.add('hidden');
+  hideOverlay(el.masterOverlay);
 }
 
 function runMasterSearch() {
@@ -1658,7 +1701,7 @@ el.btnClearKoreksiSearch.addEventListener('click', () => {
 });
 
 async function openKoreksi() {
-  el.koreksiOverlay.classList.remove('hidden');
+  showOverlay(el.koreksiOverlay);
   el.koreksiSearchInput.value = el.searchInput.value.trim();
   updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch);
   el.koreksiSummary.textContent = 'Memuat data koreksi terbaru…';
@@ -1680,7 +1723,7 @@ async function openKoreksi() {
 }
 
 function closeKoreksi() {
-  el.koreksiOverlay.classList.add('hidden');
+  hideOverlay(el.koreksiOverlay);
 }
 
 function runKoreksiSearch() {
@@ -1755,9 +1798,10 @@ function openSettings() {
   el.setToken.value = state.settings.token || '';
   el.setEditor.value = state.settings.editor || '';
   el.settingsStatus.textContent = '';
-  el.settingsOverlay.classList.remove('hidden');
+  refreshClearButtons(el.settingsForm);
+  showOverlay(el.settingsOverlay);
 }
-function closeSettings() { el.settingsOverlay.classList.add('hidden'); }
+function closeSettings() { hideOverlay(el.settingsOverlay); }
 el.btnSettings.addEventListener('click', openSettings);
 el.btnCloseSettings.addEventListener('click', closeSettings);
 el.settingsOverlay.addEventListener('click', (e) => { if (e.target === el.settingsOverlay) closeSettings(); });
