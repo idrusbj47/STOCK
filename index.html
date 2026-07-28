@@ -72,6 +72,43 @@ body{
   -webkit-font-smoothing: antialiased;
   padding-bottom: env(safe-area-inset-bottom);
 }
+/* ===== SPLASH SCREEN (tampilan awal saat halaman/app dimuat) ===== */
+#app-splash{
+  position:fixed; inset:0; z-index:5000; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; background: var(--bg);
+  transition: opacity .45s ease, visibility .45s ease;
+}
+#app-splash.hide{ opacity:0; visibility:hidden; pointer-events:none; }
+#app-splash .splash-logo{
+  width:76px; height:76px; border-radius:20px; background: var(--surface);
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+  border:1.5px solid var(--border); box-shadow:0 0 0 6px rgba(255,176,32,0.1), 0 14px 34px -10px rgba(0,0,0,0.4);
+  margin-bottom:18px; animation: splashPop .55s cubic-bezier(.34,1.56,.64,1);
+}
+#app-splash .splash-logo img{ width:100%; height:100%; object-fit:contain; padding:10px; }
+@keyframes splashPop{ 0%{ transform:scale(.75); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
+#app-splash .splash-title{
+  font-family: var(--font-display); font-weight:700; font-size:22px; letter-spacing:.02em;
+  text-transform:uppercase; color: var(--text); text-align:center; padding:0 24px;
+}
+#app-splash .splash-title .accent{ color: var(--amber); }
+#app-splash .splash-sub{
+  font-family: var(--font-mono); font-size:11px; letter-spacing:.08em; color: var(--muted);
+  margin-top:4px; text-align:center; padding:0 24px; text-transform:uppercase;
+}
+#app-splash .splash-dots{ display:flex; gap:6px; margin-top:26px; }
+#app-splash .splash-dots span{
+  width:7px; height:7px; border-radius:50%; background: var(--amber);
+  animation: splashDot 1.1s ease-in-out infinite;
+}
+#app-splash .splash-dots span:nth-child(2){ animation-delay:.15s; }
+#app-splash .splash-dots span:nth-child(3){ animation-delay:.3s; }
+@keyframes splashDot{ 0%,60%,100%{ opacity:.3; transform:translateY(0); } 30%{ opacity:1; transform:translateY(-4px); } }
+@media (prefers-reduced-motion: reduce){
+  #app-splash .splash-logo{ animation:none; }
+  #app-splash .splash-dots span{ animation:none; opacity:.7; }
+}
+
 .hidden{ display:none !important; }
 .muted{ color: var(--muted); }
 .small{ font-size: 12px; }
@@ -94,9 +131,12 @@ body{
 .topbar{
   display:flex; align-items:center; justify-content:space-between;
   padding:18px 18px 12px; border-bottom:1px solid transparent;
-  position: sticky; top:0; background: var(--bg); z-index:40;
+  position: relative; background: var(--bg); z-index:40;
   transition: background-color .25s ease, border-color .25s ease, backdrop-filter .25s ease, box-shadow .25s ease, padding .2s ease;
 }
+/* Header sengaja TIDAK sticky: saat daftar hasil pencarian panjang lalu discroll
+   ke bawah, header ikut tersekrol keluar layar (tidak freeze/menempel di atas).
+   Efek kaca/blur di bawah ini hanya kosmetik selagi header masih terlihat. */
 .topbar.scrolled{
   background: color-mix(in srgb, var(--surface) 72%, transparent);
   backdrop-filter: blur(14px) saturate(160%);
@@ -181,6 +221,8 @@ body{
   font-size:13.5px; padding:11px 16px; border-radius:10px; cursor:pointer;
 }
 .btn-secondary:active{ background: var(--surface-2); }
+.btn-install{ border-color: var(--green); color: var(--green); margin-top:8px; }
+.btn-install:active{ background: rgba(52,211,153,0.08); }
 
 .field-chips{ display:flex; gap:8px; margin-top:10px; overflow-x:auto; padding-bottom:2px; }
 .chip{
@@ -307,6 +349,39 @@ body{
 </head>
 <body>
 
+<!-- ===== SPLASH SCREEN ===== -->
+<div id="app-splash">
+  <div class="splash-logo">
+    <img src="icons/icon.png" alt="Logo" onerror="this.style.display='none'"/>
+  </div>
+  <div class="splash-title">STOCK<span class="accent">OPNAME</span></div>
+  <div class="splash-sub">PT Karya Indah Multiguna</div>
+  <div class="splash-dots"><span></span><span></span><span></span></div>
+</div>
+<script>
+(function(){
+  var MIN_SHOW = 1200;  // durasi minimal tampil (ms) supaya splash sempat terlihat jelas
+  var MAX_SHOW = 4000;  // batas maksimal jaga-jaga kalau koneksi/halaman lambat
+  var start = Date.now();
+  var hidden = false;
+  function hideSplash(){
+    if (hidden) return;
+    hidden = true;
+    var el = document.getElementById('app-splash');
+    if (!el) return;
+    el.classList.add('hide');
+    setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 500);
+  }
+  function trigger(){
+    var elapsed = Date.now() - start;
+    var wait = Math.max(0, MIN_SHOW - elapsed);
+    setTimeout(hideSplash, wait);
+  }
+  window.addEventListener('load', trigger);
+  setTimeout(hideSplash, MAX_SHOW);
+})();
+</script>
+
 <div id="offline-banner" class="offline-banner hidden">Tidak ada koneksi internet — cari &amp; simpan butuh koneksi</div>
 <div id="data-banner" class="data-banner hidden"></div>
 
@@ -353,6 +428,9 @@ body{
       <button class="chip" data-field="LOC">LOC#</button>
     </div>
     <button id="btn-open-master" class="btn-secondary btn-full">+ Cari di Master MC (barang baru)</button>
+    <button type="button" id="btn-install-pwa" class="btn-secondary btn-full btn-install hidden">
+      <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-3px;margin-right:6px;"><path fill="currentColor" d="M5 20h14v-2H5v2zm7-18v12.17l3.59-3.58L17 12l-5 5-5-5 1.41-1.41L12 14.17V2h0z"/></svg>Unduh Aplikasi (PWA)
+    </button>
   </section>
 
   <section class="status-row">
@@ -650,6 +728,10 @@ const DEFAULT_KOREKSI_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-
 // Link CSV publik Master MC (data acuan barang, dipakai tombol "Cari di Master MC")
 const DEFAULT_MASTER_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=2047780733&single=true&output=csv';
 
+// Link Web App (Apps Script) default untuk simpan koreksi. Bisa diganti/dihapus
+// (pakai tombol ✕ di kolomnya) lewat menu Pengaturan tanpa perlu edit kode ini.
+const DEFAULT_APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz20zIACFt-_flrGq5hYYAON0-HM4qcYL6G-ynmoFV5cfGwuyhCsHlDDZeAGkQqT5An/exec';
+
 const STORAGE_KEY = 'stockopname.settings.v2';
 const CSV_CACHE_KEY = 'stockopname.csvcache.v1';
 
@@ -678,12 +760,12 @@ function loadSettings() {
       csvUrl: s.csvUrl || DEFAULT_CSV_URL,
       koreksiCsvUrl: s.koreksiCsvUrl || DEFAULT_KOREKSI_CSV_URL,
       masterCsvUrl: s.masterCsvUrl || DEFAULT_MASTER_CSV_URL,
-      url: s.url || '',
+      url: s.url || DEFAULT_APPSCRIPT_URL,
       token: s.token || '',
       editor: s.editor || '',
     };
   } catch (e) {
-    return { csvUrl: DEFAULT_CSV_URL, koreksiCsvUrl: DEFAULT_KOREKSI_CSV_URL, masterCsvUrl: DEFAULT_MASTER_CSV_URL, url: '', token: '', editor: '' };
+    return { csvUrl: DEFAULT_CSV_URL, koreksiCsvUrl: DEFAULT_KOREKSI_CSV_URL, masterCsvUrl: DEFAULT_MASTER_CSV_URL, url: DEFAULT_APPSCRIPT_URL, token: '', editor: '' };
   }
 }
 function saveSettings(s) {
@@ -859,6 +941,7 @@ const el = {
   saveStatus: document.getElementById('save-status'),
 
   btnOpenMaster: document.getElementById('btn-open-master'),
+  btnInstallPwa: document.getElementById('btn-install-pwa'),
   masterOverlay: document.getElementById('master-overlay'),
   btnCloseMaster: document.getElementById('btn-close-master'),
   masterSearchInput: document.getElementById('master-search-input'),
@@ -928,7 +1011,10 @@ el.btnThemeToggle.addEventListener('click', () => {
   try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
 });
 
-// ---------- header kaca (blur) saat scroll & tombol kembali ke atas ----------
+// ---------- efek kaca (blur) header saat scroll & tombol kembali ke atas ----------
+// Header TIDAK sticky (lihat CSS .topbar), jadi dia tetap ikut tersekrol keluar
+// layar seperti konten biasa. Class .scrolled cuma kosmetik (blur/bayangan)
+// selagi header masih terlihat di layar saat awal-awal discroll.
 
 const SCROLL_GLASS_THRESHOLD = 8;
 const SCROLL_TOP_THRESHOLD = 360;
@@ -1701,6 +1787,40 @@ if (!saveReady()) {
   setTimeout(openSettings, 400);
 }
 loadData(false);
+
+// ---------- unduh sbg PWA (install prompt) ----------
+// Tombol "Unduh Aplikasi (PWA)" cuma muncul kalau browser mendukung & app belum
+// terpasang. Begitu sudah diunduh/dipasang, tombolnya otomatis hilang.
+
+function isRunningStandalone() {
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+    || window.navigator.standalone === true; // iOS Safari
+}
+
+let deferredInstallPrompt = null;
+
+if (el.btnInstallPwa && !isRunningStandalone()) {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    el.btnInstallPwa.classList.remove('hidden');
+  });
+
+  el.btnInstallPwa.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    el.btnInstallPwa.disabled = true;
+    deferredInstallPrompt.prompt();
+    try { await deferredInstallPrompt.userChoice; } catch (e) {}
+    deferredInstallPrompt = null;
+    el.btnInstallPwa.classList.add('hidden');
+    el.btnInstallPwa.disabled = false;
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    el.btnInstallPwa.classList.add('hidden');
+  });
+}
 
 // ---------- service worker ----------
 
