@@ -134,18 +134,19 @@ body.overlay-open{ overflow:hidden; }
   padding:calc(12px + env(safe-area-inset-top)) 18px 12px;
   position: sticky; top:0; background: var(--bg); z-index:60;
   transition: padding .25s ease, background-color .3s ease;
-  /* Header dipaksa jadi layer compositor tersendiri (transform + isolation).
-     Ini penting: di Chrome Android, position:sticky bisa "lepas" (ikut
-     kescroll) pada halaman yang panjang kalau elemen sticky tsb juga
-     nge-animasikan backdrop-filter secara langsung — braowser jadi mahal
-     repaint-nya dan kadang gagal mempertahankan posisi sticky. Makanya efek
-     kaca dipindah ke pseudo-element ::before terpisah (lihat di bawah) yang
-     cuma nge-transisi opacity, bukan blur-nya sendiri. */
-  transform: translateZ(0);
-  isolation: isolate;
+  /* PENTING: JANGAN taruh `transform` atau `isolation` di elemen yang
+     position:sticky ini sendiri. Sebelumnya di sini ada
+     `transform: translateZ(0); isolation: isolate;` dengan niat memaksa
+     GPU layer — tapi itu justru bug penyebab header "lepas" dari sticky
+     setelah discroll melewati beberapa layar (muncul di Chrome/WebKit
+     mobile): begitu elemen sticky punya transform sendiri, browser salah
+     menghitung ulang posisi stickinya saat area scroll makin panjang,
+     jadi header ikut kescroll padahal seharusnya tetap menempel. Kalau
+     butuh compositing layer untuk animasi blur, taruh di pseudo-element
+     ::before di bawah (elemen anak, bukan elemen sticky-nya sendiri). */
 }
-/* Header sekarang STICKY: tetap menempel di atas layar walau daftar hasil
-   discroll sangat panjang. Lapisan kaca (blur/saturasi) ada di ::before yang
+/* Header STICKY: tetap menempel di atas layar walau daftar hasil discroll
+   sangat panjang. Lapisan kaca (blur/saturasi) ada di ::before yang
    blur-nya SELALU aktif tapi opacity-nya 0 → 1 saat scroll, jadi terasa
    elegan tanpa memicu bug sticky di atas. */
 .topbar::before{
@@ -158,6 +159,7 @@ body.overlay-open{ overflow:hidden; }
   opacity:0;
   transition: opacity .3s ease;
   pointer-events:none;
+  will-change: opacity;
 }
 .topbar.scrolled::before{ opacity:1; }
 .topbar.scrolled{
