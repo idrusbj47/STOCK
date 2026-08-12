@@ -773,6 +773,14 @@ body.overlay-open{ overflow:hidden; }
         <div><span class="k">SO#</span><span class="v mono mc-so"></span></div>
         <div><span class="k">UKURAN</span><span class="v mono mc-ukuran"></span></div>
       </div>
+      <div class="card-grid extra-grid">
+        <div><span class="k">BERAT/PCS</span><span class="v mono mc-berat"></span></div>
+        <div><span class="k">FLUTE</span><span class="v mono mc-flute"></span></div>
+        <div><span class="k">SALES</span><span class="v mono mc-sales"></span></div>
+        <div><span class="k">INTERNAL</span><span class="v mono mc-internal"></span></div>
+        <div><span class="k">C.CODE</span><span class="v mono mc-ccode"></span></div>
+        <div><span class="k">PIC</span><span class="v mono mc-pic"></span></div>
+      </div>
       <div class="card-meta muted mc-customer"></div>
     </div>
     <div class="card-edit-hint">Ketuk untuk pakai ›</div>
@@ -928,6 +936,7 @@ function extractMasterRecords(rows) {
 
     records.push({
       mc: r[0] || '', so: r[1] || '', customer: r[2] || '', model: r[3] || '',
+      berat: r[4] || '', sales: r[5] || '', internal: r[6] || '', ccode: r[7] || '', pic: r[8] || '',
       ukuran: r[10] || '', flute: r[11] || '',
     });
   }
@@ -1746,6 +1755,12 @@ function runMasterSearch() {
     node.querySelector('.mc-model').textContent = rec.model || '';
     node.querySelector('.mc-so').textContent = rec.so || '—';
     node.querySelector('.mc-ukuran').textContent = rec.ukuran || '—';
+    node.querySelector('.mc-berat').textContent = rec.berat || '—';
+    node.querySelector('.mc-flute').textContent = rec.flute || '—';
+    node.querySelector('.mc-sales').textContent = rec.sales || '—';
+    node.querySelector('.mc-internal').textContent = rec.internal || '—';
+    node.querySelector('.mc-ccode').textContent = rec.ccode || '—';
+    node.querySelector('.mc-pic').textContent = rec.pic || '—';
     node.querySelector('.mc-customer').textContent = rec.customer || '';
 
     const card = node.querySelector('.item-card');
