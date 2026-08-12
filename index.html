@@ -110,6 +110,31 @@ body.overlay-open{ overflow:hidden; }
   #app-splash .splash-dots span{ animation:none; opacity:.7; }
 }
 
+/* ===== REFRESH SPLASH (overlay ringan saat tombol refresh ditekan) ===== */
+#refresh-splash{
+  position:fixed; inset:0; z-index:4000; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:14px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition: opacity .22s ease, visibility .22s ease;
+}
+#refresh-splash.show{ opacity:1; visibility:visible; pointer-events:auto; }
+#refresh-splash .splash-dots{ display:flex; gap:7px; }
+#refresh-splash .splash-dots span{
+  width:9px; height:9px; border-radius:50%; background: var(--amber);
+  animation: splashDot 1.1s ease-in-out infinite;
+}
+#refresh-splash .splash-dots span:nth-child(2){ animation-delay:.15s; }
+#refresh-splash .splash-dots span:nth-child(3){ animation-delay:.3s; }
+.refresh-splash-label{
+  font-family: var(--font-mono); font-size:12px; letter-spacing:.06em;
+  color: var(--muted); text-transform:uppercase;
+}
+@media (prefers-reduced-motion: reduce){
+  #refresh-splash .splash-dots span{ animation:none; opacity:.7; }
+}
+
 .hidden{ display:none !important; }
 .muted{ color: var(--muted); }
 .small{ font-size: 12px; }
@@ -279,6 +304,9 @@ body.overlay-open{ overflow:hidden; }
 .model{ font-size:13px; color: var(--text); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .card-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:10px; }
 .card-grid > div{ display:flex; justify-content:space-between; font-size:12.5px; }
+.card-grid.extra-grid{ margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); }
+.card-grid.extra-grid > div{ font-size:11.5px; }
+.card-grid.extra-grid .k{ opacity:.8; }
 .k{ color: var(--muted); }
 .v{ color: var(--text); }
 .card-bottom{
@@ -409,6 +437,12 @@ body.overlay-open{ overflow:hidden; }
 })();
 </script>
 
+<!-- ===== REFRESH SPLASH (animasi titik 3 saat tombol refresh ditekan) ===== -->
+<div id="refresh-splash">
+  <div class="splash-dots"><span></span><span></span><span></span></div>
+  <div class="refresh-splash-label">Memuat ulang data…</div>
+</div>
+
 <div id="offline-banner" class="offline-banner hidden">Tidak ada koneksi internet — cari &amp; simpan butuh koneksi</div>
 <div id="data-banner" class="data-banner hidden"></div>
 
@@ -481,6 +515,12 @@ body.overlay-open{ overflow:hidden; }
           <div><span class="k">C#</span><span class="v mono c"></span></div>
           <div><span class="k">SO#</span><span class="v mono so"></span></div>
           <div><span class="k">REF#</span><span class="v mono ref"></span></div>
+        </div>
+        <div class="card-grid extra-grid">
+          <div><span class="k">UKURAN</span><span class="v mono ukuran"></span></div>
+          <div><span class="k">TOTAL SALDO</span><span class="v mono total-saldo"></span></div>
+          <div><span class="k">INTERNAL</span><span class="v mono internal"></span></div>
+          <div><span class="k">SALES</span><span class="v mono sales"></span></div>
         </div>
         <div class="card-bottom">
           <div class="bal-block">
@@ -836,7 +876,8 @@ function parseCSV(text) {
 // Susunan kolom tetap (sesuai laporan gudang):
 // 0 NO, 1 LOC#, 2 AC#, 3 STS, 4 MCS#, 5 MC MODEL, 6 C#, 7 PD, 8 SET, 9 PART#,
 // 10 ED, 11 SO#, 12 SO PO#, 13 WO#, 14 DATE, 15 TRAN, 16 GRX, 17 REF#,
-// 18 ALT REF#, 19 IN, 20 OUT, 21 BAL, 22 CUSTOMER
+// 18 ALT REF#, 19 IN, 20 OUT, 21 BAL, 22 CUSTOMER (kolom W),
+// 23 UKURAN (kolom X), 24 TOTAL SALDO (kolom Y), 25 INTERNAL (kolom Z), 26 SALES (kolom AA)
 function extractRecords(rows) {
   let headerIdx = -1;
   for (let i = 0; i < rows.length; i++) {
@@ -863,6 +904,7 @@ function extractRecords(rows) {
       so: r[11] || '', sopo: r[12] || '', wo: r[13] || '', date: r[14] || '',
       ref: r[17] || '', altref: r[18] || '', in: r[19] || '', out: r[20] || '',
       bal: r[21] || '', customer: r[22] || '',
+      ukuran: r[23] || '', totalSaldo: r[24] || '', internal: r[25] || '', sales: r[26] || '',
     });
   }
   return records;
@@ -1320,11 +1362,17 @@ function runSearch() {
     if (field === 'SO') return String(r.so).toLowerCase().includes(q);
     if (field === 'REF') return String(r.ref).toLowerCase().includes(q);
     if (field === 'LOC') return String(r.loc).toLowerCase().includes(q);
+    // "Semua": selain MCS#/SO#/REF#/LOC#/C#, ikut cari juga di kolom
+    // Customer (W), Internal (Z), dan Sales (AA) — sesuai permintaan revisi,
+    // walau kolom-kolom ini tidak ditampilkan sebagai chip filter tersendiri.
     return String(r.mcs).toLowerCase().includes(q)
         || String(r.so).toLowerCase().includes(q)
         || String(r.ref).toLowerCase().includes(q)
         || String(r.loc).toLowerCase().includes(q)
-        || String(r.c).toLowerCase().includes(q);
+        || String(r.c).toLowerCase().includes(q)
+        || String(r.customer).toLowerCase().includes(q)
+        || String(r.internal).toLowerCase().includes(q)
+        || String(r.sales).toLowerCase().includes(q);
   });
 
   const truncated = matches.length > MAX_RESULTS;
@@ -1365,6 +1413,10 @@ function renderResults(truncated, totalCount) {
     node.querySelector('.out').textContent = item.out;
     node.querySelector('.date').textContent = formatDate(item.date);
     node.querySelector('.customer').textContent = item.customer || '';
+    node.querySelector('.ukuran').textContent = item.ukuran || '—';
+    node.querySelector('.total-saldo').textContent = item.totalSaldo || '—';
+    node.querySelector('.internal').textContent = item.internal || '—';
+    node.querySelector('.sales').textContent = item.sales || '—';
 
     card.addEventListener('click', () => openEditSheet(item));
     card.addEventListener('keydown', (e) => { if (e.key === 'Enter') openEditSheet(item); });
@@ -1422,7 +1474,19 @@ async function downloadExcel() {
 
 // ---------- refresh data manual ----------
 
-el.btnRefresh.addEventListener('click', () => loadData(true));
+const refreshSplashEl = document.getElementById('refresh-splash');
+function showRefreshSplash(){ if (refreshSplashEl) refreshSplashEl.classList.add('show'); }
+function hideRefreshSplash(){ if (refreshSplashEl) refreshSplashEl.classList.remove('show'); }
+
+el.btnRefresh.addEventListener('click', async () => {
+  showRefreshSplash();
+  try {
+    await loadData(true);
+  } finally {
+    // beri jeda kecil biar animasi titik 3 sempat terlihat walau data cepat selesai dimuat
+    setTimeout(hideRefreshSplash, 350);
+  }
+});
 
 // ---------- edit sheet (form koreksi) ----------
 
