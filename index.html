@@ -881,17 +881,53 @@ function parseCSV(text) {
   return rows;
 }
 
-// Susunan kolom tetap (sesuai laporan gudang):
-// 0 NO, 1 LOC#, 2 AC#, 3 STS, 4 MCS#, 5 MC MODEL, 6 C#, 7 PD, 8 SET, 9 PART#,
-// 10 ED, 11 SO#, 12 SO PO#, 13 WO#, 14 DATE, 15 TRAN, 16 GRX, 17 REF#,
-// 18 ALT REF#, 19 IN, 20 OUT, 21 BAL, 22 CUSTOMER (kolom W),
-// 23 UKURAN (kolom X), 24 TOTAL SALDO (kolom Y), 25 INTERNAL (kolom Z), 26 SALES (kolom AA)
+// Cari index kolom berdasarkan NAMA header (bukan posisi tetap), supaya kalau ada
+// kolom baru/hilang/geser di Google Sheets, mapping tidak ikut rusak. Kalau nama
+// headernya tidak ketemu (mis. sheet sangat lama), baru pakai posisi tetap (fallback).
+function colIndexByName(header, names, fallback) {
+  const upper = header.map((h) => String(h || '').trim().toUpperCase());
+  for (const name of names) {
+    const i = upper.indexOf(name.toUpperCase());
+    if (i !== -1) return i;
+  }
+  return fallback;
+}
+
+// Susunan kolom (dicari berdasarkan nama header; posisi di bawah cuma fallback
+// kalau nama headernya tidak ketemu di CSV):
+// NO, LOC#, AC#, STS, MCS#, MC MODEL, C#, PD, SET, PART#, ED, SO#, SO PO#, WO#,
+// DATE, TRAN, GRX, REF#, ALT REF#, IN, OUT, BAL, CUTOMER (kolom W), UKURAN (kolom X),
+// TOTAL SALDO (kolom Y), INT (kolom Z), SALES (kolom AA)
 function extractRecords(rows) {
   let headerIdx = -1;
   for (let i = 0; i < rows.length; i++) {
     if (rows[i].includes('LOC#') && rows[i].includes('MCS#')) { headerIdx = i; break; }
   }
   if (headerIdx === -1) throw new Error('Header data tidak ditemukan di CSV (kolom LOC#/MCS# tidak ada).');
+
+  const header = rows[headerIdx];
+  const iNo = colIndexByName(header, ['NO.', 'NO'], 0);
+  const iLoc = colIndexByName(header, ['LOC#'], 1);
+  const iAc = colIndexByName(header, ['AC#'], 2);
+  const iSts = colIndexByName(header, ['STS'], 3);
+  const iMcs = colIndexByName(header, ['MCS#'], 4);
+  const iModel = colIndexByName(header, ['MC MODEL'], 5);
+  const iC = colIndexByName(header, ['C#'], 6);
+  const iPart = colIndexByName(header, ['PART#'], 9);
+  const iSo = colIndexByName(header, ['SO#'], 11);
+  const iSoPo = colIndexByName(header, ['SO PO#'], 12);
+  const iWo = colIndexByName(header, ['WO#'], 13);
+  const iDate = colIndexByName(header, ['DATE'], 14);
+  const iRef = colIndexByName(header, ['REF#'], 17);
+  const iAltRef = colIndexByName(header, ['ALT REF#'], 18);
+  const iIn = colIndexByName(header, ['IN'], 19);
+  const iOut = colIndexByName(header, ['OUT'], 20);
+  const iBal = colIndexByName(header, ['BAL'], 21);
+  const iCustomer = colIndexByName(header, ['CUTOMER', 'CUSTOMER'], 22);
+  const iUkuran = colIndexByName(header, ['UKURAN'], 23);
+  const iTotalSaldo = colIndexByName(header, ['TOTAL SALDO'], 24);
+  const iInternal = colIndexByName(header, ['INT', "INT'S", 'INTERNAL'], 25);
+  const iSales = colIndexByName(header, ['SALES'], 26);
 
   let dataStart = headerIdx + 1;
   const nextRow = rows[dataStart] || [];
@@ -902,17 +938,17 @@ function extractRecords(rows) {
   for (let i = dataStart; i < rows.length; i++) {
     const r = rows[i];
     if (!r || r.length < 5) continue;
-    const no = String(r[0] || '').trim();
-    const mcs = String(r[4] || '').trim();
+    const no = String(r[iNo] || '').trim();
+    const mcs = String(r[iMcs] || '').trim();
     if (no === '' && mcs === '') continue; // baris kosong/#N/A di akhir laporan, berhenti anggap selesai
 
     records.push({
-      no: r[0] || '', loc: r[1] || '', ac: r[2] || '', sts: r[3] || '',
-      mcs: r[4] || '', model: r[5] || '', c: r[6] || '', part: r[9] || '',
-      so: r[11] || '', sopo: r[12] || '', wo: r[13] || '', date: r[14] || '',
-      ref: r[17] || '', altref: r[18] || '', in: r[19] || '', out: r[20] || '',
-      bal: r[21] || '', customer: r[22] || '',
-      ukuran: r[23] || '', totalSaldo: r[24] || '', internal: r[25] || '', sales: r[26] || '',
+      no: r[iNo] || '', loc: r[iLoc] || '', ac: r[iAc] || '', sts: r[iSts] || '',
+      mcs: r[iMcs] || '', model: r[iModel] || '', c: r[iC] || '', part: r[iPart] || '',
+      so: r[iSo] || '', sopo: r[iSoPo] || '', wo: r[iWo] || '', date: r[iDate] || '',
+      ref: r[iRef] || '', altref: r[iAltRef] || '', in: r[iIn] || '', out: r[iOut] || '',
+      bal: r[iBal] || '', customer: r[iCustomer] || '',
+      ukuran: r[iUkuran] || '', totalSaldo: r[iTotalSaldo] || '', internal: r[iInternal] || '', sales: r[iSales] || '',
     });
   }
   return records;
@@ -927,17 +963,30 @@ function extractMasterRecords(rows) {
   }
   if (headerIdx === -1) throw new Error('Header Master MC tidak ditemukan (kolom MC/NAMA BARANG tidak ada).');
 
+  const header = rows[headerIdx];
+  const iMc = colIndexByName(header, ['MC'], 0);
+  const iSo = colIndexByName(header, ['SO'], 1);
+  const iCustomer = colIndexByName(header, ['CUSTOMER'], 2);
+  const iModel = colIndexByName(header, ['NAMA BARANG'], 3);
+  const iBerat = colIndexByName(header, ['BERAT'], 4);
+  const iSales = colIndexByName(header, ['SALES'], 5);
+  const iInternal = colIndexByName(header, ["INT'S", 'INT', 'INTERNAL'], 6);
+  const iCcode = colIndexByName(header, ['C.CODE', 'CCODE'], 7);
+  const iPic = colIndexByName(header, ['PIC'], 8);
+  const iUkuran = colIndexByName(header, ['UKURAN'], 10);
+  const iFlute = colIndexByName(header, ['FLUTE'], 11);
+
   const records = [];
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i];
     if (!r || r.length < 2) continue;
-    const mc = String(r[0] || '').trim();
+    const mc = String(r[iMc] || '').trim();
     if (mc === '') continue;
 
     records.push({
-      mc: r[0] || '', so: r[1] || '', customer: r[2] || '', model: r[3] || '',
-      berat: r[4] || '', sales: r[5] || '', internal: r[6] || '', ccode: r[7] || '', pic: r[8] || '',
-      ukuran: r[10] || '', flute: r[11] || '',
+      mc: r[iMc] || '', so: r[iSo] || '', customer: r[iCustomer] || '', model: r[iModel] || '',
+      berat: r[iBerat] || '', sales: r[iSales] || '', internal: r[iInternal] || '', ccode: r[iCcode] || '', pic: r[iPic] || '',
+      ukuran: r[iUkuran] || '', flute: r[iFlute] || '',
     });
   }
   return records;
