@@ -901,6 +901,19 @@ function colIndexByName(header, names, fallback) {
   return fallback;
 }
 
+// Sama seperti colIndexByName, tapi mencari header yang MENGANDUNG salah satu
+// kata kunci (bukan harus persis sama). Dipakai sebagai lapisan cadangan kalau
+// nama kolom di sheet sedikit berbeda (mis. "Total Pallet", "Jml Pallet", dst).
+function colIndexBySubstring(header, substrings, fallback) {
+  const upper = header.map((h) => String(h || '').trim().toUpperCase());
+  for (let i = 0; i < upper.length; i++) {
+    for (const s of substrings) {
+      if (upper[i] && upper[i].includes(s.toUpperCase())) return i;
+    }
+  }
+  return fallback;
+}
+
 // Susunan kolom (dicari berdasarkan nama header; posisi di bawah cuma fallback
 // kalau nama headernya tidak ketemu di CSV):
 // NO, LOC#, AC#, STS, MCS#, MC MODEL, C#, PD, SET, PART#, ED, SO#, SO PO#, WO#,
@@ -936,7 +949,10 @@ function extractRecords(rows) {
   const iTotalSaldo = colIndexByName(header, ['TOTAL SALDO'], 24);
   const iInternal = colIndexByName(header, ['INT', "INT'S", 'INTERNAL'], 25);
   const iSales = colIndexByName(header, ['SALES'], 26);
-  const iTotalPallet = colIndexByName(header, ['TOTAL PALLET'], 28);
+  // Total Pallet: cari dulu berdasarkan nama header yang mengandung kata "PALLET".
+  // Kalau tidak ketemu, fallback ke posisi 2 kolom setelah SALES (SALES → mcfit → Total Pallet),
+  // sesuai susunan kolom di sheet ini. Fallback terakhir: posisi tetap kolom AC (28).
+  const iTotalPallet = colIndexBySubstring(header, ['TOTAL PALLET', 'JML PALLET', 'PALLET'], iSales + 2 || 28);
 
   let dataStart = headerIdx + 1;
   const nextRow = rows[dataStart] || [];
