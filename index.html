@@ -905,7 +905,7 @@ function colIndexByName(header, names, fallback) {
 // kalau nama headernya tidak ketemu di CSV):
 // NO, LOC#, AC#, STS, MCS#, MC MODEL, C#, PD, SET, PART#, ED, SO#, SO PO#, WO#,
 // DATE, TRAN, GRX, REF#, ALT REF#, IN, OUT, BAL, CUTOMER (kolom W), UKURAN (kolom X),
-// TOTAL SALDO (kolom Y), INT (kolom Z), SALES (kolom AA)
+// TOTAL SALDO (kolom Y), INT (kolom Z), SALES (kolom AA), TOTAL PALLET (kolom AC)
 function extractRecords(rows) {
   let headerIdx = -1;
   for (let i = 0; i < rows.length; i++) {
@@ -936,6 +936,7 @@ function extractRecords(rows) {
   const iTotalSaldo = colIndexByName(header, ['TOTAL SALDO'], 24);
   const iInternal = colIndexByName(header, ['INT', "INT'S", 'INTERNAL'], 25);
   const iSales = colIndexByName(header, ['SALES'], 26);
+  const iTotalPallet = colIndexByName(header, ['TOTAL PALLET'], 28);
 
   let dataStart = headerIdx + 1;
   const nextRow = rows[dataStart] || [];
@@ -957,6 +958,7 @@ function extractRecords(rows) {
       ref: r[iRef] || '', altref: r[iAltRef] || '', in: r[iIn] || '', out: r[iOut] || '',
       bal: r[iBal] || '', customer: r[iCustomer] || '',
       ukuran: r[iUkuran] || '', totalSaldo: r[iTotalSaldo] || '', internal: r[iInternal] || '', sales: r[iSales] || '',
+      totalPallet: r[iTotalPallet] || '',
     });
   }
   return records;
@@ -965,6 +967,16 @@ function extractRecords(rows) {
 // Ambil tanggal & jam cutoff data dari cell A2 (baris ke-2, kolom pertama),
 // contoh isinya: "REPORT TITLE: FG OPEN ITEM BY AC# AS AT 15/08/2026 TIME : 09:24am"
 // Hasilnya cuma dipakai buat ditampilkan singkat sebagai badge "CD: dd/mm/yyyy HH:MMam".
+// Gabungkan Total Saldo & Total Pallet jadi satu baris singkat, mis. "3100 [P:10]".
+// Kalau Total Pallet kosong, tampil biasa (cuma total saldo) tanpa embel-embel.
+function formatTotalSaldoPallet(totalSaldo, totalPallet) {
+  const saldo = String(totalSaldo || '').trim();
+  const pallet = String(totalPallet || '').trim();
+  if (!saldo && !pallet) return '—';
+  if (!pallet) return saldo || '—';
+  return (saldo || '—') + ' [P:' + pallet + ']';
+}
+
 function extractCutoffInfo(rows) {
   const a2 = String((rows[1] && rows[1][0]) || '').trim();
   if (!a2) return '';
@@ -1510,7 +1522,7 @@ function renderResults(truncated, totalCount) {
     node.querySelector('.date').textContent = formatDate(item.date);
     node.querySelector('.customer').textContent = item.customer || '';
     node.querySelector('.ukuran').textContent = item.ukuran || '—';
-    node.querySelector('.total-saldo').textContent = item.totalSaldo || '—';
+    node.querySelector('.total-saldo').textContent = formatTotalSaldoPallet(item.totalSaldo, item.totalPallet);
     node.querySelector('.internal').textContent = item.internal || '—';
     node.querySelector('.sales').textContent = item.sales || '—';
 
