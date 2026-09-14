@@ -913,6 +913,40 @@ el.btnDownload.addEventListener('click', () => {
   try{
     const wb = XLSX.utils.book_new();
 
+    // ---- Sheet Pivot (cross-tab siap pakai): Nama x Status, Jumlah Line & Tonase ----
+    function buildPivotSheet(propName){
+      const groups = {};
+      state.records.forEach(r => {
+        const name = r[propName];
+        if (!groups[name]) groups[name] = {
+          Nama:name, 'Jml Lunas':0, 'Tonase Lunas':0, 'Jml Kekurangan':0, 'Tonase Kekurangan':0,
+          'Jml Siap Kirim':0, 'Tonase Siap Kirim':0, 'Jml Kosong':0, 'Tonase Kosong':0,
+          'Total Line':0, 'Total Tonase':0,
+        };
+        const g = groups[name];
+        g['Total Line']++;
+        g['Total Tonase'] += r.tonase;
+        if (r.status==='lunas'){ g['Jml Lunas']++; g['Tonase Lunas'] += r.tonase; }
+        else if (r.status==='kurang'){ g['Jml Kekurangan']++; g['Tonase Kekurangan'] += r.tonase; }
+        else if (r.status==='siap'){ g['Jml Siap Kirim']++; g['Tonase Siap Kirim'] += r.tonase; }
+        else { g['Jml Kosong']++; g['Tonase Kosong'] += r.tonase; }
+      });
+      const rowsArr = Object.values(groups).sort((a,b)=>b['Total Line']-a['Total Line']);
+      // baris total keseluruhan di paling bawah
+      const grand = { Nama:'TOTAL KESELURUHAN' };
+      ['Jml Lunas','Tonase Lunas','Jml Kekurangan','Tonase Kekurangan','Jml Siap Kirim','Tonase Siap Kirim','Jml Kosong','Tonase Kosong','Total Line','Total Tonase']
+        .forEach(k => { grand[k] = rowsArr.reduce((s,g)=>s+g[k],0); });
+      // bulatkan tonase 2 desimal biar rapi
+      [...rowsArr, grand].forEach(g => {
+        ['Tonase Lunas','Tonase Kekurangan','Tonase Siap Kirim','Tonase Kosong','Total Tonase'].forEach(k => {
+          g[k] = Math.round(g[k]*100)/100;
+        });
+      });
+      return XLSX.utils.json_to_sheet([...rowsArr, grand]);
+    }
+    XLSX.utils.book_append_sheet(wb, buildPivotSheet('internal'), 'Pivot Internal');
+    XLSX.utils.book_append_sheet(wb, buildPivotSheet('sales'), 'Pivot Sales');
+
     [['int','internal','Rekap Internal'], ['sales','sales','Rekap Sales']].forEach(([dimKey, propName, sheetTitle]) => {
       const groups = {};
       state.records.forEach(r => {
