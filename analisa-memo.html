@@ -19,6 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
@@ -1195,33 +1196,68 @@ el.btnPrint.addEventListener('click', () => {
 
 /* ---------- screenshot (SS) ---------- */
 el.btnScreenshot = document.getElementById('btn-screenshot');
+function ssSkipNode(node){
+  if (!node || node.nodeType !== 1) return false;
+  return node.classList && (
+    node.classList.contains('fab-row') ||
+    node.classList.contains('sheet-overlay') ||
+    node.classList.contains('toast') ||
+    node.id === 'print-area' ||
+    node.id === 'app-splash'
+  );
+}
+async function captureWithHtmlToImage(target, bg){
+  return await htmlToImage.toPng(target, {
+    backgroundColor: bg,
+    pixelRatio: window.devicePixelRatio > 1 ? 2 : 1.5,
+    width: document.documentElement.scrollWidth,
+    height: document.documentElement.scrollHeight,
+    filter: ssSkipNode,
+    cacheBust: true,
+  });
+}
+async function captureWithHtml2Canvas(target, bg){
+  const canvas = await html2canvas(target, {
+    backgroundColor: bg,
+    useCORS: true,
+    scale: window.devicePixelRatio > 1 ? 2 : 1.5,
+    windowWidth: document.documentElement.scrollWidth,
+    windowHeight: document.documentElement.scrollHeight,
+    scrollX: 0,
+    scrollY: 0,
+    ignoreElements: ssSkipNode,
+  });
+  return canvas.toDataURL('image/png');
+}
 el.btnScreenshot.addEventListener('click', async () => {
-  if (typeof html2canvas === 'undefined'){ showToast('Komponen screenshot gagal dimuat, cek koneksi'); return; }
   const fabRow = document.querySelector('.fab-row');
   const originalVis = fabRow.style.visibility;
   fabRow.style.visibility = 'hidden';
   showToast('Menyiapkan screenshot…');
   try{
     await new Promise(res => setTimeout(res, 80)); // beri waktu FAB hilang & toast render
-    const target = document.documentElement;
-    const canvas = await html2canvas(target, {
-      backgroundColor: getComputedStyle(document.body).backgroundColor || '#12161B',
-      useCORS: true,
-      scale: window.devicePixelRatio > 1 ? 2 : 1.5,
-      windowWidth: document.documentElement.scrollWidth,
-      windowHeight: document.documentElement.scrollHeight,
-      scrollX: 0,
-      scrollY: 0,
-    });
+    const target = document.body;
+    const bg = getComputedStyle(document.body).backgroundColor || (getCurrentTheme()==='light' ? '#F3F4F6' : '#12161B');
+    let dataUrl = null;
+    let lastErr = null;
+    if (typeof htmlToImage !== 'undefined'){
+      try{ dataUrl = await captureWithHtmlToImage(target, bg); }
+      catch(e){ lastErr = e; console.warn('html-to-image gagal, coba fallback html2canvas', e); }
+    }
+    if (!dataUrl && typeof html2canvas !== 'undefined'){
+      try{ dataUrl = await captureWithHtml2Canvas(target, bg); }
+      catch(e){ lastErr = e; }
+    }
+    if (!dataUrl) throw lastErr || new Error('Komponen screenshot gagal dimuat, cek koneksi');
     const link = document.createElement('a');
     const today = new Date().toISOString().slice(0,10);
     link.download = 'Analisa_Memo_SS_' + today + '.png';
-    link.href = canvas.toDataURL('image/png');
+    link.href = dataUrl;
     link.click();
     showToast('Screenshot berhasil diunduh');
   }catch(err){
     console.error(err);
-    showToast('Gagal membuat screenshot');
+    showToast('Gagal membuat screenshot: ' + (err && err.message ? err.message : 'coba lagi'));
   }finally{
     fabRow.style.visibility = originalVis;
   }
