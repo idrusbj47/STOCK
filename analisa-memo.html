@@ -855,7 +855,16 @@ el.btnDownload.addEventListener('click', () => {
         else groups[name].Kosong++;
       });
       const arr = Object.values(groups).sort((a,b)=>b.Total-a.Total).map(g => ({
-        ...g, '% Lunas': g.Total ? Math.round(g.Lunas/g.Total*100)+'%' : '0%'
+        Nama: g.Nama,
+        Total: g.Total,
+        Lunas: g.Lunas,
+        '% Lunas': g.Total ? Math.round(g.Lunas/g.Total*100)+'%' : '0%',
+        Kekurangan: g.Kekurangan,
+        '% Kekurangan': g.Total ? Math.round(g.Kekurangan/g.Total*100)+'%' : '0%',
+        'Siap Kirim': g['Siap Kirim'],
+        '% Siap Kirim': g.Total ? Math.round(g['Siap Kirim']/g.Total*100)+'%' : '0%',
+        Kosong: g.Kosong,
+        '% Kosong': g.Total ? Math.round(g.Kosong/g.Total*100)+'%' : '0%',
       }));
       const ws = XLSX.utils.json_to_sheet(arr);
       XLSX.utils.book_append_sheet(wb, ws, dimKey==='int' ? 'Rekap Internal' : 'Rekap Sales');
