@@ -176,7 +176,8 @@ table.rank-table tbody tr{ cursor:pointer; }
 table.rank-table tbody tr:hover{ background: var(--surface-2); }
 table.rank-table tbody tr.selected{ background: color-mix(in srgb, var(--amber) 12%, transparent); }
 .rank-name{ font-weight:600; }
-.rank-cell{ font-family: var(--font-mono); font-weight:600; border-radius:7px; padding:3px 8px; display:inline-block; min-width:26px; text-align:center; cursor:pointer; }
+.rank-cell{ font-family: var(--font-mono); font-weight:600; border-radius:7px; padding:3px 8px; display:inline-block; min-width:26px; text-align:center; cursor:pointer; white-space:nowrap; }
+.rank-cell small{ font-weight:500; opacity:.75; font-size:10px; }
 .rank-cell:hover{ filter: brightness(1.15); }
 .rc-lunas{ background: color-mix(in srgb, var(--green) 20%, transparent); color: var(--green); }
 .rc-kurang{ background: color-mix(in srgb, var(--red) 20%, transparent); color: var(--red); }
@@ -674,7 +675,7 @@ function renderRankTable(){
     groups[name].total++;
   });
   const list = Object.values(groups).sort((a,b) => b.total - a.total);
-  el.rankCount.textContent = list.length + ' ' + (dimKey==='int'?'internal':'sales');
+  el.rankCount.textContent = list.length + ' ' + (state.dim==='int' ? 'internal' : 'sales');
   el.rankTbody.innerHTML = '';
   if (!list.length){
     el.rankTbody.innerHTML = '<tr><td colspan="7" class="empty-note">Tidak ada data</td></tr>';
@@ -683,14 +684,15 @@ function renderRankTable(){
   list.forEach(g => {
     const tr = document.createElement('tr');
     if (state.selected === g.name) tr.classList.add('selected');
-    const pctLunas = g.total ? Math.round(g.lunas / g.total * 100) : 0;
+    const pct = (n) => g.total ? Math.round(n / g.total * 100) : 0;
+    const pctLunas = pct(g.lunas);
     tr.innerHTML = `
       <td class="rank-name">${escapeHtml(g.name)}</td>
       <td class="mono">${g.total}</td>
-      <td><span class="rank-cell rc-lunas" data-status="lunas">${g.lunas}</span></td>
-      <td><span class="rank-cell rc-kurang" data-status="kurang">${g.kurang}</span></td>
-      <td><span class="rank-cell rc-siap" data-status="siap">${g.siap}</span></td>
-      <td><span class="rank-cell rc-kosong" data-status="kosong">${g.kosong}</span></td>
+      <td><span class="rank-cell rc-lunas" data-status="lunas">${g.lunas} <small>(${pct(g.lunas)}%)</small></span></td>
+      <td><span class="rank-cell rc-kurang" data-status="kurang">${g.kurang} <small>(${pct(g.kurang)}%)</small></span></td>
+      <td><span class="rank-cell rc-siap" data-status="siap">${g.siap} <small>(${pct(g.siap)}%)</small></span></td>
+      <td><span class="rank-cell rc-kosong" data-status="kosong">${g.kosong} <small>(${pct(g.kosong)}%)</small></span></td>
       <td><span class="bar-track"><span class="bar-fill" style="width:${pctLunas}%"></span></span>${pctLunas}%</td>
     `;
     tr.addEventListener('click', (e) => {
