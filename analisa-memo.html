@@ -278,6 +278,8 @@ table.rank-table tbody tr.selected{ background: rgba(var(--amber-rgb), .12); }
 #print-area{ display:none; }
 @media print{
   body *{ visibility:hidden; }
+  .sheet-overlay{ display:none !important; }
+  #app-splash, .data-banner, .fab-row, .toast{ display:none !important; }
   #print-area, #print-area *{ visibility:visible; }
   #print-area{ display:block; position:absolute; left:0; top:0; width:100%; background:#fff; color:#14181F; }
   @page{ size:A4 landscape; margin:12mm; }
