@@ -297,23 +297,23 @@ table.rank-table tbody tr.selected{ background: color-mix(in srgb, var(--amber) 
   <div class="kpi-grid">
     <div class="kpi-card kpi-lunas" data-status="lunas">
       <div class="kpi-label">Lunas Memo</div>
-      <div class="kpi-value" id="kpi-lunas-val">0</div>
-      <div class="kpi-sub" id="kpi-lunas-sub">0% dari total line</div>
+      <div class="kpi-value" id="kpi-lunas-val">0%</div>
+      <div class="kpi-sub" id="kpi-lunas-sub">0 dari total line</div>
     </div>
     <div class="kpi-card kpi-kurang" data-status="kurang">
       <div class="kpi-label">Kekurangan Memo</div>
-      <div class="kpi-value" id="kpi-kurang-val">0</div>
+      <div class="kpi-value" id="kpi-kurang-val">0%</div>
       <div class="kpi-sub" id="kpi-kurang-sub">stok produksi belum cukup</div>
     </div>
     <div class="kpi-card kpi-siap" data-status="siap">
       <div class="kpi-label">Siap Kirim</div>
-      <div class="kpi-value" id="kpi-siap-val">0</div>
+      <div class="kpi-value" id="kpi-siap-val">0%</div>
       <div class="kpi-sub" id="kpi-siap-sub">stok cukup, tinggal DO</div>
     </div>
     <div class="kpi-card kpi-kosong" data-status="kosong">
       <div class="kpi-label">Memo Kosong</div>
-      <div class="kpi-value" id="kpi-kosong-val">0</div>
-      <div class="kpi-sub" id="kpi-kosong-sub">belum ada DO sama sekali</div>
+      <div class="kpi-value" id="kpi-kosong-val">0%</div>
+      <div class="kpi-sub" id="kpi-kosong-sub">barang belum masuk gudang</div>
     </div>
   </div>
 
@@ -537,6 +537,9 @@ function extractRecords(rows){
   for (let i=headerIdx+1;i<rows.length;i++){
     const r = rows[i];
     if (!r || r.every(c => String(c||'').trim()==='')) continue;
+    // Kolom A kosong/tidak ada huruf-angka = batas bawah data yang valid, lewati baris ini
+    const colA = String(r[0]||'').trim();
+    if (!colA || !/[a-zA-Z0-9]/.test(colA)) continue;
     const internal = String(r[idx.internal]||'').trim();
     const sales = String(r[idx.sales]||'').trim();
     const no = String(r[idx.no]||'').trim();
@@ -548,9 +551,14 @@ function extractRecords(rows){
     const siapPct = pctParse(r[idx.siapKirimPct]);
     const pctTerpenuhi = pctParse(r[idx.pctTerpenuhi]);
 
+    // Urutan pengecekan status:
+    // 1) Lunas: DO sudah memenuhi/melebihi Memo (selesai, apapun kondisi stok CPS saat ini)
+    // 2) Kosong: qty Memo ada tapi qty CPS tidak ada/0 -> barang belum masuk gudang / belum diproduksi
+    // 3) Siap Kirim: DO belum penuh, tapi stok CPS sudah cukup untuk sisa memo -> tinggal dibuatkan DO
+    // 4) Kekurangan: DO belum penuh dan stok CPS pun belum cukup
     let status;
-    if (doRaw === '-' || doRaw === '') status = 'kosong';
-    else if (memoQtyAK > 0 && doQtyAK >= memoQtyAK - 0.001) status = 'lunas';
+    if (memoQtyAK > 0 && doQtyAK >= memoQtyAK - 0.001) status = 'lunas';
+    else if (cps <= 0) status = 'kosong';
     else if (siapPct >= 99.5) status = 'siap';
     else status = 'kurang';
 
@@ -613,8 +621,9 @@ function matchesSearch(rec, q){
   return [rec.no, rec.customer, rec.compModel, rec.soNum, rec.mcsNum, rec.internal, rec.sales, rec.remark]
     .join(' ').toLowerCase().includes(q);
 }
+function dimProp(){ return state.dim === 'int' ? 'internal' : 'sales'; }
 function currentScope(){
-  const dimKey = state.dim;
+  const dimKey = dimProp();
   return state.records.filter(r => {
     if (state.selected && r[dimKey] !== state.selected) return false;
     if (state.search && !matchesSearch(r, state.search)) return false;
@@ -639,19 +648,23 @@ function renderKPI(){
   const total = scope.length || 1;
   const counts = { lunas:0, kurang:0, siap:0, kosong:0 };
   scope.forEach(r => counts[r.status]++);
-  document.getElementById('kpi-lunas-val').textContent = fmtInt(counts.lunas);
-  document.getElementById('kpi-kurang-val').textContent = fmtInt(counts.kurang);
-  document.getElementById('kpi-siap-val').textContent = fmtInt(counts.siap);
-  document.getElementById('kpi-kosong-val').textContent = fmtInt(counts.kosong);
-  document.getElementById('kpi-lunas-sub').textContent = Math.round(counts.lunas/total*100) + '% dari ' + scope.length + ' line';
-  document.getElementById('kpi-kurang-sub').textContent = Math.round(counts.kurang/total*100) + '% · stok produksi belum cukup';
-  document.getElementById('kpi-siap-sub').textContent = Math.round(counts.siap/total*100) + '% · stok cukup, tinggal DO';
-  document.getElementById('kpi-kosong-sub').textContent = Math.round(counts.kosong/total*100) + '% · belum ada DO sama sekali';
+  const pLunas = Math.round(counts.lunas/total*100);
+  const pKurang = Math.round(counts.kurang/total*100);
+  const pSiap = Math.round(counts.siap/total*100);
+  const pKosong = Math.round(counts.kosong/total*100);
+  document.getElementById('kpi-lunas-val').textContent = pLunas + '%';
+  document.getElementById('kpi-kurang-val').textContent = pKurang + '%';
+  document.getElementById('kpi-siap-val').textContent = pSiap + '%';
+  document.getElementById('kpi-kosong-val').textContent = pKosong + '%';
+  document.getElementById('kpi-lunas-sub').textContent = fmtInt(counts.lunas) + ' dari ' + scope.length + ' line';
+  document.getElementById('kpi-kurang-sub').textContent = fmtInt(counts.kurang) + ' line · stok produksi belum cukup';
+  document.getElementById('kpi-siap-sub').textContent = fmtInt(counts.siap) + ' line · stok cukup, tinggal DO';
+  document.getElementById('kpi-kosong-sub').textContent = fmtInt(counts.kosong) + ' line · barang belum masuk gudang';
 }
 
 function renderRankTable(){
-  const dimKey = state.dim;
-  el.rankTitle.textContent = 'Rekap per ' + (dimKey==='int' ? 'Internal' : 'Sales');
+  const dimKey = dimProp();
+  el.rankTitle.textContent = 'Rekap per ' + (state.dim==='int' ? 'Internal' : 'Sales');
   const pool = state.records.filter(r => !state.search || matchesSearch(r, state.search));
   const groups = {};
   pool.forEach(r => {
@@ -753,7 +766,7 @@ function escapeHtml(s){
 /* ---------- detail sheet ---------- */
 let detailCtx = null;
 function openDetail(status, groupName){
-  detailCtx = { status, groupName, dim: state.dim };
+  detailCtx = { status, groupName, dim: dimProp() };
   el.detailEyebrow.textContent = (groupName ? groupName + ' · ' : '') + (state.dim==='int' ? 'Internal' : 'Sales');
   el.detailTitle.textContent = statusLabel(status);
   el.detailSearch.value = '';
