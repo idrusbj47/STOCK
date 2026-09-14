@@ -709,16 +709,10 @@ function renderKPI(){
   let totalTonaseMemo = 0;
   scope.forEach(r => {
     counts[r.status]++;
+    // Tonase penuh baris ini (kolom Tonase/U) dimasukkan seluruhnya ke SATU kartu
+    // sesuai status baris tsb, supaya total 4 kartu selalu sama dengan Total Tonase Memo.
     totalTonaseMemo += r.tonase;
-    // Berat per pcs = kolom Tonase (U) / kolom Memo Qty (T), lalu dikalikan qty yang relevan
-    // untuk masing-masing status kartu (qty terkirim untuk Lunas, qty sisa untuk Kurang/Siap/Kosong).
-    const beratPerPcs = r.memoQty > 0 ? r.tonase / r.memoQty : 0;
-    if (r.status === 'lunas'){
-      tonase.lunas += beratPerPcs * r.doAK;
-    } else {
-      const sisaTonase = beratPerPcs * r.sisa;
-      tonase[r.status] += sisaTonase;
-    }
+    tonase[r.status] += r.tonase;
   });
   document.getElementById('total-tonase-val').textContent = fmtNum(totalTonaseMemo);
   const pLunas = Math.round(counts.lunas/total*100);
@@ -733,10 +727,10 @@ function renderKPI(){
   document.getElementById('kpi-kurang-sub').textContent = fmtInt(counts.kurang) + ' line · stok produksi belum cukup';
   document.getElementById('kpi-siap-sub').textContent = fmtInt(counts.siap) + ' line · stok cukup, tinggal DO';
   document.getElementById('kpi-kosong-sub').textContent = fmtInt(counts.kosong) + ' line · barang belum masuk gudang';
-  document.getElementById('kpi-lunas-tonase').textContent = 'Tonase terkirim: ' + fmtNum(tonase.lunas);
-  document.getElementById('kpi-kurang-tonase').textContent = 'Tonase kurang: ' + fmtNum(tonase.kurang);
-  document.getElementById('kpi-siap-tonase').textContent = 'Tonase siap kirim: ' + fmtNum(tonase.siap);
-  document.getElementById('kpi-kosong-tonase').textContent = 'Tonase tertunda: ' + fmtNum(tonase.kosong);
+  document.getElementById('kpi-lunas-tonase').textContent = 'Tonase: ' + fmtNum(tonase.lunas);
+  document.getElementById('kpi-kurang-tonase').textContent = 'Tonase: ' + fmtNum(tonase.kurang);
+  document.getElementById('kpi-siap-tonase').textContent = 'Tonase: ' + fmtNum(tonase.siap);
+  document.getElementById('kpi-kosong-tonase').textContent = 'Tonase: ' + fmtNum(tonase.kosong);
 }
 
 function renderRankTable(){
