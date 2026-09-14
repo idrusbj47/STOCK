@@ -41,6 +41,12 @@
   --font-mono: 'JetBrains Mono', monospace;
   color-scheme: dark;
   --on-accent: #1A1300;
+  --bg-rgb: 18,22,27;
+  --surface-rgb: 27,33,41;
+  --amber-rgb: 255,176,32;
+  --green-rgb: 52,211,153;
+  --red-rgb: 244,91,105;
+  --violet-rgb: 167,139,250;
 }
 html[data-theme="light"]{
   --bg: #F3F4F6;
@@ -56,6 +62,12 @@ html[data-theme="light"]{
   --gray-badge: #6B7280;
   color-scheme: light;
   --on-accent: #FFFFFF;
+  --bg-rgb: 243,244,246;
+  --surface-rgb: 255,255,255;
+  --amber-rgb: 184,119,15;
+  --green-rgb: 18,153,107;
+  --red-rgb: 220,62,78;
+  --violet-rgb: 124,92,224;
 }
 html, body{ transition: background-color .25s ease, color .25s ease; }
 *{ box-sizing: border-box; }
@@ -102,13 +114,13 @@ body.overlay-open{ overflow:hidden; }
 #app-splash .splash-dots span:nth-child(3){ animation-delay:.3s; }
 @keyframes splashDot{ 0%,60%,100%{ opacity:.3; transform:translateY(0); } 30%{ opacity:1; transform:translateY(-4px); } }
 
-.data-banner{ background: color-mix(in srgb, var(--red) 18%, var(--surface)); color: var(--text); font-size:12.5px; padding:8px 16px; text-align:center; }
+.data-banner{ background: rgba(var(--red-rgb), .18); color: var(--text); font-size:12.5px; padding:8px 16px; text-align:center; }
 .data-banner.hidden{ display:none; }
 .data-banner button{ margin-left:8px; background:none; border:1px solid currentColor; color:inherit; border-radius:6px; padding:2px 8px; font-size:11.5px; cursor:pointer; }
 
 header.topbar{
   position:sticky; top:0; z-index:200; display:flex; align-items:center; justify-content:space-between;
-  padding:14px 16px; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  padding:14px 16px; background: rgba(var(--bg-rgb), .88);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-bottom:1px solid var(--border);
 }
@@ -149,7 +161,7 @@ header.topbar{
 .search-panel input:focus{ outline:2px solid var(--amber); outline-offset:-1px; }
 .btn-clear{ border:1px solid var(--border); background: var(--surface); color: var(--muted); border-radius:10px; padding:0 14px; cursor:pointer; font-size:13px; }
 
-.selected-chip{ display:none; align-items:center; gap:8px; background: color-mix(in srgb, var(--amber) 16%, var(--surface)); border:1px solid var(--amber); color: var(--text); border-radius:10px; padding:8px 12px; margin-bottom:14px; font-size:13.5px; }
+.selected-chip{ display:none; align-items:center; gap:8px; background: rgba(var(--amber-rgb), .16); border:1px solid var(--amber); color: var(--text); border-radius:10px; padding:8px 12px; margin-bottom:14px; font-size:13.5px; }
 .selected-chip.show{ display:flex; }
 .selected-chip b{ color: var(--amber); }
 .selected-chip button{ margin-left:auto; background:none; border:none; color: var(--muted); cursor:pointer; font-size:16px; }
@@ -165,6 +177,7 @@ header.topbar{
 .total-tonase-bar.do .v{ color: var(--green); }
 .total-tonase-bar.do .k::before{ content:"↳ "; color: var(--muted); }
 .kpi-tonase{ font-family: var(--font-mono); font-size:11px; color: var(--muted); margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); }
+.kpi-tonase-do{ font-family: var(--font-mono); font-size:11px; color: var(--green); margin-top:3px; }
 @media (max-width:720px){ .kpi-grid{ grid-template-columns: repeat(2,1fr); } }
 .kpi-card{
   background: var(--surface); border:1px solid var(--border); border-radius: var(--radius);
@@ -194,15 +207,15 @@ table.rank-table td{ padding:10px 10px; border-bottom:1px solid var(--border); v
 table.rank-table tbody tr:last-child td{ border-bottom:none; }
 table.rank-table tbody tr{ cursor:pointer; }
 table.rank-table tbody tr:hover{ background: var(--surface-2); }
-table.rank-table tbody tr.selected{ background: color-mix(in srgb, var(--amber) 12%, transparent); }
+table.rank-table tbody tr.selected{ background: rgba(var(--amber-rgb), .12); }
 .rank-name{ font-weight:600; }
 .rank-cell{ font-family: var(--font-mono); font-weight:600; border-radius:7px; padding:3px 8px; display:inline-block; min-width:26px; text-align:center; cursor:pointer; white-space:nowrap; }
 .rank-cell small{ font-weight:500; opacity:.75; font-size:10px; }
 .rank-cell:hover{ filter: brightness(1.15); }
-.rc-lunas{ background: color-mix(in srgb, var(--green) 20%, transparent); color: var(--green); }
-.rc-kurang{ background: color-mix(in srgb, var(--red) 20%, transparent); color: var(--red); }
-.rc-siap{ background: color-mix(in srgb, var(--amber) 20%, transparent); color: var(--amber); }
-.rc-kosong{ background: color-mix(in srgb, var(--violet) 20%, transparent); color: var(--violet); }
+.rc-lunas{ background: rgba(var(--green-rgb), .2); color: var(--green); }
+.rc-kurang{ background: rgba(var(--red-rgb), .2); color: var(--red); }
+.rc-siap{ background: rgba(var(--amber-rgb), .2); color: var(--amber); }
+.rc-kosong{ background: rgba(var(--violet-rgb), .2); color: var(--violet); }
 .bar-track{ width:74px; height:6px; border-radius:4px; background: var(--surface-2); overflow:hidden; display:inline-block; vertical-align:middle; margin-right:6px; }
 .bar-fill{ height:100%; background: var(--green); }
 
@@ -212,10 +225,10 @@ table.rank-table tbody tr.selected{ background: color-mix(in srgb, var(--amber) 
 .item-top{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
 .item-top .mono{ font-family: var(--font-mono); font-size:12px; color: var(--muted); }
 .status-badge{ font-family: var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; padding:3px 9px; border-radius:20px; font-weight:600; }
-.sb-lunas{ background: color-mix(in srgb, var(--green) 20%, transparent); color: var(--green); }
-.sb-kurang{ background: color-mix(in srgb, var(--red) 20%, transparent); color: var(--red); }
-.sb-siap{ background: color-mix(in srgb, var(--amber) 20%, transparent); color: var(--amber); }
-.sb-kosong{ background: color-mix(in srgb, var(--violet) 20%, transparent); color: var(--violet); }
+.sb-lunas{ background: rgba(var(--green-rgb), .2); color: var(--green); }
+.sb-kurang{ background: rgba(var(--red-rgb), .2); color: var(--red); }
+.sb-siap{ background: rgba(var(--amber-rgb), .2); color: var(--amber); }
+.sb-kosong{ background: rgba(var(--violet-rgb), .2); color: var(--violet); }
 .item-model{ font-size:14.5px; font-weight:600; margin:6px 0 8px; }
 .item-grid{ display:grid; grid-template-columns: repeat(4,1fr); gap:6px 10px; font-size:12.5px; }
 @media (max-width:600px){ .item-grid{ grid-template-columns: repeat(2,1fr); } }
@@ -378,25 +391,29 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
       <div class="kpi-label">Lunas Memo</div>
       <div class="kpi-value" id="kpi-lunas-val">0%</div>
       <div class="kpi-sub" id="kpi-lunas-sub">0 dari total line</div>
-      <div class="kpi-tonase" id="kpi-lunas-tonase">Tonase terkirim: 0</div>
+      <div class="kpi-tonase" id="kpi-lunas-tonase">Tonase: 0</div>
+      <div class="kpi-tonase-do" id="kpi-lunas-tonase-do">Tonase DO: 0</div>
     </div>
     <div class="kpi-card kpi-kurang" data-status="kurang">
       <div class="kpi-label">Kekurangan Memo</div>
       <div class="kpi-value" id="kpi-kurang-val">0%</div>
       <div class="kpi-sub" id="kpi-kurang-sub">stok produksi belum cukup</div>
-      <div class="kpi-tonase" id="kpi-kurang-tonase">Tonase kurang: 0</div>
+      <div class="kpi-tonase" id="kpi-kurang-tonase">Tonase: 0</div>
+      <div class="kpi-tonase-do" id="kpi-kurang-tonase-do">Tonase DO: 0</div>
     </div>
     <div class="kpi-card kpi-siap" data-status="siap">
       <div class="kpi-label">Siap Kirim</div>
       <div class="kpi-value" id="kpi-siap-val">0%</div>
       <div class="kpi-sub" id="kpi-siap-sub">stok cukup, tinggal DO</div>
-      <div class="kpi-tonase" id="kpi-siap-tonase">Tonase siap kirim: 0</div>
+      <div class="kpi-tonase" id="kpi-siap-tonase">Tonase: 0</div>
+      <div class="kpi-tonase-do" id="kpi-siap-tonase-do">Tonase DO: 0</div>
     </div>
     <div class="kpi-card kpi-kosong" data-status="kosong">
       <div class="kpi-label">Memo Kosong</div>
       <div class="kpi-value" id="kpi-kosong-val">0%</div>
       <div class="kpi-sub" id="kpi-kosong-sub">barang belum masuk gudang</div>
-      <div class="kpi-tonase" id="kpi-kosong-tonase">Tonase tertunda: 0</div>
+      <div class="kpi-tonase" id="kpi-kosong-tonase">Tonase: 0</div>
+      <div class="kpi-tonase-do" id="kpi-kosong-tonase-do">Tonase DO: 0</div>
     </div>
   </div>
 
@@ -780,6 +797,7 @@ function renderKPI(){
   const total = scope.length || 1;
   const counts = { lunas:0, kurang:0, siap:0, kosong:0 };
   const tonase = { lunas:0, kurang:0, siap:0, kosong:0 };
+  const tonaseDo = { lunas:0, kurang:0, siap:0, kosong:0 };
   let totalTonaseMemo = 0;
   let totalTonaseDO = 0;
   scope.forEach(r => {
@@ -790,6 +808,7 @@ function renderKPI(){
     tonase[r.status] += r.tonase;
     // Tonase DO = berat per pcs (Tonase/Memo Qty) x qty DO -> tonase yang sudah benar-benar terkirim
     totalTonaseDO += r.tonaseDO;
+    tonaseDo[r.status] += r.tonaseDO;
   });
   document.getElementById('total-tonase-val').textContent = fmtNum(totalTonaseMemo);
   if (el.totalDoVal) el.totalDoVal.textContent = fmtNum(totalTonaseDO);
@@ -809,6 +828,10 @@ function renderKPI(){
   document.getElementById('kpi-kurang-tonase').textContent = 'Tonase: ' + fmtNum(tonase.kurang);
   document.getElementById('kpi-siap-tonase').textContent = 'Tonase: ' + fmtNum(tonase.siap);
   document.getElementById('kpi-kosong-tonase').textContent = 'Tonase: ' + fmtNum(tonase.kosong);
+  document.getElementById('kpi-lunas-tonase-do').textContent = 'Tonase DO: ' + fmtNum(tonaseDo.lunas);
+  document.getElementById('kpi-kurang-tonase-do').textContent = 'Tonase DO: ' + fmtNum(tonaseDo.kurang);
+  document.getElementById('kpi-siap-tonase-do').textContent = 'Tonase DO: ' + fmtNum(tonaseDo.siap);
+  document.getElementById('kpi-kosong-tonase-do').textContent = 'Tonase DO: ' + fmtNum(tonaseDo.kosong);
 }
 
 function renderRankTable(){
@@ -1242,12 +1265,13 @@ el.btnScreenshot.addEventListener('click', async () => {
     const bg = getComputedStyle(document.body).backgroundColor || (getCurrentTheme()==='light' ? '#F3F4F6' : '#12161B');
     let dataUrl = null;
     let lastErr = null;
-    if (typeof htmlToImage !== 'undefined'){
-      try{ dataUrl = await captureWithHtmlToImage(target, bg); }
-      catch(e){ lastErr = e; console.warn('html-to-image gagal, coba fallback html2canvas', e); }
-    }
-    if ((!dataUrl || dataUrl.length < 5000) && typeof html2canvas !== 'undefined'){
+    // html2canvas lebih stabil di Safari/iOS dibanding metode SVG (html-to-image), jadi dicoba lebih dulu
+    if (typeof html2canvas !== 'undefined'){
       try{ dataUrl = await captureWithHtml2Canvas(target, bg); }
+      catch(e){ lastErr = e; console.warn('html2canvas gagal, coba fallback html-to-image', e); }
+    }
+    if ((!dataUrl || dataUrl.length < 5000) && typeof htmlToImage !== 'undefined'){
+      try{ dataUrl = await captureWithHtmlToImage(target, bg); }
       catch(e){ lastErr = e; }
     }
     if (!dataUrl) throw lastErr || new Error('Komponen screenshot gagal dimuat, cek koneksi');
