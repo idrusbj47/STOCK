@@ -843,10 +843,10 @@ el.btnDownload.addEventListener('click', () => {
   try{
     const wb = XLSX.utils.book_new();
 
-    ['int','sales'].forEach(dimKey => {
+    [['int','internal','Rekap Internal'], ['sales','sales','Rekap Sales']].forEach(([dimKey, propName, sheetTitle]) => {
       const groups = {};
       state.records.forEach(r => {
-        const name = r[dimKey];
+        const name = r[propName];
         if (!groups[name]) groups[name] = { Nama:name, Total:0, Lunas:0, Kekurangan:0, 'Siap Kirim':0, Kosong:0 };
         groups[name].Total++;
         if (r.status==='lunas') groups[name].Lunas++;
@@ -867,7 +867,7 @@ el.btnDownload.addEventListener('click', () => {
         '% Kosong': g.Total ? Math.round(g.Kosong/g.Total*100)+'%' : '0%',
       }));
       const ws = XLSX.utils.json_to_sheet(arr);
-      XLSX.utils.book_append_sheet(wb, ws, dimKey==='int' ? 'Rekap Internal' : 'Rekap Sales');
+      XLSX.utils.book_append_sheet(wb, ws, sheetTitle);
     });
 
     const detailCols = r => ({
