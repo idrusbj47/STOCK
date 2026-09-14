@@ -114,6 +114,14 @@ header.topbar{
 .brand-eyebrow{ font-family: var(--font-mono); font-size:10px; letter-spacing:.08em; color: var(--muted); text-transform:uppercase; }
 .brand-title{ font-family: var(--font-display); font-weight:700; font-size:22px; margin:0; letter-spacing:.01em; text-transform:uppercase; }
 .brand-title .accent{ color: var(--amber); }
+.cutoff-badge{
+  display:inline-flex; align-items:center; gap:5px; margin-top:4px;
+  font-family: var(--font-mono); font-size:11px; letter-spacing:.02em;
+  color: var(--amber); background: rgba(255,176,32,0.1);
+  border:1px solid rgba(255,176,32,0.3); border-radius:999px; padding:2px 9px;
+  max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.cutoff-badge b{ font-weight:700; }
 .topbar-actions{ display:flex; gap:6px; }
 .icon-btn{
   width:38px; height:38px; border-radius:10px; border:1px solid var(--border); background: var(--surface);
@@ -145,6 +153,13 @@ header.topbar{
 .selected-chip button{ margin-left:auto; background:none; border:none; color: var(--muted); cursor:pointer; font-size:16px; }
 
 .kpi-grid{ display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin-bottom:18px; }
+.total-tonase-bar{
+  display:flex; align-items:center; justify-content:space-between; background: var(--surface);
+  border:1px solid var(--border); border-radius: var(--radius); padding:12px 16px; margin-bottom:12px;
+}
+.total-tonase-bar .k{ font-family: var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color: var(--muted); }
+.total-tonase-bar .v{ font-family: var(--font-display); font-weight:700; font-size:20px; color: var(--amber); }
+.kpi-tonase{ font-family: var(--font-mono); font-size:11px; color: var(--muted); margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); }
 @media (max-width:720px){ .kpi-grid{ grid-template-columns: repeat(2,1fr); } }
 .kpi-card{
   background: var(--surface); border:1px solid var(--border); border-radius: var(--radius);
@@ -163,14 +178,14 @@ header.topbar{
 .section-title{ font-family: var(--font-display); font-weight:700; font-size:17px; text-transform:uppercase; letter-spacing:.02em; margin:22px 0 10px; display:flex; align-items:center; justify-content:space-between; }
 .section-title small{ font-family: var(--font-mono); font-size:11px; color: var(--muted); text-transform:none; letter-spacing:0; }
 
-.rank-table-wrap{ background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); overflow:hidden; }
-table.rank-table{ width:100%; border-collapse:collapse; font-size:13px; }
+.rank-table-wrap{ background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); overflow-x:auto; -webkit-overflow-scrolling:touch; }
+table.rank-table{ width:100%; min-width:640px; border-collapse:collapse; font-size:13px; }
 table.rank-table th{
   text-align:left; padding:10px 10px; font-family: var(--font-mono); font-size:10.5px; letter-spacing:.05em;
   text-transform:uppercase; color: var(--muted); border-bottom:1px solid var(--border); background: var(--surface-2);
   white-space:nowrap;
 }
-table.rank-table td{ padding:10px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+table.rank-table td{ padding:10px 10px; border-bottom:1px solid var(--border); vertical-align:middle; white-space:nowrap; }
 table.rank-table tbody tr:last-child td{ border-bottom:none; }
 table.rank-table tbody tr{ cursor:pointer; }
 table.rank-table tbody tr:hover{ background: var(--surface-2); }
@@ -263,6 +278,7 @@ table.rank-table tbody tr.selected{ background: color-mix(in srgb, var(--amber) 
   <div class="brand">
     <span class="brand-eyebrow">PT Karya Indah Multiguna</span>
     <h1 class="brand-title">ANALISA<span class="accent"> MEMO</span></h1>
+    <span id="cutoff-badge" class="cutoff-badge hidden">Update per: <b id="cutoff-value">—</b></span>
   </div>
   <div class="topbar-actions">
     <a href="index.html" class="icon-btn" aria-label="Kembali ke menu utama" title="Kembali ke menu utama" style="text-decoration:none;">
@@ -298,26 +314,35 @@ table.rank-table tbody tr.selected{ background: color-mix(in srgb, var(--amber) 
     <button id="btn-clear-selected" title="Hapus filter">✕</button>
   </div>
 
+  <div class="total-tonase-bar" id="total-tonase-bar">
+    <span class="k">Total Tonase Memo</span>
+    <span class="v" id="total-tonase-val">0</span>
+  </div>
+
   <div class="kpi-grid">
     <div class="kpi-card kpi-lunas" data-status="lunas">
       <div class="kpi-label">Lunas Memo</div>
       <div class="kpi-value" id="kpi-lunas-val">0%</div>
       <div class="kpi-sub" id="kpi-lunas-sub">0 dari total line</div>
+      <div class="kpi-tonase" id="kpi-lunas-tonase">Tonase terkirim: 0</div>
     </div>
     <div class="kpi-card kpi-kurang" data-status="kurang">
       <div class="kpi-label">Kekurangan Memo</div>
       <div class="kpi-value" id="kpi-kurang-val">0%</div>
       <div class="kpi-sub" id="kpi-kurang-sub">stok produksi belum cukup</div>
+      <div class="kpi-tonase" id="kpi-kurang-tonase">Tonase kurang: 0</div>
     </div>
     <div class="kpi-card kpi-siap" data-status="siap">
       <div class="kpi-label">Siap Kirim</div>
       <div class="kpi-value" id="kpi-siap-val">0%</div>
       <div class="kpi-sub" id="kpi-siap-sub">stok cukup, tinggal DO</div>
+      <div class="kpi-tonase" id="kpi-siap-tonase">Tonase siap kirim: 0</div>
     </div>
     <div class="kpi-card kpi-kosong" data-status="kosong">
       <div class="kpi-label">Memo Kosong</div>
       <div class="kpi-value" id="kpi-kosong-val">0%</div>
       <div class="kpi-sub" id="kpi-kosong-sub">barang belum masuk gudang</div>
+      <div class="kpi-tonase" id="kpi-kosong-tonase">Tonase tertunda: 0</div>
     </div>
   </div>
 
@@ -433,6 +458,8 @@ const el = {
   btnThemeToggle: document.getElementById('btn-theme-toggle'),
   btnDownload: document.getElementById('btn-download'),
   toast: document.getElementById('toast'),
+  cutoffBadge: document.getElementById('cutoff-badge'),
+  cutoffValue: document.getElementById('cutoff-value'),
 };
 
 function loadSettings(){
@@ -509,6 +536,30 @@ function pctParse(s){
 function colIndex(header, name){
   const upper = header.map(h => String(h||'').trim().toUpperCase());
   return upper.indexOf(name.toUpperCase());
+}
+
+// Cut off data diambil dari cell paling atas kolom A (baris pertama sheet, sebelum baris judul kolom).
+// Ini berguna untuk tahu per kapan data/laporan ini dibuat/di-update.
+function extractCutoffInfo(rows){
+  const a1 = String((rows[0] && rows[0][0]) || '').trim();
+  if (!a1) return '';
+  const dateMatch = a1.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+  const timeMatch = a1.match(/(\d{1,2}:\d{2}\s*(?:am|pm|AM|PM)?)/);
+  if (dateMatch){
+    let label = dateMatch[1];
+    if (timeMatch) label += ' ' + timeMatch[1].replace(/\s+/g,'').toUpperCase();
+    return label;
+  }
+  return a1;
+}
+function updateCutoffBadge(label){
+  if (!el.cutoffBadge || !el.cutoffValue) return;
+  if (label){
+    el.cutoffValue.textContent = label;
+    el.cutoffBadge.classList.remove('hidden');
+  } else {
+    el.cutoffBadge.classList.add('hidden');
+  }
 }
 
 function extractRecords(rows){
@@ -595,6 +646,7 @@ async function loadData(forceRefresh){
     const records = extractRecords(rows);
     state.records = records;
     localStorage.setItem(CSV_CACHE_KEY, JSON.stringify({ text, ts: Date.now() }));
+    updateCutoffBadge(extractCutoffInfo(rows));
     el.dataBanner.classList.add('hidden');
     render();
     showToast('Data dimuat: ' + records.length + ' baris memo');
@@ -605,6 +657,7 @@ async function loadData(forceRefresh){
       if (cached){
         const rows = parseCSV(cached.text);
         state.records = extractRecords(rows);
+        updateCutoffBadge(extractCutoffInfo(rows));
         const waktu = new Date(cached.ts).toLocaleString('id-ID');
         el.dataBanner.classList.remove('hidden');
         el.dataBanner.innerHTML = 'Gagal ambil data terbaru — memakai cache ' + waktu + ' <button id="btn-retry-load">Coba lagi</button>';
@@ -613,6 +666,7 @@ async function loadData(forceRefresh){
         return;
       }
     }catch(e2){}
+    updateCutoffBadge('');
     el.dataBanner.classList.remove('hidden');
     el.dataBanner.textContent = 'Gagal memuat data CSV. Cek link CSV di Pengaturan & koneksi internet.';
   }
@@ -651,7 +705,22 @@ function renderKPI(){
   const scope = currentScope();
   const total = scope.length || 1;
   const counts = { lunas:0, kurang:0, siap:0, kosong:0 };
-  scope.forEach(r => counts[r.status]++);
+  const tonase = { lunas:0, kurang:0, siap:0, kosong:0 };
+  let totalTonaseMemo = 0;
+  scope.forEach(r => {
+    counts[r.status]++;
+    totalTonaseMemo += r.tonase;
+    // Berat per pcs = kolom Tonase (U) / kolom Memo Qty (T), lalu dikalikan qty yang relevan
+    // untuk masing-masing status kartu (qty terkirim untuk Lunas, qty sisa untuk Kurang/Siap/Kosong).
+    const beratPerPcs = r.memoQty > 0 ? r.tonase / r.memoQty : 0;
+    if (r.status === 'lunas'){
+      tonase.lunas += beratPerPcs * r.doAK;
+    } else {
+      const sisaTonase = beratPerPcs * r.sisa;
+      tonase[r.status] += sisaTonase;
+    }
+  });
+  document.getElementById('total-tonase-val').textContent = fmtNum(totalTonaseMemo);
   const pLunas = Math.round(counts.lunas/total*100);
   const pKurang = Math.round(counts.kurang/total*100);
   const pSiap = Math.round(counts.siap/total*100);
@@ -664,6 +733,10 @@ function renderKPI(){
   document.getElementById('kpi-kurang-sub').textContent = fmtInt(counts.kurang) + ' line · stok produksi belum cukup';
   document.getElementById('kpi-siap-sub').textContent = fmtInt(counts.siap) + ' line · stok cukup, tinggal DO';
   document.getElementById('kpi-kosong-sub').textContent = fmtInt(counts.kosong) + ' line · barang belum masuk gudang';
+  document.getElementById('kpi-lunas-tonase').textContent = 'Tonase terkirim: ' + fmtNum(tonase.lunas);
+  document.getElementById('kpi-kurang-tonase').textContent = 'Tonase kurang: ' + fmtNum(tonase.kurang);
+  document.getElementById('kpi-siap-tonase').textContent = 'Tonase siap kirim: ' + fmtNum(tonase.siap);
+  document.getElementById('kpi-kosong-tonase').textContent = 'Tonase tertunda: ' + fmtNum(tonase.kosong);
 }
 
 function renderRankTable(){
