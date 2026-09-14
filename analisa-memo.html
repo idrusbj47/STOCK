@@ -19,6 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
 :root{
@@ -155,10 +156,13 @@ header.topbar{
 .kpi-grid{ display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin-bottom:18px; }
 .total-tonase-bar{
   display:flex; align-items:center; justify-content:space-between; background: var(--surface);
-  border:1px solid var(--border); border-radius: var(--radius); padding:12px 16px; margin-bottom:12px;
+  border:1px solid var(--border); border-radius: var(--radius); padding:12px 16px; margin-bottom:10px;
 }
 .total-tonase-bar .k{ font-family: var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase; color: var(--muted); }
 .total-tonase-bar .v{ font-family: var(--font-display); font-weight:700; font-size:20px; color: var(--amber); }
+.total-tonase-bar.do{ margin-bottom:12px; }
+.total-tonase-bar.do .v{ color: var(--green); }
+.total-tonase-bar.do .k::before{ content:"↳ "; color: var(--muted); }
 .kpi-tonase{ font-family: var(--font-mono); font-size:11px; color: var(--muted); margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); }
 @media (max-width:720px){ .kpi-grid{ grid-template-columns: repeat(2,1fr); } }
 .kpi-card{
@@ -241,7 +245,7 @@ table.rank-table tbody tr.selected{ background: color-mix(in srgb, var(--amber) 
 .sheet-body{ padding:12px 18px 24px; overflow-y:auto; flex:1; }
 
 .fab-row{ position:fixed; right:18px; bottom:18px; z-index:150; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
-.fab-excel, .fab-print{
+.fab-excel, .fab-print, .fab-ss{
   display:flex; align-items:center; gap:8px;
   color: var(--on-accent); border:none; border-radius:30px; padding:13px 18px;
   font-family: var(--font-display); font-weight:700; letter-spacing:.02em; text-transform:uppercase; font-size:14px;
@@ -249,10 +253,11 @@ table.rank-table tbody tr.selected{ background: color-mix(in srgb, var(--amber) 
 }
 .fab-excel{ background: var(--amber); }
 .fab-print{ background: var(--violet); }
-.fab-excel:active, .fab-print:active{ transform: scale(.96); }
+.fab-ss{ background: var(--green); }
+.fab-excel:active, .fab-print:active, .fab-ss:active{ transform: scale(.96); }
 @media (max-width:420px){
-  .fab-excel span, .fab-print span{ display:none; }
-  .fab-excel, .fab-print{ padding:13px; border-radius:50%; }
+  .fab-excel span, .fab-print span, .fab-ss span{ display:none; }
+  .fab-excel, .fab-print, .fab-ss{ padding:13px; border-radius:50%; }
 }
 
 /* ---------- print report (hidden on screen) ---------- */
@@ -362,6 +367,10 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
     <span class="k">Total Tonase Memo</span>
     <span class="v" id="total-tonase-val">0</span>
   </div>
+  <div class="total-tonase-bar do" id="total-do-bar">
+    <span class="k">Total Tonase DO (Terkirim)</span>
+    <span class="v" id="total-do-val">0</span>
+  </div>
 
   <div class="kpi-grid">
     <div class="kpi-card kpi-lunas" data-status="lunas">
@@ -416,6 +425,10 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
 </main>
 
 <div class="fab-row">
+  <button class="fab-ss" id="btn-screenshot">
+    <svg viewBox="0 0 24 24" width="17" height="17"><path fill="currentColor" d="M9 3l-1.83 2H4a2 2 0 00-2 2v11a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2h-3.17L15 3H9zm3 15a5 5 0 110-10 5 5 0 010 10zm0-2a3 3 0 100-6 3 3 0 000 6z"/></svg>
+    <span>SS</span>
+  </button>
   <button class="fab-print" id="btn-print">
     <svg viewBox="0 0 24 24" width="17" height="17"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
     <span>Cetak</span>
@@ -512,6 +525,7 @@ const el = {
   toast: document.getElementById('toast'),
   cutoffBadge: document.getElementById('cutoff-badge'),
   cutoffValue: document.getElementById('cutoff-value'),
+  totalDoVal: document.getElementById('total-do-val'),
 };
 
 function loadSettings(){
@@ -669,6 +683,12 @@ function extractRecords(rows){
     else if (siapPct >= 99.5) status = 'siap';
     else status = 'kurang';
 
+    const memoQtyCol = numParse(r[idx.memoQty]);
+    const tonaseCol = numParse(r[idx.tonase]);
+    // Berat per pcs = Tonase (kolom U) / Memo Qty (kolom T); Tonase DO = berat per pcs x Qty DO (kolom E / doAK)
+    const beratPerPcs = memoQtyCol > 0 ? tonaseCol / memoQtyCol : 0;
+    const tonaseDO = beratPerPcs * doQtyAK;
+
     records.push({
       no, internal: internal || '(Kosong)', sales: sales || '(Kosong)',
       customer: String(r[idx.customer]||'').trim(),
@@ -676,11 +696,12 @@ function extractRecords(rows){
       soNum: String(r[idx.soNum]||'').trim(),
       mcsNum: String(r[idx.mcsNum]||'').trim(),
       orderQty: numParse(r[idx.orderQty]),
-      memoQty: numParse(r[idx.memoQty]),
-      tonase: numParse(r[idx.tonase]),
+      memoQty: memoQtyCol,
+      tonase: tonaseCol,
       remark: String(r[idx.remark]||'').trim(),
       cps, memoAK: memoQtyAK, doAK: doQtyAK, pctTerpenuhi, siapPct,
       sisa: Math.max(0, memoQtyAK - doQtyAK),
+      beratPerPcs, tonaseDO,
       status,
     });
   }
@@ -759,14 +780,18 @@ function renderKPI(){
   const counts = { lunas:0, kurang:0, siap:0, kosong:0 };
   const tonase = { lunas:0, kurang:0, siap:0, kosong:0 };
   let totalTonaseMemo = 0;
+  let totalTonaseDO = 0;
   scope.forEach(r => {
     counts[r.status]++;
     // Tonase penuh baris ini (kolom Tonase/U) dimasukkan seluruhnya ke SATU kartu
     // sesuai status baris tsb, supaya total 4 kartu selalu sama dengan Total Tonase Memo.
     totalTonaseMemo += r.tonase;
     tonase[r.status] += r.tonase;
+    // Tonase DO = berat per pcs (Tonase/Memo Qty) x qty DO -> tonase yang sudah benar-benar terkirim
+    totalTonaseDO += r.tonaseDO;
   });
   document.getElementById('total-tonase-val').textContent = fmtNum(totalTonaseMemo);
+  if (el.totalDoVal) el.totalDoVal.textContent = fmtNum(totalTonaseDO);
   const pLunas = Math.round(counts.lunas/total*100);
   const pKurang = Math.round(counts.kurang/total*100);
   const pSiap = Math.round(counts.siap/total*100);
@@ -973,11 +998,12 @@ el.btnDownload.addEventListener('click', () => {
         if (!groups[name]) groups[name] = {
           Nama:name, 'Jml Lunas':0, 'Tonase Lunas':0, 'Jml Kekurangan':0, 'Tonase Kekurangan':0,
           'Jml Siap Kirim':0, 'Tonase Siap Kirim':0, 'Jml Kosong':0, 'Tonase Kosong':0,
-          'Total Line':0, 'Total Tonase':0,
+          'Total Line':0, 'Total Tonase':0, 'Total Tonase DO':0,
         };
         const g = groups[name];
         g['Total Line']++;
         g['Total Tonase'] += r.tonase;
+        g['Total Tonase DO'] += r.tonaseDO;
         if (r.status==='lunas'){ g['Jml Lunas']++; g['Tonase Lunas'] += r.tonase; }
         else if (r.status==='kurang'){ g['Jml Kekurangan']++; g['Tonase Kekurangan'] += r.tonase; }
         else if (r.status==='siap'){ g['Jml Siap Kirim']++; g['Tonase Siap Kirim'] += r.tonase; }
@@ -986,11 +1012,11 @@ el.btnDownload.addEventListener('click', () => {
       const rowsArr = Object.values(groups).sort((a,b)=>b['Total Line']-a['Total Line']);
       // baris total keseluruhan di paling bawah
       const grand = { Nama:'TOTAL KESELURUHAN' };
-      ['Jml Lunas','Tonase Lunas','Jml Kekurangan','Tonase Kekurangan','Jml Siap Kirim','Tonase Siap Kirim','Jml Kosong','Tonase Kosong','Total Line','Total Tonase']
+      ['Jml Lunas','Tonase Lunas','Jml Kekurangan','Tonase Kekurangan','Jml Siap Kirim','Tonase Siap Kirim','Jml Kosong','Tonase Kosong','Total Line','Total Tonase','Total Tonase DO']
         .forEach(k => { grand[k] = rowsArr.reduce((s,g)=>s+g[k],0); });
       // bulatkan tonase 2 desimal biar rapi
       [...rowsArr, grand].forEach(g => {
-        ['Tonase Lunas','Tonase Kekurangan','Tonase Siap Kirim','Tonase Kosong','Total Tonase'].forEach(k => {
+        ['Tonase Lunas','Tonase Kekurangan','Tonase Siap Kirim','Tonase Kosong','Total Tonase','Total Tonase DO'].forEach(k => {
           g[k] = Math.round(g[k]*100)/100;
         });
       });
@@ -1029,7 +1055,7 @@ el.btnDownload.addEventListener('click', () => {
     const detailCols = r => ({
       'No.': r.no, Internal: r.internal, Sales: r.sales, Customer: r.customer,
       'Comp / Model': r.compModel, 'SO Num': r.soNum, 'MCS Num': r.mcsNum,
-      CPS: r.cps, Memo: r.memoAK, DO: r.doAK, Sisa: r.sisa,
+      CPS: r.cps, Memo: r.memoAK, DO: r.doAK, 'Tonase DO': Math.round(r.tonaseDO*100)/100, Sisa: r.sisa,
       'Order Qty': r.orderQty, 'Memo Qty': r.memoQty, Tonase: r.tonase,
       '% Terpenuhi': r.pctTerpenuhi, '% Siap Kirim': r.siapPct, Status: statusLabel(r.status), Remark: r.remark,
     });
@@ -1058,7 +1084,8 @@ function prKpiBlock(scope){
   const counts = { lunas:0, kurang:0, siap:0, kosong:0 };
   const tonase = { lunas:0, kurang:0, siap:0, kosong:0 };
   let totalTonase = 0;
-  scope.forEach(r => { counts[r.status]++; tonase[r.status]+=r.tonase; totalTonase += r.tonase; });
+  let totalTonaseDO = 0;
+  scope.forEach(r => { counts[r.status]++; tonase[r.status]+=r.tonase; totalTonase += r.tonase; totalTonaseDO += r.tonaseDO; });
   const card = (key, label, sub) => `
     <div class="pr-kpi ${key}">
       <div class="l">${label}</div>
@@ -1068,6 +1095,7 @@ function prKpiBlock(scope){
     </div>`;
   return `
     <div class="pr-tonase"><span>Total Tonase Memo</span><b>${fmtNum(totalTonase)}</b></div>
+    <div class="pr-tonase"><span>Total Tonase DO (Terkirim)</span><b style="color:#12996B;">${fmtNum(totalTonaseDO)}</b></div>
     <div class="pr-kpi-grid">
       ${card('lunas','Lunas Memo','dari total line')}
       ${card('kurang','Kekurangan Memo','stok belum cukup')}
@@ -1104,13 +1132,13 @@ function prDetailTable(status){
     <td>${escapeHtml(r.no)}</td><td>${escapeHtml(r.internal)}</td><td>${escapeHtml(r.sales)}</td>
     <td>${escapeHtml(r.customer)}</td><td>${escapeHtml(r.compModel)}</td><td>${escapeHtml(r.soNum)}</td>
     <td>${escapeHtml(r.mcsNum)}</td><td>${fmtNum(r.cps)}</td><td>${fmtNum(r.memoAK)}</td>
-    <td>${fmtNum(r.doAK)}</td><td>${fmtNum(r.sisa)}</td><td>${fmtNum(r.tonase)}</td>
+    <td>${fmtNum(r.doAK)}</td><td>${fmtNum(r.tonaseDO)}</td><td>${fmtNum(r.sisa)}</td><td>${fmtNum(r.tonase)}</td>
     <td>${escapeHtml(r.remark)}</td>
   </tr>`).join('');
   return `<table class="pr-table">
     <thead><tr>
       <th>No.</th><th>Internal</th><th>Sales</th><th>Customer</th><th>Comp/Model</th><th>SO Num</th>
-      <th>MCS Num</th><th>CPS</th><th>Memo</th><th>DO</th><th>Sisa</th><th>Tonase</th><th>Remark</th>
+      <th>MCS Num</th><th>CPS</th><th>Memo</th><th>DO</th><th>Tonase DO</th><th>Sisa</th><th>Tonase</th><th>Remark</th>
     </tr></thead>
     <tbody>${rows}</tbody></table>`;
 }
@@ -1163,6 +1191,40 @@ el.btnPrint.addEventListener('click', () => {
   if (!state.records.length){ showToast('Belum ada data untuk dicetak'); return; }
   buildPrintArea();
   setTimeout(() => window.print(), 60);
+});
+
+/* ---------- screenshot (SS) ---------- */
+el.btnScreenshot = document.getElementById('btn-screenshot');
+el.btnScreenshot.addEventListener('click', async () => {
+  if (typeof html2canvas === 'undefined'){ showToast('Komponen screenshot gagal dimuat, cek koneksi'); return; }
+  const fabRow = document.querySelector('.fab-row');
+  const originalVis = fabRow.style.visibility;
+  fabRow.style.visibility = 'hidden';
+  showToast('Menyiapkan screenshot…');
+  try{
+    await new Promise(res => setTimeout(res, 80)); // beri waktu FAB hilang & toast render
+    const target = document.documentElement;
+    const canvas = await html2canvas(target, {
+      backgroundColor: getComputedStyle(document.body).backgroundColor || '#12161B',
+      useCORS: true,
+      scale: window.devicePixelRatio > 1 ? 2 : 1.5,
+      windowWidth: document.documentElement.scrollWidth,
+      windowHeight: document.documentElement.scrollHeight,
+      scrollX: 0,
+      scrollY: 0,
+    });
+    const link = document.createElement('a');
+    const today = new Date().toISOString().slice(0,10);
+    link.download = 'Analisa_Memo_SS_' + today + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('Screenshot berhasil diunduh');
+  }catch(err){
+    console.error(err);
+    showToast('Gagal membuat screenshot');
+  }finally{
+    fabRow.style.visibility = originalVis;
+  }
 });
 
 /* ---------- splash ---------- */
