@@ -178,6 +178,7 @@ header.topbar{
 .total-tonase-bar.do .k::before{ content:"↳ "; color: var(--muted); }
 .kpi-tonase{ font-family: var(--font-mono); font-size:11px; color: var(--muted); margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); }
 .kpi-tonase-do{ font-family: var(--font-mono); font-size:11px; color: var(--green); margin-top:3px; }
+.kpi-tonase-sisa{ font-family: var(--font-mono); font-size:11px; color: var(--red); margin-top:3px; }
 @media (max-width:720px){ .kpi-grid{ grid-template-columns: repeat(2,1fr); } }
 .kpi-card{
   background: var(--surface); border:1px solid var(--border); border-radius: var(--radius);
@@ -208,7 +209,8 @@ table.rank-table tbody tr:last-child td{ border-bottom:none; }
 table.rank-table tbody tr{ cursor:pointer; }
 table.rank-table tbody tr:hover{ background: var(--surface-2); }
 table.rank-table tbody tr.selected{ background: rgba(var(--amber-rgb), .12); }
-.rank-name{ font-weight:600; }
+.rank-name{ font-weight:600; cursor:pointer; }
+.rank-name:hover{ color: var(--amber); text-decoration:underline; }
 .rank-cell{ font-family: var(--font-mono); font-weight:600; border-radius:7px; padding:3px 8px; display:inline-block; min-width:26px; text-align:center; cursor:pointer; white-space:nowrap; }
 .rank-cell small{ font-weight:500; opacity:.75; font-size:10px; }
 .rank-cell:hover{ filter: brightness(1.15); }
@@ -237,6 +239,14 @@ table.rank-table tbody tr.selected{ background: rgba(var(--amber-rgb), .12); }
 .item-meta{ margin-top:8px; font-size:12px; color: var(--muted); }
 
 .empty-note{ text-align:center; color: var(--muted); font-size:13.5px; padding:30px 10px; }
+
+.group-summary-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+.group-summary-chip{ font-family: var(--font-mono); font-size:10.5px; line-height:1.5; border-radius:10px; padding:7px 11px; border:1px solid var(--border); background: var(--surface); flex:1 1 200px; }
+.group-summary-chip b{ display:block; font-family: var(--font-display); font-size:15px; font-weight:700; margin-bottom:2px; }
+.group-summary-chip.gsc-lunas{ border-color: rgba(var(--green-rgb),.4); color: var(--green); }
+.group-summary-chip.gsc-kurang{ border-color: rgba(var(--red-rgb),.4); color: var(--red); }
+.group-summary-chip.gsc-siap{ border-color: rgba(var(--amber-rgb),.4); color: var(--amber); }
+.group-summary-chip.gsc-kosong{ border-color: rgba(var(--violet-rgb),.4); color: var(--violet); }
 
 .sheet-overlay{
   position:fixed; inset:0; z-index:3000; background: rgba(0,0,0,.55);
@@ -395,6 +405,7 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
       <div class="kpi-sub" id="kpi-lunas-sub">0 dari total line</div>
       <div class="kpi-tonase" id="kpi-lunas-tonase">Tonase: 0</div>
       <div class="kpi-tonase-do" id="kpi-lunas-tonase-do">Tonase DO: 0</div>
+      <div class="kpi-tonase-sisa" id="kpi-lunas-tonase-sisa">Tonase Sisa: 0</div>
     </div>
     <div class="kpi-card kpi-kurang" data-status="kurang">
       <div class="kpi-label">Kekurangan Memo</div>
@@ -402,6 +413,7 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
       <div class="kpi-sub" id="kpi-kurang-sub">stok produksi belum cukup</div>
       <div class="kpi-tonase" id="kpi-kurang-tonase">Tonase: 0</div>
       <div class="kpi-tonase-do" id="kpi-kurang-tonase-do">Tonase DO: 0</div>
+      <div class="kpi-tonase-sisa" id="kpi-kurang-tonase-sisa">Tonase Sisa: 0</div>
     </div>
     <div class="kpi-card kpi-siap" data-status="siap">
       <div class="kpi-label">Siap Kirim</div>
@@ -409,6 +421,7 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
       <div class="kpi-sub" id="kpi-siap-sub">stok cukup, tinggal DO</div>
       <div class="kpi-tonase" id="kpi-siap-tonase">Tonase: 0</div>
       <div class="kpi-tonase-do" id="kpi-siap-tonase-do">Tonase DO: 0</div>
+      <div class="kpi-tonase-sisa" id="kpi-siap-tonase-sisa">Tonase Sisa: 0</div>
     </div>
     <div class="kpi-card kpi-kosong" data-status="kosong">
       <div class="kpi-label">Memo Kosong</div>
@@ -416,6 +429,7 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
       <div class="kpi-sub" id="kpi-kosong-sub">barang belum masuk gudang</div>
       <div class="kpi-tonase" id="kpi-kosong-tonase">Tonase: 0</div>
       <div class="kpi-tonase-do" id="kpi-kosong-tonase-do">Tonase DO: 0</div>
+      <div class="kpi-tonase-sisa" id="kpi-kosong-tonase-sisa">Tonase Sisa: 0</div>
     </div>
   </div>
 
@@ -840,6 +854,10 @@ function renderKPI(){
   document.getElementById('kpi-kurang-tonase-do').textContent = 'Tonase DO: ' + fmtNum(tonaseDo.kurang);
   document.getElementById('kpi-siap-tonase-do').textContent = 'Tonase DO: ' + fmtNum(tonaseDo.siap);
   document.getElementById('kpi-kosong-tonase-do').textContent = 'Tonase DO: ' + fmtNum(tonaseDo.kosong);
+  document.getElementById('kpi-lunas-tonase-sisa').textContent = 'Tonase Sisa: ' + fmtNum(tonase.lunas - tonaseDo.lunas);
+  document.getElementById('kpi-kurang-tonase-sisa').textContent = 'Tonase Sisa: ' + fmtNum(tonase.kurang - tonaseDo.kurang);
+  document.getElementById('kpi-siap-tonase-sisa').textContent = 'Tonase Sisa: ' + fmtNum(tonase.siap - tonaseDo.siap);
+  document.getElementById('kpi-kosong-tonase-sisa').textContent = 'Tonase Sisa: ' + fmtNum(tonase.kosong - tonaseDo.kosong);
 }
 
 function renderRankTable(){
@@ -866,7 +884,7 @@ function renderRankTable(){
     const pct = (n) => g.total ? Math.round(n / g.total * 100) : 0;
     const pctLunas = pct(g.lunas);
     tr.innerHTML = `
-      <td class="rank-name">${escapeHtml(g.name)}</td>
+      <td class="rank-name" title="Klik untuk lihat detail lengkap &amp; cetak per ${state.dim==='int'?'internal':'sales'} ini">${escapeHtml(g.name)}</td>
       <td class="mono">${g.total}</td>
       <td><span class="rank-cell rc-lunas" data-status="lunas">${g.lunas} <small>(${pct(g.lunas)}%)</small></span></td>
       <td><span class="rank-cell rc-kurang" data-status="kurang">${g.kurang} <small>(${pct(g.kurang)}%)</small></span></td>
@@ -879,6 +897,12 @@ function renderRankTable(){
       if (cell){
         e.stopPropagation();
         openDetail(cell.dataset.status, g.name);
+        return;
+      }
+      const nameCell = e.target.closest('.rank-name');
+      if (nameCell){
+        e.stopPropagation();
+        openDetail(null, g.name);
         return;
       }
       state.selected = (state.selected === g.name) ? null : g.name;
@@ -948,21 +972,44 @@ function escapeHtml(s){
 let detailCtx = null;
 function openDetail(status, groupName){
   detailCtx = { status, groupName, dim: dimProp() };
-  el.detailEyebrow.textContent = (groupName ? groupName + ' · ' : '') + (state.dim==='int' ? 'Internal' : 'Sales');
-  el.detailTitle.textContent = statusLabel(status);
+  const dimLabel = state.dim==='int' ? 'Internal' : 'Sales';
+  if (status){
+    el.detailEyebrow.textContent = (groupName ? groupName + ' · ' : '') + dimLabel;
+    el.detailTitle.textContent = statusLabel(status);
+  } else {
+    el.detailEyebrow.textContent = dimLabel + ' · Rekap Lengkap';
+    el.detailTitle.textContent = groupName || '—';
+  }
   el.detailSearch.value = '';
   renderDetailBody('');
   showOverlay(el.detailOverlay);
 }
 function renderDetailBody(q){
   const dimKey = detailCtx.dim;
-  let items = state.records.filter(r => r.status === detailCtx.status);
+  let items = state.records.slice();
+  if (detailCtx.status) items = items.filter(r => r.status === detailCtx.status);
   if (detailCtx.groupName) items = items.filter(r => r[dimKey] === detailCtx.groupName);
   if (q) items = items.filter(r => matchesSearch(r, q));
   el.detailBody.innerHTML = '';
   if (!items.length){
     el.detailBody.innerHTML = '<div class="empty-note">Tidak ada item.</div>';
     return;
+  }
+  if (!detailCtx.status){
+    // Mode rekap lengkap per internal/sales: tampilkan ringkasan lunas/kurang/siap/kosong dulu
+    const counts = { lunas:0, kurang:0, siap:0, kosong:0 };
+    const tonase = { lunas:0, kurang:0, siap:0, kosong:0 };
+    const tonaseDo = { lunas:0, kurang:0, siap:0, kosong:0 };
+    items.forEach(r => { counts[r.status]++; tonase[r.status]+=r.tonase; tonaseDo[r.status]+=r.tonaseDO; });
+    const order = [['lunas','Lunas'],['kurang','Kurang'],['siap','Siap'],['kosong','Kosong']];
+    const chips = order.map(([st,label]) => `
+      <div class="group-summary-chip gsc-${st}">
+        <b>${label}: ${counts[st]}</b>
+        Tonase: ${fmtNum(tonase[st])}<br>
+        Tonase DO: ${fmtNum(tonaseDo[st])}<br>
+        Tonase Sisa: ${fmtNum(tonase[st]-tonaseDo[st])}
+      </div>`).join('');
+    el.detailBody.insertAdjacentHTML('beforeend', `<div class="group-summary-row">${chips}</div>`);
   }
   const frag = document.createDocumentFragment();
   items.slice(0, 400).forEach(r => frag.appendChild(buildItemCard(r)));
@@ -990,20 +1037,59 @@ function prDetailTableForItems(items){
     <tbody>${rows}</tbody></table>`;
 }
 function buildPrintAreaDetailView(status, groupName, dimKey, q){
-  let items = state.records.filter(r => r.status === status);
+  const dimLabel = state.dim==='int' ? 'Internal' : 'Sales';
+  const subtitle = (groupName ? escapeHtml(groupName) + ' · ' : '') + dimLabel;
+
+  if (status){
+    // cetak per kategori (lunas/kurang/siap/kosong), opsional difilter per internal/sales
+    let items = state.records.filter(r => r.status === status);
+    if (groupName) items = items.filter(r => r[dimKey] === groupName);
+    if (q) items = items.filter(r => matchesSearch(r, q));
+    const totalTonase = items.reduce((s,r)=>s+r.tonase,0);
+    const totalTonaseDO = items.reduce((s,r)=>s+r.tonaseDO,0);
+    const totalSisa = totalTonase - totalTonaseDO;
+    const html = `<div class="pr-page">
+      ${prHeader('Detail · ' + subtitle)}
+      <div class="pr-section-title pr-detail-title"><span class="pr-badge ${status}">${statusLabel(status)}</span> ${subtitle} <span style="font-weight:400;font-size:11px;color:#667085;">(${items.length} item)</span></div>
+      <div class="pr-tonase"><span>Total Tonase</span><b>${fmtNum(totalTonase)}</b></div>
+      <div class="pr-tonase"><span>Total Tonase DO (Terkirim)</span><b style="color:#12996B;">${fmtNum(totalTonaseDO)}</b></div>
+      <div class="pr-tonase"><span>Total Tonase Sisa</span><b style="color:#DC3E4E;">${fmtNum(totalSisa)}</b></div>
+      ${prDetailTableForItems(items)}
+      <div class="pr-footer">${statusLabel(status)}${groupName ? ' — ' + escapeHtml(groupName) : ''}</div>
+    </div>`;
+    document.getElementById('print-area').innerHTML = html;
+    return;
+  }
+
+  // cetak rekap lengkap (semua status) untuk satu internal/sales
+  let items = state.records.slice();
   if (groupName) items = items.filter(r => r[dimKey] === groupName);
   if (q) items = items.filter(r => matchesSearch(r, q));
-  const totalTonase = items.reduce((s,r)=>s+r.tonase,0);
-  const totalTonaseDO = items.reduce((s,r)=>s+r.tonaseDO,0);
-  const subtitle = (groupName ? escapeHtml(groupName) + ' · ' : '') + (state.dim==='int' ? 'Internal' : 'Sales');
-  const html = `<div class="pr-page">
-    ${prHeader('Detail · ' + subtitle)}
-    <div class="pr-section-title pr-detail-title"><span class="pr-badge ${status}">${statusLabel(status)}</span> ${subtitle} <span style="font-weight:400;font-size:11px;color:#667085;">(${items.length} item)</span></div>
-    <div class="pr-tonase"><span>Total Tonase</span><b>${fmtNum(totalTonase)}</b></div>
-    <div class="pr-tonase"><span>Total Tonase DO (Terkirim)</span><b style="color:#12996B;">${fmtNum(totalTonaseDO)}</b></div>
-    ${prDetailTableForItems(items)}
-    <div class="pr-footer">${statusLabel(status)}${groupName ? ' — ' + escapeHtml(groupName) : ''}</div>
+  const statuses = [['lunas','Lunas Memo'], ['kurang','Kekurangan Memo'], ['siap','Siap Kirim'], ['kosong','Memo Kosong']];
+
+  let html = `<div class="pr-page">
+    ${prHeader('Rekap Lengkap · ' + subtitle)}
+    <div class="pr-section-title">Ringkasan — ${escapeHtml(groupName || '')}</div>
+    ${prKpiBlock(items)}
+    <div class="pr-footer">Halaman 1 dari ${statuses.length + 1} — Ringkasan ${escapeHtml(groupName || '')}</div>
   </div>`;
+
+  statuses.forEach(([st, label], i) => {
+    const stItems = items.filter(r => r.status === st);
+    const tTonase = stItems.reduce((s,r)=>s+r.tonase,0);
+    const tDo = stItems.reduce((s,r)=>s+r.tonaseDO,0);
+    const tSisa = tTonase - tDo;
+    html += `<div class="pr-page">
+      ${prHeader('Detail · ' + label + ' · ' + subtitle)}
+      <div class="pr-section-title pr-detail-title"><span class="pr-badge ${st}">${label}</span> ${subtitle} <span style="font-weight:400;font-size:11px;color:#667085;">(${stItems.length} item)</span></div>
+      <div class="pr-tonase"><span>Total Tonase</span><b>${fmtNum(tTonase)}</b></div>
+      <div class="pr-tonase"><span>Total Tonase DO (Terkirim)</span><b style="color:#12996B;">${fmtNum(tDo)}</b></div>
+      <div class="pr-tonase"><span>Total Tonase Sisa</span><b style="color:#DC3E4E;">${fmtNum(tSisa)}</b></div>
+      ${prDetailTableForItems(stItems)}
+      <div class="pr-footer">Halaman ${i + 2} dari ${statuses.length + 1} — ${label} ${escapeHtml(groupName || '')}</div>
+    </div>`;
+  });
+
   document.getElementById('print-area').innerHTML = html;
 }
 el.btnPrintDetail.addEventListener('click', () => {
@@ -1156,19 +1242,23 @@ function prKpiBlock(scope){
   const total = scope.length || 1;
   const counts = { lunas:0, kurang:0, siap:0, kosong:0 };
   const tonase = { lunas:0, kurang:0, siap:0, kosong:0 };
+  const tonaseDo = { lunas:0, kurang:0, siap:0, kosong:0 };
   let totalTonase = 0;
   let totalTonaseDO = 0;
-  scope.forEach(r => { counts[r.status]++; tonase[r.status]+=r.tonase; totalTonase += r.tonase; totalTonaseDO += r.tonaseDO; });
+  scope.forEach(r => { counts[r.status]++; tonase[r.status]+=r.tonase; tonaseDo[r.status]+=r.tonaseDO; totalTonase += r.tonase; totalTonaseDO += r.tonaseDO; });
   const card = (key, label, sub) => `
     <div class="pr-kpi ${key}">
       <div class="l">${label}</div>
       <div class="v">${total? Math.round(counts[key]/total*100):0}%</div>
       <div class="s">${fmtInt(counts[key])} line · ${sub}</div>
       <div class="s">Tonase: ${fmtNum(tonase[key])}</div>
+      <div class="s" style="color:#12996B;">Tonase DO: ${fmtNum(tonaseDo[key])}</div>
+      <div class="s" style="color:#DC3E4E;">Tonase Sisa: ${fmtNum(tonase[key] - tonaseDo[key])}</div>
     </div>`;
   return `
     <div class="pr-tonase"><span>Total Tonase Memo</span><b>${fmtNum(totalTonase)}</b></div>
     <div class="pr-tonase"><span>Total Tonase DO (Terkirim)</span><b style="color:#12996B;">${fmtNum(totalTonaseDO)}</b></div>
+    <div class="pr-tonase"><span>Total Tonase Sisa</span><b style="color:#DC3E4E;">${fmtNum(totalTonase - totalTonaseDO)}</b></div>
     <div class="pr-kpi-grid">
       ${card('lunas','Lunas Memo','dari total line')}
       ${card('kurang','Kekurangan Memo','stok belum cukup')}
