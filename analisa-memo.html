@@ -146,6 +146,13 @@ header.topbar{
 
 .main{ max-width: 1180px; margin: 0 auto; padding: 16px 16px 60px; }
 
+.view-tabs{ display:flex; gap:6px; background: var(--surface); border:1px solid var(--border); border-radius:12px; padding:4px; margin-bottom:14px; }
+.view-tabs button{
+  flex:1; border:none; background:none; color: var(--muted); font-family: var(--font-display); font-weight:600;
+  letter-spacing:.02em; text-transform:uppercase; font-size:13px; padding:9px 4px; border-radius:9px; cursor:pointer;
+}
+.view-tabs button.active{ background: var(--violet); color:#fff; }
+
 .date-tabs-wrap{ margin-bottom:14px; }
 .date-tabs{ display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:3px; }
 .date-tabs::-webkit-scrollbar{ height:4px; }
@@ -232,6 +239,8 @@ table.rank-table tbody tr.selected{ background: rgba(var(--amber-rgb), .12); }
 .rc-kosong{ background: rgba(var(--violet-rgb), .2); color: var(--violet); }
 .bar-track{ width:74px; height:6px; border-radius:4px; background: var(--surface-2); overflow:hidden; display:inline-block; vertical-align:middle; margin-right:6px; }
 .bar-fill{ height:100%; background: var(--green); }
+.delta-up{ font-family: var(--font-mono); font-size:10px; color: var(--green); margin-left:4px; white-space:nowrap; }
+.delta-down{ font-family: var(--font-mono); font-size:10px; color: var(--red); margin-left:4px; white-space:nowrap; }
 
 .results{ display:flex; flex-direction:column; gap:8px; }
 .item-card{ background: var(--surface); border:1px solid var(--border); border-radius: 12px; padding:12px 14px; cursor:pointer; }
@@ -386,6 +395,13 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
 
 <main class="main">
 
+  <div class="view-tabs" id="view-tabs">
+    <button data-view="date" class="active">📅 Data Harian</button>
+    <button data-view="summary">📊 Ringkasan &amp; Pergerakan</button>
+  </div>
+
+  <div id="date-view">
+
   <div class="date-tabs-wrap">
     <div class="date-tabs" id="date-tabs"></div>
   </div>
@@ -440,7 +456,7 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
       <div class="kpi-tonase-sisa" id="kpi-siap-tonase-sisa">Tonase Sisa: 0</div>
     </div>
     <div class="kpi-card kpi-kosong" data-status="kosong">
-      <div class="kpi-label">Memo Kosong</div>
+      <div class="kpi-label">Memo Kosong &amp; Sisa Kirim</div>
       <div class="kpi-value" id="kpi-kosong-val">0%</div>
       <div class="kpi-sub" id="kpi-kosong-sub">barang belum masuk gudang</div>
       <div class="kpi-tonase" id="kpi-kosong-tonase">Tonase: 0</div>
@@ -470,6 +486,31 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
   <div id="results-section">
     <div class="section-title">Detail Item <small id="results-count"></small></div>
     <section id="results" class="results"></section>
+  </div>
+
+  </div>
+
+  <div id="summary-section" class="hidden">
+    <div class="section-title">Pergerakan per Tanggal <small id="summary-count"></small></div>
+    <div class="rank-table-wrap">
+      <table class="rank-table">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Total Line</th>
+            <th>Tonase Memo</th>
+            <th>Tonase DO</th>
+            <th>Tonase Sisa</th>
+            <th>Lunas</th>
+            <th>Kurang</th>
+            <th>Siap</th>
+            <th>Kosong &amp; Sisa Kirim</th>
+          </tr>
+        </thead>
+        <tbody id="summary-tbody"></tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:12px;margin-top:12px;">Klik salah satu baris tanggal untuk langsung membuka detail lengkapnya di tab Data Harian.</p>
   </div>
 
 </main>
@@ -543,6 +584,7 @@ const CSV_CACHE_KEY = 'analisamemo.csv.cache';
 
 const state = {
   dim: 'int',
+  view: 'date',
   selected: null,
   search: '',
   records: [],
@@ -557,6 +599,11 @@ const el = {
   dataBanner: document.getElementById('data-banner'),
   dimSwitch: document.getElementById('dim-switch'),
   dateTabs: document.getElementById('date-tabs'),
+  viewTabs: document.getElementById('view-tabs'),
+  dateView: document.getElementById('date-view'),
+  summarySection: document.getElementById('summary-section'),
+  summaryTbody: document.getElementById('summary-tbody'),
+  summaryCount: document.getElementById('summary-count'),
   searchInput: document.getElementById('search-input'),
   btnClearSearch: document.getElementById('btn-clear-search'),
   selectedChip: document.getElementById('selected-chip'),
@@ -825,6 +872,7 @@ function applyLoadedCSV(text){
   state.records = dateList[newIndex] ? dateList[newIndex].records : [];
   renderDateTabs();
   updateCutoffBadge(state.lastDateLabel || '');
+  if (state.view === 'summary') renderSummary();
   return dateList;
 }
 
@@ -880,7 +928,7 @@ function fmtInt(n){ return Math.round(n).toLocaleString('id-ID'); }
 function fmtNum(n){ return n.toLocaleString('id-ID', {maximumFractionDigits:2}); }
 
 function statusLabel(s){
-  return { lunas:'Lunas Memo', kurang:'Kekurangan Memo', siap:'Siap Kirim', kosong:'Memo Kosong' }[s];
+  return { lunas:'Lunas Memo', kurang:'Kekurangan Memo', siap:'Siap Kirim', kosong:'Memo Kosong & Sisa Kirim' }[s];
 }
 
 function render(){
@@ -1076,7 +1124,7 @@ function renderDetailBody(q){
     const tonase = { lunas:0, kurang:0, siap:0, kosong:0 };
     const tonaseDo = { lunas:0, kurang:0, siap:0, kosong:0 };
     items.forEach(r => { counts[r.status]++; tonase[r.status]+=r.tonase; tonaseDo[r.status]+=r.tonaseDO; });
-    const order = [['lunas','Lunas'],['kurang','Kurang'],['siap','Siap'],['kosong','Kosong']];
+    const order = [['lunas','Lunas'],['kurang','Kurang'],['siap','Siap'],['kosong','Kosong & Sisa Kirim']];
     const chips = order.map(([st,label]) => `
       <div class="group-summary-chip gsc-${st}">
         <b>${label}: ${counts[st]}</b>
@@ -1140,7 +1188,7 @@ function buildPrintAreaDetailView(status, groupName, dimKey, q){
   let items = state.records.slice();
   if (groupName) items = items.filter(r => r[dimKey] === groupName);
   if (q) items = items.filter(r => matchesSearch(r, q));
-  const statuses = [['lunas','Lunas Memo'], ['kurang','Kekurangan Memo'], ['siap','Siap Kirim'], ['kosong','Memo Kosong']];
+  const statuses = [['lunas','Lunas Memo'], ['kurang','Kekurangan Memo'], ['siap','Siap Kirim'], ['kosong','Memo Kosong & Sisa Kirim']];
 
   let html = `<div class="pr-page">
     ${prHeader('Rekap Lengkap · ' + subtitle)}
@@ -1189,6 +1237,89 @@ el.dimSwitch.addEventListener('click', (e) => {
   updateSelectedChip();
   render();
 });
+
+/* ---------- view switch: Data Harian vs Ringkasan & Pergerakan ---------- */
+el.viewTabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  el.viewTabs.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.view = btn.dataset.view;
+  if (state.view === 'summary'){
+    el.dateView.classList.add('hidden');
+    el.summarySection.classList.remove('hidden');
+    renderSummary();
+  } else {
+    el.summarySection.classList.add('hidden');
+    el.dateView.classList.remove('hidden');
+  }
+});
+
+// Ringkasan pergerakan 4 status (Lunas/Kurang/Siap/Kosong & Sisa Kirim) untuk SEMUA tanggal
+// sekaligus, biar ketahuan tren-nya. Ini cuma tampilan ringkas — detail per baris tetap
+// dibuka lewat tab tanggal masing-masing (klik baris di sini akan lompat ke tab itu).
+function renderSummary(){
+  if (!el.summaryTbody) return;
+  const summaries = state.dateList.map(d => {
+    const counts = { lunas:0, kurang:0, siap:0, kosong:0 };
+    const tonase = { lunas:0, kurang:0, siap:0, kosong:0 };
+    const tonaseDo = { lunas:0, kurang:0, siap:0, kosong:0 };
+    let totalTonase = 0, totalTonaseDO = 0;
+    d.records.forEach(r => {
+      counts[r.status]++;
+      tonase[r.status] += r.tonase;
+      tonaseDo[r.status] += r.tonaseDO;
+      totalTonase += r.tonase;
+      totalTonaseDO += r.tonaseDO;
+    });
+    return { label: d.label, total: d.records.length, counts, tonase, tonaseDo, totalTonase, totalTonaseDO, totalSisa: totalTonase - totalTonaseDO };
+  });
+  el.summaryCount.textContent = summaries.length + ' tanggal';
+  if (!summaries.length){
+    el.summaryTbody.innerHTML = '<tr><td colspan="9" class="empty-note">Belum ada data</td></tr>';
+    return;
+  }
+  el.summaryTbody.innerHTML = summaries.map((s, i) => {
+    const prev = summaries[i-1];
+    const deltaDO = prev ? s.totalTonaseDO - prev.totalTonaseDO : null;
+    const deltaHtml = deltaDO === null ? '' : (
+      Math.abs(deltaDO) < 0.005 ? '' :
+      deltaDO > 0 ? `<span class="delta-up">▲ ${fmtNum(deltaDO)}</span>` : `<span class="delta-down">▼ ${fmtNum(Math.abs(deltaDO))}</span>`
+    );
+    const pct = (n) => s.total ? Math.round(n / s.total * 100) : 0;
+    return `<tr data-date-label="${escapeHtml(s.label)}">
+      <td class="rank-name">${escapeHtml(s.label)}</td>
+      <td class="mono">${s.total}</td>
+      <td class="mono">${fmtNum(s.totalTonase)}</td>
+      <td class="mono" style="color:var(--green);">${fmtNum(s.totalTonaseDO)}${deltaHtml}</td>
+      <td class="mono" style="color:var(--red);">${fmtNum(s.totalSisa)}</td>
+      <td><span class="rank-cell rc-lunas">${s.counts.lunas} <small>(${pct(s.counts.lunas)}%)</small></span></td>
+      <td><span class="rank-cell rc-kurang">${s.counts.kurang} <small>(${pct(s.counts.kurang)}%)</small></span></td>
+      <td><span class="rank-cell rc-siap">${s.counts.siap} <small>(${pct(s.counts.siap)}%)</small></span></td>
+      <td><span class="rank-cell rc-kosong">${s.counts.kosong} <small>(${pct(s.counts.kosong)}%)</small></span></td>
+    </tr>`;
+  }).join('');
+  el.summaryTbody.querySelectorAll('tr[data-date-label]').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const label = tr.dataset.dateLabel;
+      const idx = state.dateList.findIndex(d => d.label === label);
+      if (idx === -1) return;
+      state.dateIndex = idx;
+      state.lastDateLabel = label;
+      state.records = state.dateList[idx].records;
+      state.selected = null;
+      updateSelectedChip();
+      updateCutoffBadge(label);
+      renderDateTabs();
+      // pindah kembali ke tab Data Harian supaya user langsung lihat detailnya
+      el.viewTabs.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.view === 'date'));
+      state.view = 'date';
+      el.summarySection.classList.add('hidden');
+      el.dateView.classList.remove('hidden');
+      render();
+    });
+  });
+}
 
 /* ---------- search ---------- */
 el.searchInput.addEventListener('input', () => {
@@ -1338,7 +1469,7 @@ function prKpiBlock(scope){
       ${card('lunas','Lunas Memo','dari total line')}
       ${card('kurang','Kekurangan Memo','stok belum cukup')}
       ${card('siap','Siap Kirim','tinggal DO')}
-      ${card('kosong','Memo Kosong','belum masuk gudang')}
+      ${card('kosong','Memo Kosong & Sisa Kirim','belum masuk gudang')}
     </div>`;
 }
 function prRankTable(dimKey, label){
@@ -1399,7 +1530,7 @@ function prHeader(subtitle){
 function buildPrintArea(){
   const dimKey = dimProp();
   const dimLabel = state.dim === 'int' ? 'Internal' : 'Sales';
-  const statuses = [['lunas','Detail Lunas Memo'], ['kurang','Detail Kekurangan Memo'], ['siap','Detail Siap Kirim'], ['kosong','Detail Memo Kosong']];
+  const statuses = [['lunas','Detail Lunas Memo'], ['kurang','Detail Kekurangan Memo'], ['siap','Detail Siap Kirim'], ['kosong','Detail Memo Kosong & Sisa Kirim']];
 
   let html = '';
   // Page 1: Ringkasan / Summary
