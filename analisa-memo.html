@@ -146,6 +146,18 @@ header.topbar{
 
 .main{ max-width: 1180px; margin: 0 auto; padding: 16px 16px 60px; }
 
+.date-tabs-wrap{ margin-bottom:14px; }
+.date-tabs{ display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:3px; }
+.date-tabs::-webkit-scrollbar{ height:4px; }
+.date-tabs::-webkit-scrollbar-thumb{ background: var(--border); border-radius:4px; }
+.date-tab{
+  flex:0 0 auto; font-family: var(--font-mono); font-size:12.5px; font-weight:600; letter-spacing:.02em;
+  padding:9px 18px; border-radius:10px; border:1px solid var(--border); background: var(--surface);
+  color: var(--muted); cursor:pointer; white-space:nowrap; transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.date-tab.active{ background: var(--amber); border-color: var(--amber); color: var(--on-accent); }
+.date-tab:hover:not(.active){ border-color: var(--amber); color: var(--text); }
+
 .dim-switch{ display:flex; gap:6px; background: var(--surface); border:1px solid var(--border); border-radius:12px; padding:4px; margin-bottom:14px; }
 .dim-switch button{
   flex:1; border:none; background:none; color: var(--muted); font-family: var(--font-display); font-weight:600;
@@ -353,7 +365,7 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
   <div class="brand">
     <span class="brand-eyebrow">PT Karya Indah Multiguna</span>
     <h1 class="brand-title">ANALISA<span class="accent"> MEMO</span></h1>
-    <span id="cutoff-badge" class="cutoff-badge hidden">Update per: <b id="cutoff-value">—</b></span>
+    <span id="cutoff-badge" class="cutoff-badge hidden">Tanggal: <b id="cutoff-value">—</b></span>
   </div>
   <div class="topbar-actions">
     <a href="index.html" class="icon-btn" aria-label="Kembali ke menu utama" title="Kembali ke menu utama" style="text-decoration:none;">
@@ -373,6 +385,10 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
 </header>
 
 <main class="main">
+
+  <div class="date-tabs-wrap">
+    <div class="date-tabs" id="date-tabs"></div>
+  </div>
 
   <div class="dim-switch" id="dim-switch">
     <button data-dim="int" class="active">Internal</button>
@@ -530,6 +546,9 @@ const state = {
   selected: null,
   search: '',
   records: [],
+  dateList: [],
+  dateIndex: 0,
+  lastDateLabel: null,
   settings: loadSettings(),
 };
 
@@ -537,6 +556,7 @@ const el = {
   splash: document.getElementById('app-splash'),
   dataBanner: document.getElementById('data-banner'),
   dimSwitch: document.getElementById('dim-switch'),
+  dateTabs: document.getElementById('date-tabs'),
   searchInput: document.getElementById('search-input'),
   btnClearSearch: document.getElementById('btn-clear-search'),
   selectedChip: document.getElementById('selected-chip'),
@@ -644,20 +664,7 @@ function colIndex(header, name){
   return upper.indexOf(name.toUpperCase());
 }
 
-// Cut off data diambil dari cell paling atas kolom A (baris pertama sheet, sebelum baris judul kolom).
-// Ini berguna untuk tahu per kapan data/laporan ini dibuat/di-update.
-function extractCutoffInfo(rows){
-  const a1 = String((rows[0] && rows[0][0]) || '').trim();
-  if (!a1) return '';
-  const dateMatch = a1.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
-  const timeMatch = a1.match(/(\d{1,2}:\d{2}\s*(?:am|pm|AM|PM)?)/);
-  if (dateMatch){
-    let label = dateMatch[1];
-    if (timeMatch) label += ' ' + timeMatch[1].replace(/\s+/g,'').toUpperCase();
-    return label;
-  }
-  return a1;
-}
+// Cut off / label tanggal diambil dari baris tanggal tepat di atas baris header setiap blok.
 function updateCutoffBadge(label){
   if (!el.cutoffBadge || !el.cutoffValue) return;
   if (label){
@@ -668,14 +675,17 @@ function updateCutoffBadge(label){
   }
 }
 
-function extractRecords(rows){
-  let headerIdx = -1;
+/* ---------- parsing data per-tanggal (kolom bertambah ke samping per tanggal) ---------- */
+function findHeaderRowIndex(rows){
   for (let i=0;i<rows.length;i++){
     const up = rows[i].map(c => String(c||'').trim().toUpperCase());
-    if (up.includes('INT') && up.includes('SALES') && up.includes('NO.')){ headerIdx = i; break; }
+    if (up.includes('INT') && up.includes('SALES') && up.includes('NO.')) return i;
   }
-  if (headerIdx === -1) throw new Error('Header CSV tidak ditemukan (kolom Int/Sales/No. tidak ada).');
-  const header = rows[headerIdx];
+  return -1;
+}
+
+function extractRecordsFromBlock(rows, headerIdx, offset, blockWidth){
+  const header = rows[headerIdx].slice(offset, offset + blockWidth);
   const idx = {
     cps: colIndex(header,'cps'),
     memo: colIndex(header,'memo'),
@@ -696,16 +706,17 @@ function extractRecords(rows){
   };
   const records = [];
   for (let i=headerIdx+1;i<rows.length;i++){
-    const r = rows[i];
-    if (!r || r.every(c => String(c||'').trim()==='')) continue;
-    // Kolom A kosong/tidak ada huruf-angka = batas bawah data yang valid, lewati baris ini
+    const rFull = rows[i];
+    if (!rFull) continue;
+    const r = rFull.slice(offset, offset + blockWidth);
+    if (!r.length || r.every(c => String(c||'').trim()==='')) continue;
+    // Kolom pertama blok kosong/tidak ada huruf-angka = batas bawah data yang valid, lewati baris ini
     const colA = String(r[0]||'').trim();
     if (!colA || !/[a-zA-Z0-9]/.test(colA)) continue;
     const internal = String(r[idx.internal]||'').trim();
     const sales = String(r[idx.sales]||'').trim();
     const no = String(r[idx.no]||'').trim();
     if (!no && !internal && !sales) continue;
-    const doRaw = String(r[idx.doQ]||'').trim();
     const memoQtyAK = numParse(r[idx.memo]);
     const doQtyAK = numParse(r[idx.doQ]);
     const cps = numParse(r[idx.cps]);
@@ -748,6 +759,75 @@ function extractRecords(rows){
   return records;
 }
 
+// Sheet-nya berisi banyak blok tanggal yang tersusun ke SAMPING (horizontal), masing-masing
+// blok punya header sendiri (Int/Sales/No./dst) dan baris tanggal tepat di atas headernya.
+// Fungsi ini memecah rows jadi array { label, records } per tanggal, urut sesuai urutan kolom di sheet.
+function extractRecordsByDate(rows){
+  const headerIdx = findHeaderRowIndex(rows);
+  if (headerIdx === -1) throw new Error('Header CSV tidak ditemukan (kolom Int/Sales/No. tidak ada).');
+  const header = rows[headerIdx];
+  const upHeader = header.map(h => String(h||'').trim().toUpperCase());
+  const noIdxs = [];
+  upHeader.forEach((h,i) => { if (h === 'NO.') noIdxs.push(i); });
+  const blockWidth = noIdxs.length > 1 ? (noIdxs[1] - noIdxs[0]) : header.length;
+  const blockCount = Math.max(1, Math.ceil(header.length / blockWidth));
+  const dateRowIdx = headerIdx > 0 ? headerIdx - 1 : -1;
+  const dateRow = dateRowIdx >= 0 ? (rows[dateRowIdx] || []) : [];
+
+  const dates = [];
+  for (let b=0; b<blockCount; b++){
+    const offset = b * blockWidth;
+    let label = String(dateRow[offset] || '').trim();
+    if (!label) label = 'Data ' + (b + 1);
+    const records = extractRecordsFromBlock(rows, headerIdx, offset, blockWidth);
+    dates.push({ label, records });
+  }
+  return dates;
+}
+
+function renderDateTabs(){
+  if (!el.dateTabs) return;
+  el.dateTabs.innerHTML = '';
+  if (!state.dateList.length) return;
+  state.dateList.forEach((d, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'date-tab' + (i === state.dateIndex ? ' active' : '');
+    btn.textContent = d.label;
+    btn.addEventListener('click', () => {
+      if (state.dateIndex === i) return;
+      state.dateIndex = i;
+      state.lastDateLabel = d.label;
+      state.records = d.records;
+      state.selected = null;
+      updateSelectedChip();
+      updateCutoffBadge(d.label);
+      renderDateTabs();
+      render();
+    });
+    el.dateTabs.appendChild(btn);
+  });
+}
+
+// Ambil teks CSV mentah -> pecah per tanggal -> pilih tab yang aktif (pertahankan pilihan
+// sebelumnya kalau tanggalnya masih ada, kalau tidak pakai tanggal paling kanan / terbaru).
+function applyLoadedCSV(text){
+  const rows = parseCSV(text);
+  const dateList = extractRecordsByDate(rows);
+  state.dateList = dateList;
+  let newIndex = dateList.length - 1;
+  if (state.lastDateLabel){
+    const found = dateList.findIndex(d => d.label === state.lastDateLabel);
+    if (found !== -1) newIndex = found;
+  }
+  state.dateIndex = newIndex;
+  state.lastDateLabel = dateList[newIndex] ? dateList[newIndex].label : null;
+  state.records = dateList[newIndex] ? dateList[newIndex].records : [];
+  renderDateTabs();
+  updateCutoffBadge(state.lastDateLabel || '');
+  return dateList;
+}
+
 /* ---------- data load ---------- */
 async function loadData(forceRefresh){
   const url = state.settings.csvUrl + (forceRefresh ? (state.settings.csvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now() : '');
@@ -755,22 +835,17 @@ async function loadData(forceRefresh){
     const res = await fetch(url, { cache: forceRefresh ? 'no-store' : 'default' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
-    const rows = parseCSV(text);
-    const records = extractRecords(rows);
-    state.records = records;
+    applyLoadedCSV(text);
     localStorage.setItem(CSV_CACHE_KEY, JSON.stringify({ text, ts: Date.now() }));
-    updateCutoffBadge(extractCutoffInfo(rows));
     el.dataBanner.classList.add('hidden');
     render();
-    showToast('Data dimuat: ' + records.length + ' baris memo');
+    showToast('Data dimuat: ' + state.records.length + ' baris memo' + (state.lastDateLabel ? ' · ' + state.lastDateLabel : ''));
   }catch(err){
     console.error(err);
     try{
       const cached = JSON.parse(localStorage.getItem(CSV_CACHE_KEY) || 'null');
       if (cached){
-        const rows = parseCSV(cached.text);
-        state.records = extractRecords(rows);
-        updateCutoffBadge(extractCutoffInfo(rows));
+        applyLoadedCSV(cached.text);
         const waktu = new Date(cached.ts).toLocaleString('id-ID');
         el.dataBanner.classList.remove('hidden');
         el.dataBanner.innerHTML = 'Gagal ambil data terbaru — memakai cache ' + waktu + ' <button id="btn-retry-load">Coba lagi</button>';
