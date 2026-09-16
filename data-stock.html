@@ -222,6 +222,20 @@ body.overlay-open{ overflow:hidden; }
 }
 .cutoff-badge b{ font-weight:700; }
 .topbar-actions{ display:flex; gap:8px; }
+
+.mode-bar{ display:flex; justify-content:center; padding:8px 16px 0; }
+.mode-toggle{
+  display:flex; align-items:center; gap:7px;
+  padding:7px 14px; border-radius:999px; border:1px solid var(--border, rgba(255,255,255,0.14));
+  background: var(--surface-2, rgba(255,255,255,0.06)); color: var(--muted);
+  font-size:12.5px; font-weight:600; letter-spacing:.2px; cursor:pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.mode-toggle svg{ flex:none; }
+.mode-toggle[data-mode="admin"]{
+  border-color: var(--amber); color: var(--amber); background: rgba(255,176,32,0.1);
+}
+.mode-toggle:active{ transform: scale(0.98); }
 .icon-btn{
   background: var(--surface); border:1px solid var(--border); color: var(--text);
   width:42px; height:42px; border-radius:10px;
@@ -481,6 +495,14 @@ body.overlay-open{ overflow:hidden; }
     </button>
   </div>
 </header>
+
+<div id="mode-bar" class="mode-bar">
+  <button id="btn-mode-toggle" class="mode-toggle" data-mode="search" aria-pressed="false">
+    <svg class="mode-icon-lock" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 1a5 5 0 00-5 5v3H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2h-1V6a5 5 0 00-5-5zm-3 8V6a3 3 0 116 0v3H9z"/></svg>
+    <svg class="mode-icon-unlock hidden" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M17 8h-1V6a4 4 0 00-7.76-1.38 1 1 0 101.87.71A2 2 0 0114 6v2H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2z"/></svg>
+    <span class="mode-toggle-text">Mode: Cari Saja</span>
+  </button>
+</div>
 
 <main class="main">
 
@@ -820,8 +842,10 @@ const DEFAULT_APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz20zIACF
 
 const STORAGE_KEY = 'stockopname.settings.v2';
 const CSV_CACHE_KEY = 'stockopname.csvcache.v1';
+const MODE_KEY = 'stockopname.mode.v1';
 
 const state = {
+  mode: localStorage.getItem(MODE_KEY) === 'admin' ? 'admin' : 'search', // 'search' = cari saja (read-only), 'admin' = boleh input/koreksi
   field: 'ALL',
   allRows: [],       // seluruh data dari CSV (sumber informasi)
   results: [],        // hasil pencarian saat ini
@@ -1173,6 +1197,7 @@ const el = {
   cutoffBadge: document.getElementById('cutoff-badge'),
   cutoffValue: document.getElementById('cutoff-value'),
   btnThemeToggle: document.getElementById('btn-theme-toggle'),
+  btnModeToggle: document.getElementById('btn-mode-toggle'),
   themeIconMoon: document.getElementById('theme-icon-moon'),
   themeIconSun: document.getElementById('theme-icon-sun'),
   metaThemeColor: document.getElementById('meta-theme-color'),
@@ -1201,6 +1226,41 @@ el.btnThemeToggle.addEventListener('click', () => {
   const next = getCurrentTheme() === 'light' ? 'dark' : 'light';
   applyTheme(next);
   try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+});
+
+// ---------- mode: Cari Saja vs Admin (input/koreksi) ----------
+// Mode "Cari Saja" (default): user cuma bisa mencari & lihat info barang,
+// kartu hasil TIDAK bisa diketuk untuk masuk ke form input/koreksi, dan
+// tombol "+ Cari di Master MC (barang baru)" & "Edit Koreksi Tersimpan"
+// disembunyikan karena keduanya jalur untuk menambah/mengubah data.
+// Mode "Admin": semua fitur input/koreksi aktif seperti biasa.
+
+function isAdminMode() { return state.mode === 'admin'; }
+
+function applyMode(mode) {
+  state.mode = mode === 'admin' ? 'admin' : 'search';
+  const admin = isAdminMode();
+
+  el.btnModeToggle.dataset.mode = state.mode;
+  el.btnModeToggle.setAttribute('aria-pressed', String(admin));
+  el.btnModeToggle.querySelector('.mode-toggle-text').textContent = admin ? 'Mode: Admin (bisa input)' : 'Mode: Cari Saja';
+  el.btnModeToggle.querySelector('.mode-icon-lock').classList.toggle('hidden', admin);
+  el.btnModeToggle.querySelector('.mode-icon-unlock').classList.toggle('hidden', !admin);
+
+  if (el.btnOpenMaster) el.btnOpenMaster.classList.toggle('hidden', !admin);
+  if (el.btnOpenKoreksi) el.btnOpenKoreksi.classList.toggle('hidden', !admin);
+
+  document.body.classList.toggle('admin-mode', admin);
+  document.body.classList.toggle('search-only-mode', !admin);
+}
+
+applyMode(state.mode);
+
+el.btnModeToggle.addEventListener('click', () => {
+  const next = isAdminMode() ? 'search' : 'admin';
+  applyMode(next);
+  try { localStorage.setItem(MODE_KEY, next); } catch (e) {}
+  showToast(next === 'admin' ? 'Mode Admin aktif — bisa input/koreksi' : 'Mode Cari Saja aktif — cuma bisa mencari info');
 });
 
 // ---------- header sticky + efek kaca (glassmorphism) saat scroll ----------
@@ -1489,9 +1549,10 @@ function runSearch() {
     if (field === 'SO') return String(r.so).toLowerCase().includes(q);
     if (field === 'REF') return String(r.ref).toLowerCase().includes(q);
     if (field === 'LOC') return String(r.loc).toLowerCase().includes(q);
-    // "Semua": selain MCS#/SO#/REF#/LOC#/C#, ikut cari juga di kolom
-    // Customer (W), Internal (Z), dan Sales (AA) — sesuai permintaan revisi,
-    // walau kolom-kolom ini tidak ditampilkan sebagai chip filter tersendiri.
+    // "Semua": cari di SEMUA kolom yang ada di data (bukan cuma MCS#/SO#/REF#/LOC#),
+    // supaya perilakunya sama luasnya dengan pencarian di tab "Cari di Master MC" —
+    // ikut mencakup model/nama barang, AC#, C#, PART#, SO PO#, WO#, ALT REF#,
+    // customer, ukuran, internal, sales, dan STS.
     return String(r.mcs).toLowerCase().includes(q)
         || String(r.so).toLowerCase().includes(q)
         || String(r.ref).toLowerCase().includes(q)
@@ -1499,7 +1560,16 @@ function runSearch() {
         || String(r.c).toLowerCase().includes(q)
         || String(r.customer).toLowerCase().includes(q)
         || String(r.internal).toLowerCase().includes(q)
-        || String(r.sales).toLowerCase().includes(q);
+        || String(r.sales).toLowerCase().includes(q)
+        || String(r.model).toLowerCase().includes(q)
+        || String(r.ac).toLowerCase().includes(q)
+        || String(r.sts).toLowerCase().includes(q)
+        || String(r.part).toLowerCase().includes(q)
+        || String(r.sopo).toLowerCase().includes(q)
+        || String(r.wo).toLowerCase().includes(q)
+        || String(r.altref).toLowerCase().includes(q)
+        || String(r.ukuran).toLowerCase().includes(q)
+        || String(r.no).toLowerCase().includes(q);
   });
 
   const truncated = matches.length > MAX_RESULTS;
@@ -1544,9 +1614,18 @@ function renderResults(truncated, totalCount) {
     node.querySelector('.total-saldo').textContent = formatTotalSaldoPallet(item.totalSaldo, item.totalPallet);
     node.querySelector('.internal').textContent = item.internal || '—';
     node.querySelector('.sales').textContent = item.sales || '—';
+    const editHint = node.querySelector('.card-edit-hint');
+    if (editHint) editHint.textContent = isAdminMode() ? 'Ketuk untuk koreksi ›' : 'Mode cari saja — info aja';
 
-    card.addEventListener('click', () => openEditSheet(item));
-    card.addEventListener('keydown', (e) => { if (e.key === 'Enter') openEditSheet(item); });
+    card.addEventListener('click', () => {
+      if (!isAdminMode()) { showToast('Mode Cari Saja — aktifkan Mode Admin untuk input/koreksi'); return; }
+      openEditSheet(item);
+    });
+    card.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      if (!isAdminMode()) { showToast('Mode Cari Saja — aktifkan Mode Admin untuk input/koreksi'); return; }
+      openEditSheet(item);
+    });
 
     el.results.appendChild(node);
   });
@@ -1806,6 +1885,7 @@ el.btnClearMasterSearch.addEventListener('click', () => {
 });
 
 async function openMaster() {
+  if (!isAdminMode()) { showToast('Mode Cari Saja — aktifkan Mode Admin untuk tambah barang baru'); return; }
   showOverlay(el.masterOverlay);
 
   // isi otomatis dari kolom pencarian utama, biar tinggal dihapus kalau tidak dipakai
@@ -1917,6 +1997,7 @@ el.btnClearKoreksiSearch.addEventListener('click', () => {
 });
 
 async function openKoreksi() {
+  if (!isAdminMode()) { showToast('Mode Cari Saja — aktifkan Mode Admin untuk edit koreksi'); return; }
   showOverlay(el.koreksiOverlay);
   el.koreksiSearchInput.value = el.searchInput.value.trim();
   updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch);
