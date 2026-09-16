@@ -242,11 +242,6 @@ table.rank-table tbody tr.selected{ background: rgba(var(--amber-rgb), .12); }
 .delta-up{ font-family: var(--font-mono); font-size:10px; color: var(--green); margin-left:4px; white-space:nowrap; }
 .delta-down{ font-family: var(--font-mono); font-size:10px; color: var(--red); margin-left:4px; white-space:nowrap; }
 
-.summary-kpi-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin-bottom:14px; }
-@media (max-width:720px){ .summary-kpi-grid{ grid-template-columns: repeat(2,1fr); } }
-.summary-kpi-card{ background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); padding:12px 14px; }
-.summary-kpi-card .k{ font-family: var(--font-mono); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color: var(--muted); }
-.summary-kpi-card .v{ font-family: var(--font-display); font-weight:700; font-size:22px; color: var(--text); margin-top:4px; line-height:1.1; }
 .summary-narrative{ font-size:13px; line-height:1.65; color: var(--text); background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); padding:14px 16px; margin-bottom:16px; }
 .summary-narrative b{ color: var(--amber); }
 
@@ -298,7 +293,7 @@ table.rank-table tbody tr.selected{ background: rgba(var(--amber-rgb), .12); }
 .sheet-body{ padding:12px 18px 24px; overflow-y:auto; flex:1; }
 
 .fab-row{ position:fixed; right:18px; bottom:18px; z-index:150; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
-.fab-excel, .fab-print, .fab-ss{
+.fab-excel, .fab-print, .fab-ss, .fab-ai{
   display:flex; align-items:center; gap:8px;
   color: var(--on-accent); border:none; border-radius:30px; padding:13px 18px;
   font-family: var(--font-display); font-weight:700; letter-spacing:.02em; text-transform:uppercase; font-size:14px;
@@ -307,10 +302,11 @@ table.rank-table tbody tr.selected{ background: rgba(var(--amber-rgb), .12); }
 .fab-excel{ background: var(--amber); }
 .fab-print{ background: var(--violet); }
 .fab-ss{ background: var(--green); }
-.fab-excel:active, .fab-print:active, .fab-ss:active{ transform: scale(.96); }
+.fab-ai{ background: #2563EB; color:#fff; }
+.fab-excel:active, .fab-print:active, .fab-ss:active, .fab-ai:active{ transform: scale(.96); }
 @media (max-width:420px){
-  .fab-excel span, .fab-print span, .fab-ss span{ display:none; }
-  .fab-excel, .fab-print, .fab-ss{ padding:13px; border-radius:50%; }
+  .fab-excel span, .fab-print span, .fab-ss span, .fab-ai span{ display:none; }
+  .fab-excel, .fab-print, .fab-ss, .fab-ai{ padding:13px; border-radius:50%; }
 }
 
 /* ---------- print report (hidden on screen) ---------- */
@@ -499,8 +495,6 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
   </div>
 
   <div id="summary-section" class="hidden">
-    <div class="section-title">Ringkasan Keseluruhan</div>
-    <div id="summary-overview"></div>
     <div class="section-title">Pergerakan per Tanggal <small id="summary-count"></small></div>
     <div class="rank-table-wrap">
       <table class="rank-table">
@@ -510,6 +504,7 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
             <th>Total Line</th>
             <th>Tonase Memo</th>
             <th>Tonase DO</th>
+            <th>% Terpenuhi</th>
             <th>Tonase Sisa</th>
             <th>Lunas</th>
             <th>Kurang</th>
@@ -520,6 +515,7 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
         <tbody id="summary-tbody"></tbody>
       </table>
     </div>
+    <p class="summary-narrative" id="summary-average" style="margin-top:14px;"></p>
     <p class="muted" style="font-size:12px;margin-top:12px;">Klik salah satu baris tanggal untuk langsung membuka detail lengkapnya di tab Data Harian.</p>
   </div>
 
@@ -529,6 +525,10 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
   <button class="fab-ss" id="btn-screenshot">
     <svg viewBox="0 0 24 24" width="17" height="17"><path fill="currentColor" d="M9 3l-1.83 2H4a2 2 0 00-2 2v11a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2h-3.17L15 3H9zm3 15a5 5 0 110-10 5 5 0 010 10zm0-2a3 3 0 100-6 3 3 0 000 6z"/></svg>
     <span>SS</span>
+  </button>
+  <button class="fab-ai" id="btn-ai">
+    <svg viewBox="0 0 24 24" width="17" height="17"><path fill="currentColor" d="M12 2a1 1 0 011 1v1.06A6.99 6.99 0 0119 11h1a1 1 0 110 2h-1a6.99 6.99 0 01-6 6.92V21a1 1 0 11-2 0v-1.08A6.99 6.99 0 015 13H4a1 1 0 110-2h1a6.99 6.99 0 016-6.94V3a1 1 0 011-1zm0 4a5 5 0 100 10 5 5 0 000-10zm-2.2 3.3c.4 0 .7.3.7.7v.6h3v-.6c0-.4.3-.7.7-.7s.7.3.7.7v.6h.3c.4 0 .7.3.7.7s-.3.7-.7.7h-.3v1.4h.3c.4 0 .7.3.7.7s-.3.7-.7.7h-.3v.6c0 .4-.3.7-.7.7s-.7-.3-.7-.7v-.6h-3v.6c0 .4-.3.7-.7.7s-.7-.3-.7-.7v-.6h-.3c-.4 0-.7-.3-.7-.7s.3-.7.7-.7h.3V12h-.3c-.4 0-.7-.3-.7-.7s.3-.7.7-.7h.3v-.6c0-.4.3-.7.7-.7zm.7 2v1.4h3V11h-3z"/></svg>
+    <span>Analisa AI</span>
   </button>
   <button class="fab-print" id="btn-print">
     <svg viewBox="0 0 24 24" width="17" height="17"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
@@ -614,7 +614,7 @@ const el = {
   summarySection: document.getElementById('summary-section'),
   summaryTbody: document.getElementById('summary-tbody'),
   summaryCount: document.getElementById('summary-count'),
-  summaryOverview: document.getElementById('summary-overview'),
+  summaryAverage: document.getElementById('summary-average'),
   searchInput: document.getElementById('search-input'),
   btnClearSearch: document.getElementById('btn-clear-search'),
   selectedChip: document.getElementById('selected-chip'),
@@ -640,6 +640,7 @@ const el = {
   btnRefresh: document.getElementById('btn-refresh'),
   btnThemeToggle: document.getElementById('btn-theme-toggle'),
   btnDownload: document.getElementById('btn-download'),
+  btnAi: document.getElementById('btn-ai'),
   toast: document.getElementById('toast'),
   cutoffBadge: document.getElementById('cutoff-badge'),
   cutoffValue: document.getElementById('cutoff-value'),
@@ -1294,55 +1295,42 @@ function computeDateSummaries(){
   });
 }
 
-// Kartu & narasi ringkasan keseluruhan di atas tabel Pergerakan per Tanggal — merangkum
-// kondisi tanggal terbaru serta tren dibanding tanggal sebelumnya.
-function renderSummaryOverview(summaries){
-  if (!el.summaryOverview) return;
-  if (!summaries.length){ el.summaryOverview.innerHTML = ''; return; }
-  const latest = summaries[summaries.length - 1];
-  const prev = summaries.length > 1 ? summaries[summaries.length - 2] : null;
-  const pct = (n, t) => t ? Math.round(n / t * 100) : 0;
-  const avgLunasPct = Math.round(summaries.reduce((s, x) => s + pct(x.counts.lunas, x.total), 0) / summaries.length);
-  const deltaDO = prev ? latest.totalTonaseDO - prev.totalTonaseDO : null;
-  const deltaLine = prev ? latest.total - prev.total : null;
-  let trendTxt = 'belum ada tanggal pembanding.';
-  if (deltaDO !== null){
-    if (Math.abs(deltaDO) < 0.005) trendTxt = `stabil dibanding <b>${escapeHtml(prev.label)}</b>.`;
-    else if (deltaDO > 0) trendTxt = `naik <b>${fmtNum(deltaDO)}</b> dibanding <b>${escapeHtml(prev.label)}</b>.`;
-    else trendTxt = `turun <b>${fmtNum(Math.abs(deltaDO))}</b> dibanding <b>${escapeHtml(prev.label)}</b>.`;
-  }
-  const lineTrendTxt = deltaLine === null ? '' : (
-    deltaLine === 0 ? ' Jumlah line tetap sama dengan tanggal sebelumnya.' :
-    deltaLine > 0 ? ` Jumlah line bertambah ${deltaLine} dibanding tanggal sebelumnya.` :
-    ` Jumlah line berkurang ${Math.abs(deltaLine)} dibanding tanggal sebelumnya.`
-  );
+// Paragraf rata-rata dari semua tanggal yang tercatat — ditampilkan di bawah tabel
+// Pergerakan per Tanggal.
+function renderSummaryAverage(summaries){
+  if (!el.summaryAverage) return;
+  if (!summaries.length){ el.summaryAverage.innerHTML = ''; return; }
+  const n = summaries.length;
+  const avg = (arr) => arr.reduce((a,b)=>a+b,0) / n;
+  const avgTotal = avg(summaries.map(s => s.total));
+  const avgTonase = avg(summaries.map(s => s.totalTonase));
+  const avgTonaseDO = avg(summaries.map(s => s.totalTonaseDO));
+  const avgSisa = avg(summaries.map(s => s.totalSisa));
+  const avgTerpenuhi = avgTonase > 0 ? (avgTonaseDO / avgTonase * 100) : 0;
+  const avgLunas = avg(summaries.map(s => s.counts.lunas));
+  const avgKurang = avg(summaries.map(s => s.counts.kurang));
+  const avgSiap = avg(summaries.map(s => s.counts.siap));
+  const avgKosong = avg(summaries.map(s => s.counts.kosong));
+  const pctOfTotal = (v) => avgTotal > 0 ? Math.round(v / avgTotal * 100) : 0;
 
-  el.summaryOverview.innerHTML = `
-    <div class="summary-kpi-grid">
-      <div class="summary-kpi-card"><div class="k">Total Tanggal Tercatat</div><div class="v">${summaries.length}</div></div>
-      <div class="summary-kpi-card"><div class="k">Line Terbaru (${escapeHtml(latest.label)})</div><div class="v">${latest.total}</div></div>
-      <div class="summary-kpi-card"><div class="k">Rata-rata % Lunas</div><div class="v">${avgLunasPct}%</div></div>
-      <div class="summary-kpi-card"><div class="k">Tonase Memo Terbaru</div><div class="v">${fmtNum(latest.totalTonase)}</div></div>
-      <div class="summary-kpi-card"><div class="k">Tonase DO Terbaru</div><div class="v" style="color:var(--green);">${fmtNum(latest.totalTonaseDO)}</div></div>
-      <div class="summary-kpi-card"><div class="k">Tonase Sisa Terbaru</div><div class="v" style="color:var(--red);">${fmtNum(latest.totalSisa)}</div></div>
-    </div>
-    <p class="summary-narrative">
-      Pada tanggal terbaru <b>${escapeHtml(latest.label)}</b>, tercatat <b>${latest.total}</b> line dengan
-      <b>${latest.counts.lunas}</b> lunas (${pct(latest.counts.lunas, latest.total)}%),
-      <b>${latest.counts.kurang}</b> kekurangan (${pct(latest.counts.kurang, latest.total)}%),
-      <b>${latest.counts.siap}</b> siap kirim (${pct(latest.counts.siap, latest.total)}%), dan
-      <b>${latest.counts.kosong}</b> kosong &amp; sisa kirim (${pct(latest.counts.kosong, latest.total)}%).
-      Tonase DO terkirim ${trendTxt}${lineTrendTxt}
-    </p>`;
+  el.summaryAverage.innerHTML = `
+    Rata-rata dari <b>${n}</b> tanggal tercatat: <b>${fmtNum(Math.round(avgTotal*10)/10)}</b> line,
+    tonase memo <b>${fmtNum(Math.round(avgTonase*100)/100)}</b>,
+    tonase DO <b>${fmtNum(Math.round(avgTonaseDO*100)/100)}</b> (<b>${Math.round(avgTerpenuhi)}%</b> terpenuhi),
+    tonase sisa <b>${fmtNum(Math.round(avgSisa*100)/100)}</b>. Rata-rata status: 
+    <b>${fmtNum(Math.round(avgLunas*10)/10)}</b> lunas (${pctOfTotal(avgLunas)}%),
+    <b>${fmtNum(Math.round(avgKurang*10)/10)}</b> kekurangan (${pctOfTotal(avgKurang)}%),
+    <b>${fmtNum(Math.round(avgSiap*10)/10)}</b> siap kirim (${pctOfTotal(avgSiap)}%), dan
+    <b>${fmtNum(Math.round(avgKosong*10)/10)}</b> kosong &amp; sisa kirim (${pctOfTotal(avgKosong)}%) per tanggal.`;
 }
 
 function renderSummary(){
   if (!el.summaryTbody) return;
   const summaries = computeDateSummaries();
-  renderSummaryOverview(summaries);
   el.summaryCount.textContent = summaries.length + ' tanggal';
+  renderSummaryAverage(summaries);
   if (!summaries.length){
-    el.summaryTbody.innerHTML = '<tr><td colspan="9" class="empty-note">Belum ada data</td></tr>';
+    el.summaryTbody.innerHTML = '<tr><td colspan="10" class="empty-note">Belum ada data</td></tr>';
     return;
   }
   el.summaryTbody.innerHTML = summaries.map((s, i) => {
@@ -1353,11 +1341,13 @@ function renderSummary(){
       deltaDO > 0 ? `<span class="delta-up">▲ ${fmtNum(deltaDO)}</span>` : `<span class="delta-down">▼ ${fmtNum(Math.abs(deltaDO))}</span>`
     );
     const pct = (n) => s.total ? Math.round(n / s.total * 100) : 0;
+    const pctTerpenuhi = s.totalTonase > 0 ? Math.round(s.totalTonaseDO / s.totalTonase * 100) : 0;
     return `<tr data-date-label="${escapeHtml(s.label)}">
       <td class="rank-name">${escapeHtml(s.label)}</td>
       <td class="mono">${s.total}</td>
       <td class="mono">${fmtNum(s.totalTonase)}</td>
       <td class="mono" style="color:var(--green);">${fmtNum(s.totalTonaseDO)}${deltaHtml}</td>
+      <td class="mono">${pctTerpenuhi}%</td>
       <td class="mono" style="color:var(--red);">${fmtNum(s.totalSisa)}</td>
       <td><span class="rank-cell rc-lunas">${s.counts.lunas} <small>(${pct(s.counts.lunas)}%)</small></span></td>
       <td><span class="rank-cell rc-kurang">${s.counts.kurang} <small>(${pct(s.counts.kurang)}%)</small></span></td>
@@ -1413,6 +1403,99 @@ el.btnSaveSettings.addEventListener('click', () => {
 /* ---------- refresh ---------- */
 el.btnRefresh.addEventListener('click', () => loadData(true));
 
+/* ---------- analisa AI (copy data ke clipboard) ---------- */
+async function copyTextToClipboard(text){
+  try{
+    if (navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(e){}
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){ return false; }
+}
+
+// Rangkuman teks tab Data Harian (tanggal yang lagi aktif) untuk ditempel ke AI.
+function buildDateAIText(){
+  const dimLabel = state.dim === 'int' ? 'Internal' : 'Sales';
+  const label = state.lastDateLabel || '-';
+  const totalTonase = state.records.reduce((s,r)=>s+r.tonase,0);
+  const totalTonaseDO = state.records.reduce((s,r)=>s+r.tonaseDO,0);
+  const totalSisa = totalTonase - totalTonaseDO;
+  const pctTerpenuhi = totalTonase > 0 ? Math.round(totalTonaseDO / totalTonase * 100) : 0;
+  const counts = { lunas:0, kurang:0, siap:0, kosong:0 };
+  const tonaseByStatus = { lunas:0, kurang:0, siap:0, kosong:0 };
+  state.records.forEach(r => { counts[r.status]++; tonaseByStatus[r.status] += r.tonase; });
+  const pct = (n) => state.records.length ? Math.round(n / state.records.length * 100) : 0;
+
+  let txt = `ANALISA MEMO - PT KARYA INDAH MULTIGUNA\n`;
+  txt += `Tab: Data Harian — Tanggal: ${label}\n\n`;
+  txt += `Total Line: ${state.records.length}\n`;
+  txt += `Tonase Memo: ${fmtNum(totalTonase)}\n`;
+  txt += `Tonase DO: ${fmtNum(totalTonaseDO)} (${pctTerpenuhi}% terpenuhi)\n`;
+  txt += `Tonase Sisa: ${fmtNum(totalSisa)}\n\n`;
+  txt += `Status:\n`;
+  txt += `- Lunas: ${counts.lunas} (${pct(counts.lunas)}%), tonase ${fmtNum(tonaseByStatus.lunas)}\n`;
+  txt += `- Kekurangan: ${counts.kurang} (${pct(counts.kurang)}%), tonase ${fmtNum(tonaseByStatus.kurang)}\n`;
+  txt += `- Siap Kirim: ${counts.siap} (${pct(counts.siap)}%), tonase ${fmtNum(tonaseByStatus.siap)}\n`;
+  txt += `- Kosong & Sisa Kirim: ${counts.kosong} (${pct(counts.kosong)}%), tonase ${fmtNum(tonaseByStatus.kosong)}\n\n`;
+  txt += `Rekap per ${dimLabel}:\n`;
+  const dimKey = dimProp();
+  const groups = {};
+  state.records.forEach(r => {
+    const name = r[dimKey];
+    if (!groups[name]) groups[name] = { name, lunas:0, kurang:0, siap:0, kosong:0, total:0 };
+    groups[name][r.status]++; groups[name].total++;
+  });
+  Object.values(groups).sort((a,b)=>b.total-a.total).forEach(g => {
+    const p = (n) => g.total ? Math.round(n / g.total * 100) : 0;
+    txt += `- ${g.name}: total ${g.total}, lunas ${g.lunas} (${p(g.lunas)}%), kurang ${g.kurang} (${p(g.kurang)}%), siap ${g.siap} (${p(g.siap)}%), kosong ${g.kosong} (${p(g.kosong)}%)\n`;
+  });
+  txt += `\nTolong analisa data pergerakan memo di atas: beri insight singkat mengenai performa, potensi masalah, dan rekomendasi tindak lanjut.`;
+  return txt;
+}
+
+// Rangkuman teks tab Ringkasan & Pergerakan (semua tanggal) untuk ditempel ke AI.
+function buildSummaryAIText(){
+  const summaries = computeDateSummaries();
+  let txt = `ANALISA MEMO - PT KARYA INDAH MULTIGUNA\n`;
+  txt += `Tab: Ringkasan & Pergerakan — ${summaries.length} tanggal tercatat\n\n`;
+  summaries.forEach(s => {
+    const pct = (n) => s.total ? Math.round(n / s.total * 100) : 0;
+    const pctTerpenuhi = s.totalTonase > 0 ? Math.round(s.totalTonaseDO / s.totalTonase * 100) : 0;
+    txt += `Tanggal ${s.label}: Total Line ${s.total}, Tonase Memo ${fmtNum(s.totalTonase)}, `;
+    txt += `Tonase DO ${fmtNum(s.totalTonaseDO)} (${pctTerpenuhi}% terpenuhi), Tonase Sisa ${fmtNum(s.totalSisa)}, `;
+    txt += `Lunas ${s.counts.lunas} (${pct(s.counts.lunas)}%), Kurang ${s.counts.kurang} (${pct(s.counts.kurang)}%), `;
+    txt += `Siap ${s.counts.siap} (${pct(s.counts.siap)}%), Kosong & Sisa Kirim ${s.counts.kosong} (${pct(s.counts.kosong)}%)\n`;
+  });
+  if (el.summaryAverage && el.summaryAverage.textContent.trim()){
+    txt += `\n${el.summaryAverage.textContent.trim()}\n`;
+  }
+  txt += `\nTolong analisa tren pergerakan memo per tanggal di atas: beri insight singkat mengenai performa, potensi masalah, dan rekomendasi tindak lanjut.`;
+  return txt;
+}
+
+el.btnAi.addEventListener('click', async () => {
+  let text;
+  if (state.view === 'summary'){
+    if (!state.dateList.length){ showToast('Belum ada data untuk dianalisa'); return; }
+    text = buildSummaryAIText();
+  } else {
+    if (!state.records.length){ showToast('Belum ada data untuk dianalisa'); return; }
+    text = buildDateAIText();
+  }
+  const ok = await copyTextToClipboard(text);
+  showToast(ok ? 'Data disalin! Tempel (paste) di AI pilihan Anda' : 'Gagal menyalin, coba lagi');
+});
+
 /* ---------- excel export ---------- */
 // Export khusus tab Ringkasan & Pergerakan — satu sheet berisi rekap pergerakan per tanggal
 // persis seperti yang tampil di tabel, bukan detail tanggal yang lagi aktif di tab lain.
@@ -1427,6 +1510,7 @@ function downloadSummaryExcel(){
       'Total Line': s.total,
       'Tonase Memo': Math.round(s.totalTonase * 100) / 100,
       'Tonase DO': Math.round(s.totalTonaseDO * 100) / 100,
+      '% Terpenuhi': s.totalTonase > 0 ? Math.round(s.totalTonaseDO / s.totalTonase * 100) + '%' : '0%',
       'Tonase Sisa': Math.round(s.totalSisa * 100) / 100,
       Lunas: s.counts.lunas, '% Lunas': pct(s.counts.lunas, s.total),
       Kurang: s.counts.kurang, '% Kurang': pct(s.counts.kurang, s.total),
@@ -1654,17 +1738,20 @@ function buildPrintArea(){
 function prSummaryTable(summaries){
   if (!summaries.length) return '<div class="pr-empty">Tidak ada data.</div>';
   const pct = (n, t) => t ? Math.round(n / t * 100) : 0;
-  const rows = summaries.map(s => `<tr>
+  const rows = summaries.map(s => {
+    const pctTerpenuhi = s.totalTonase > 0 ? Math.round(s.totalTonaseDO / s.totalTonase * 100) : 0;
+    return `<tr>
     <td>${escapeHtml(s.label)}</td><td>${s.total}</td>
-    <td>${fmtNum(s.totalTonase)}</td><td>${fmtNum(s.totalTonaseDO)}</td><td>${fmtNum(s.totalSisa)}</td>
+    <td>${fmtNum(s.totalTonase)}</td><td>${fmtNum(s.totalTonaseDO)}</td><td>${pctTerpenuhi}%</td><td>${fmtNum(s.totalSisa)}</td>
     <td>${s.counts.lunas} (${pct(s.counts.lunas, s.total)}%)</td>
     <td>${s.counts.kurang} (${pct(s.counts.kurang, s.total)}%)</td>
     <td>${s.counts.siap} (${pct(s.counts.siap, s.total)}%)</td>
     <td>${s.counts.kosong} (${pct(s.counts.kosong, s.total)}%)</td>
-  </tr>`).join('');
+  </tr>`;
+  }).join('');
   return `<table class="pr-table">
     <thead><tr>
-      <th>Tanggal</th><th>Total Line</th><th>Tonase Memo</th><th>Tonase DO</th><th>Tonase Sisa</th>
+      <th>Tanggal</th><th>Total Line</th><th>Tonase Memo</th><th>Tonase DO</th><th>% Terpenuhi</th><th>Tonase Sisa</th>
       <th>Lunas</th><th>Kurang</th><th>Siap</th><th>Kosong &amp; Sisa Kirim</th>
     </tr></thead>
     <tbody>${rows}</tbody></table>`;
