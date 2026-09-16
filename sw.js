@@ -1,8 +1,10 @@
-const CACHE_NAME = 'stock-opname-shell-v47';
+const CACHE_NAME = 'stock-opname-shell-v49';
 const SHELL_FILES = [
   './',
   './index.html',
   './manifest.json',
+  './analisa-memo.html',
+  './data-stock.html',
   './icons/icon.png',
 ];
 
