@@ -1247,7 +1247,9 @@ function applyMode(mode) {
   el.btnModeToggle.querySelector('.mode-icon-lock').classList.toggle('hidden', admin);
   el.btnModeToggle.querySelector('.mode-icon-unlock').classList.toggle('hidden', !admin);
 
-  if (el.btnOpenMaster) el.btnOpenMaster.classList.toggle('hidden', !admin);
+  // Tombol "Cari di Master MC" tetap tersedia di mode Cari Saja (boleh dipakai
+  // untuk cari info barang di Master MC), tapi hasilnya tidak bisa diklik untuk
+  // input/tambah barang baru selama masih mode Cari Saja (lihat useMasterRecord).
   if (el.btnOpenKoreksi) el.btnOpenKoreksi.classList.toggle('hidden', !admin);
 
   document.body.classList.toggle('admin-mode', admin);
@@ -1885,7 +1887,6 @@ el.btnClearMasterSearch.addEventListener('click', () => {
 });
 
 async function openMaster() {
-  if (!isAdminMode()) { showToast('Mode Cari Saja — aktifkan Mode Admin untuk tambah barang baru'); return; }
   showOverlay(el.masterOverlay);
 
   // isi otomatis dari kolom pencarian utama, biar tinggal dihapus kalau tidak dipakai
@@ -1970,6 +1971,7 @@ function runMasterSearch() {
 }
 
 function useMasterRecord(rec) {
+  if (!isAdminMode()) { showToast('Mode Cari Saja — aktifkan Mode Admin untuk input barang baru'); return; }
   closeMaster();
   const newItem = {
     no: '', mcs: rec.mc, so: rec.so, ref: '', model: rec.model,
