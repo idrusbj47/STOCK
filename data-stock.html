@@ -2132,10 +2132,10 @@ el.settingsForm.addEventListener('submit', (e) => {
 });
 
 // ---------- inisialisasi ----------
-
-if (!saveReady()) {
-  setTimeout(openSettings, 400);
-}
+// Catatan: dulu Pengaturan otomatis terbuka kalau token/nama admin belum diisi
+// (saveReady() == false), tapi ini mengganggu saat pertama kali buka app —
+// terutama karena mode default sekarang "Cari Saja" yang tidak butuh token.
+// Sekarang Pengaturan HANYA terbuka kalau tombol ⚙️ diklik.
 loadData(false);
 
 // ---------- unduh sbg PWA (install prompt) ----------
