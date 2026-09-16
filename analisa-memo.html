@@ -19,6 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -244,6 +245,22 @@ table.rank-table tbody tr.selected{ background: rgba(var(--amber-rgb), .12); }
 
 .summary-narrative{ font-size:13px; line-height:1.65; color: var(--text); background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); padding:14px 16px; margin-bottom:16px; }
 .summary-narrative b{ color: var(--amber); }
+
+.chart-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px; }
+@media (max-width:820px){ .chart-grid{ grid-template-columns: 1fr; } }
+.chart-card{
+  background: var(--surface); border:1px solid var(--border); border-radius: var(--radius);
+  padding:14px 16px 12px; display:flex; flex-direction:column;
+}
+.chart-card.full{ margin-bottom:16px; }
+.chart-card .chart-card-title{
+  font-family: var(--font-display); font-weight:700; font-size:15px; letter-spacing:.01em;
+  text-transform:uppercase; color: var(--text); margin:0 0 2px;
+}
+.chart-card .chart-card-sub{ font-size:11.5px; color: var(--muted); margin:0 0 10px; }
+.chart-card .chart-canvas-wrap{ position:relative; height:250px; width:100%; }
+.chart-card .chart-canvas-wrap.tall{ height:260px; }
+.chart-legend-note{ font-family: var(--font-mono); font-size:10px; color: var(--muted); margin-top:8px; text-align:right; }
 
 .results{ display:flex; flex-direction:column; gap:8px; }
 .item-card{ background: var(--surface); border:1px solid var(--border); border-radius: 12px; padding:12px 14px; cursor:pointer; }
@@ -540,7 +557,26 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
       </table>
     </div>
     <p class="summary-narrative" id="summary-average" style="margin-top:14px;"></p>
-    <p class="muted" style="font-size:12px;margin-top:12px;">Klik salah satu baris tanggal untuk langsung membuka detail lengkapnya di tab Data Harian.</p>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-card-title">Tren Memo vs DO</div>
+        <p class="chart-card-sub">Perbandingan kebutuhan memo dengan tonase terkirim</p>
+        <div class="chart-canvas-wrap"><canvas id="chart-memo-do"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Komposisi Status</div>
+        <p class="chart-card-sub">Perubahan kondisi memo berdasarkan jumlah line</p>
+        <div class="chart-canvas-wrap"><canvas id="chart-status"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-card full">
+      <div class="chart-card-title">Tren Outstanding</div>
+      <p class="chart-card-sub">Pergerakan tonase yang masih harus dipenuhi</p>
+      <div class="chart-canvas-wrap tall"><canvas id="chart-outstanding"></canvas></div>
+    </div>
+
+    <p class="muted" style="font-size:12px;margin-top:12px;">Klik salah satu baris tanggal atau titik grafik untuk langsung membuka detail lengkapnya di tab Data Harian.</p>
   </div>
 
 </main>
@@ -710,7 +746,12 @@ function applyTheme(theme){
 }
 function getCurrentTheme(){ return document.documentElement.getAttribute('data-theme') || 'dark'; }
 applyTheme(getCurrentTheme());
-el.btnThemeToggle.addEventListener('click', ()=> applyTheme(getCurrentTheme()==='dark' ? 'light' : 'dark'));
+el.btnThemeToggle.addEventListener('click', ()=> {
+  applyTheme(getCurrentTheme()==='dark' ? 'light' : 'dark');
+  if (state.view === 'summary' && typeof computeDateSummaries === 'function'){
+    renderSummaryCharts(computeDateSummaries());
+  }
+});
 
 /* ---------- CSV parsing ---------- */
 function parseCSV(text){
@@ -1382,25 +1423,251 @@ function renderSummary(){
     </tr>`;
   }).join('');
   el.summaryTbody.querySelectorAll('tr[data-date-label]').forEach(tr => {
-    tr.addEventListener('click', () => {
-      const label = tr.dataset.dateLabel;
-      const idx = state.dateList.findIndex(d => d.label === label);
-      if (idx === -1) return;
-      state.dateIndex = idx;
-      state.lastDateLabel = label;
-      state.records = state.dateList[idx].records;
-      state.selected = null;
-      updateSelectedChip();
-      updateCutoffBadge(label);
-      renderDateTabs();
-      // pindah kembali ke tab Data Harian supaya user langsung lihat detailnya
-      el.viewTabs.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.view === 'date'));
-      state.view = 'date';
-      el.summarySection.classList.add('hidden');
-      el.dateView.classList.remove('hidden');
-      render();
-    });
+    tr.addEventListener('click', () => openDateDetail(tr.dataset.dateLabel));
   });
+  renderSummaryCharts(summaries);
+}
+
+// Dipakai bareng oleh klik baris tabel "Pergerakan per Tanggal" dan klik titik/bar
+// pada grafik Ringkasan & Pergerakan — keduanya lompat ke detail tanggal di tab Data Harian.
+function openDateDetail(label){
+  const idx = state.dateList.findIndex(d => d.label === label);
+  if (idx === -1) return;
+  state.dateIndex = idx;
+  state.lastDateLabel = label;
+  state.records = state.dateList[idx].records;
+  state.selected = null;
+  updateSelectedChip();
+  updateCutoffBadge(label);
+  renderDateTabs();
+  // pindah kembali ke tab Data Harian supaya user langsung lihat detailnya
+  el.viewTabs.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.view === 'date'));
+  state.view = 'date';
+  el.summarySection.classList.add('hidden');
+  el.dateView.classList.remove('hidden');
+  render();
+}
+
+/* ---------- grafik tab Ringkasan & Pergerakan ---------- */
+let charts = { memoDo: null, status: null, outstanding: null };
+
+function cssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function chartColors(){
+  return {
+    text: cssVar('--text'),
+    muted: cssVar('--muted'),
+    border: cssVar('--border'),
+    surface: cssVar('--surface'),
+    amber: cssVar('--amber'),
+    green: cssVar('--green'),
+    red: cssVar('--red'),
+    violet: cssVar('--violet'),
+  };
+}
+
+// Untuk >14 tanggal, kurangi label sumbu X otomatis biar tidak bertumpuk,
+// tapi titik data & tooltip tetap tersedia untuk semua tanggal.
+function xTickCallback(labels){
+  const n = labels.length;
+  if (n <= 14) return function(val, idx){ return labels[idx]; };
+  const step = Math.ceil(n / 14);
+  return function(val, idx){ return (idx % step === 0 || idx === n - 1) ? labels[idx] : ''; };
+}
+
+function renderSummaryCharts(summaries){
+  if (typeof Chart === 'undefined') return;
+  const labels = summaries.map(s => s.label);
+  const c = chartColors();
+  const gridColor = 'rgba(' + (getCurrentTheme() === 'light' ? '0,0,0,.06' : '255,255,255,.08') + ')';
+  const baseScale = {
+    grid: { color: gridColor, drawTicks: false },
+    ticks: { color: c.muted, font: { family: "'Inter', sans-serif", size: 10.5 } },
+    border: { color: c.border },
+  };
+  const onClickDate = (evt, elements, chart) => {
+    if (!elements || !elements.length) return;
+    const idx = elements[0].index;
+    const label = chart.data.labels[idx];
+    if (label) openDateDetail(label);
+  };
+
+  /* --- 1) Tren Memo vs DO (line) --- */
+  const elMemoDo = document.getElementById('chart-memo-do');
+  if (elMemoDo){
+    if (charts.memoDo) charts.memoDo.destroy();
+    if (!summaries.length){
+      elMemoDo.getContext('2d').clearRect(0,0,elMemoDo.width,elMemoDo.height);
+    } else {
+      charts.memoDo = new Chart(elMemoDo, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Tonase Memo',
+              data: summaries.map(s => s.totalTonase),
+              borderColor: c.violet, backgroundColor: c.violet,
+              pointBackgroundColor: c.violet, pointBorderColor: c.violet,
+              tension: .3, pointRadius: 3.5, pointHoverRadius: 5.5, borderWidth: 2.5,
+            },
+            {
+              label: 'Tonase DO',
+              data: summaries.map(s => s.totalTonaseDO),
+              borderColor: c.green, backgroundColor: c.green,
+              pointBackgroundColor: c.green, pointBorderColor: c.green,
+              tension: .3, pointRadius: 3.5, pointHoverRadius: 5.5, borderWidth: 2.5,
+            },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          onClick: onClickDate,
+          onHover: (evt, els, chart) => { chart.canvas.style.cursor = els.length ? 'pointer' : 'default'; },
+          plugins: {
+            legend: {
+              position: 'bottom', labels: { color: c.muted, boxWidth: 10, boxHeight: 10, padding: 14, font: { size: 11.5 } },
+            },
+            tooltip: {
+              backgroundColor: c.surface, titleColor: c.text, bodyColor: c.text,
+              borderColor: c.border, borderWidth: 1, padding: 10, boxPadding: 4,
+              titleFont: { family: "'Barlow Condensed', sans-serif", size: 13, weight: '700' },
+              bodyFont: { family: "'Inter', sans-serif", size: 11.5 },
+              callbacks: {
+                title: (items) => items[0].label,
+                afterBody: (items) => {
+                  const s = summaries[items[0].dataIndex];
+                  const pct = s.totalTonase > 0 ? Math.round(s.totalTonaseDO / s.totalTonase * 100) : 0;
+                  return ['% Terpenuhi: ' + pct + '%', 'Tonase Sisa: ' + fmtNum(s.totalSisa)];
+                },
+                label: (item) => item.dataset.label + ': ' + fmtNum(item.parsed.y),
+              },
+            },
+          },
+          scales: {
+            x: { ...baseScale, ticks: { ...baseScale.ticks, callback: xTickCallback(labels), maxRotation: 0, autoSkip: false } },
+            y: { ...baseScale, ticks: { ...baseScale.ticks, callback: (v) => fmtNum(v) } },
+          },
+        },
+      });
+    }
+  }
+
+  /* --- 2) Komposisi Status (100% stacked bar) --- */
+  const elStatus = document.getElementById('chart-status');
+  if (elStatus){
+    if (charts.status) charts.status.destroy();
+    if (!summaries.length){
+      elStatus.getContext('2d').clearRect(0,0,elStatus.width,elStatus.height);
+    } else {
+      const pctOf = (s, key) => s.total ? (s.counts[key] / s.total * 100) : 0;
+      charts.status = new Chart(elStatus, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Lunas', key: 'lunas', backgroundColor: c.green, data: summaries.map(s => pctOf(s, 'lunas')) },
+            { label: 'Kekurangan', key: 'kurang', backgroundColor: c.red, data: summaries.map(s => pctOf(s, 'kurang')) },
+            { label: 'Siap Kirim', key: 'siap', backgroundColor: c.amber, data: summaries.map(s => pctOf(s, 'siap')) },
+            { label: 'Kosong & Sisa Kirim', key: 'kosong', backgroundColor: c.violet, data: summaries.map(s => pctOf(s, 'kosong')) },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          onClick: onClickDate,
+          onHover: (evt, els, chart) => { chart.canvas.style.cursor = els.length ? 'pointer' : 'default'; },
+          plugins: {
+            legend: {
+              position: 'bottom', labels: { color: c.muted, boxWidth: 10, boxHeight: 10, padding: 12, font: { size: 10.5 } },
+            },
+            tooltip: {
+              backgroundColor: c.surface, titleColor: c.text, bodyColor: c.text,
+              borderColor: c.border, borderWidth: 1, padding: 10, boxPadding: 4,
+              titleFont: { family: "'Barlow Condensed', sans-serif", size: 13, weight: '700' },
+              bodyFont: { family: "'Inter', sans-serif", size: 11.5 },
+              callbacks: {
+                label: (item) => {
+                  const s = summaries[item.dataIndex];
+                  const key = item.dataset.key;
+                  return item.dataset.label + ': ' + s.counts[key] + ' line (' + Math.round(item.parsed.y) + '%)';
+                },
+              },
+            },
+          },
+          scales: {
+            x: { ...baseScale, stacked: true, ticks: { ...baseScale.ticks, callback: xTickCallback(labels), maxRotation: 0, autoSkip: false } },
+            y: { ...baseScale, stacked: true, min: 0, max: 100, ticks: { ...baseScale.ticks, callback: (v) => v + '%' } },
+          },
+        },
+      });
+    }
+  }
+
+  /* --- 3) Tren Outstanding (area) --- */
+  const elOut = document.getElementById('chart-outstanding');
+  if (elOut){
+    if (charts.outstanding) charts.outstanding.destroy();
+    if (!summaries.length){
+      elOut.getContext('2d').clearRect(0,0,elOut.width,elOut.height);
+    } else {
+      const rgb = getCurrentTheme() === 'light' ? '124,92,224' : '167,139,250';
+      charts.outstanding = new Chart(elOut, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Tonase Sisa',
+            data: summaries.map(s => s.totalSisa),
+            borderColor: c.violet, backgroundColor: 'rgba(' + rgb + ',.16)',
+            pointBackgroundColor: c.violet, pointBorderColor: c.violet,
+            fill: true, tension: .25, pointRadius: 3.5, pointHoverRadius: 5.5, borderWidth: 2.5,
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          onClick: onClickDate,
+          onHover: (evt, els, chart) => { chart.canvas.style.cursor = els.length ? 'pointer' : 'default'; },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: c.surface, titleColor: c.text, bodyColor: c.text,
+              borderColor: c.border, borderWidth: 1, padding: 10, boxPadding: 4,
+              titleFont: { family: "'Barlow Condensed', sans-serif", size: 13, weight: '700' },
+              bodyFont: { family: "'Inter', sans-serif", size: 11.5 },
+              callbacks: {
+                title: (items) => items[0].label,
+                label: (item) => {
+                  const idx = item.dataIndex;
+                  const cur = summaries[idx].totalSisa;
+                  const lines = ['Tonase Sisa: ' + fmtNum(cur)];
+                  if (idx > 0){
+                    const prev = summaries[idx - 1].totalSisa;
+                    const delta = cur - prev;
+                    const pct = prev !== 0 ? (delta / prev * 100) : 0;
+                    if (Math.abs(delta) < 0.005){
+                      lines.push('Perubahan: tetap');
+                    } else {
+                      const arrow = delta > 0 ? '▲ naik' : '▼ turun';
+                      lines.push('Perubahan: ' + arrow + ' ' + fmtNum(Math.abs(delta)) + ' (' + (delta > 0 ? '+' : '-') + Math.abs(Math.round(pct * 10) / 10) + '%)');
+                    }
+                  }
+                  return lines;
+                },
+              },
+            },
+          },
+          scales: {
+            x: { ...baseScale, ticks: { ...baseScale.ticks, callback: xTickCallback(labels), maxRotation: 0, autoSkip: false } },
+            y: { ...baseScale, ticks: { ...baseScale.ticks, callback: (v) => fmtNum(v) }, beginAtZero: true },
+          },
+        },
+      });
+    }
+  }
 }
 
 /* ---------- search ---------- */
