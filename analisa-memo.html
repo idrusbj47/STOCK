@@ -242,6 +242,14 @@ table.rank-table tbody tr.selected{ background: rgba(var(--amber-rgb), .12); }
 .delta-up{ font-family: var(--font-mono); font-size:10px; color: var(--green); margin-left:4px; white-space:nowrap; }
 .delta-down{ font-family: var(--font-mono); font-size:10px; color: var(--red); margin-left:4px; white-space:nowrap; }
 
+.summary-kpi-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin-bottom:14px; }
+@media (max-width:720px){ .summary-kpi-grid{ grid-template-columns: repeat(2,1fr); } }
+.summary-kpi-card{ background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); padding:12px 14px; }
+.summary-kpi-card .k{ font-family: var(--font-mono); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color: var(--muted); }
+.summary-kpi-card .v{ font-family: var(--font-display); font-weight:700; font-size:22px; color: var(--text); margin-top:4px; line-height:1.1; }
+.summary-narrative{ font-size:13px; line-height:1.65; color: var(--text); background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); padding:14px 16px; margin-bottom:16px; }
+.summary-narrative b{ color: var(--amber); }
+
 .results{ display:flex; flex-direction:column; gap:8px; }
 .item-card{ background: var(--surface); border:1px solid var(--border); border-radius: 12px; padding:12px 14px; cursor:pointer; }
 .item-card:hover{ border-color: var(--amber); }
@@ -491,6 +499,8 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
   </div>
 
   <div id="summary-section" class="hidden">
+    <div class="section-title">Ringkasan Keseluruhan</div>
+    <div id="summary-overview"></div>
     <div class="section-title">Pergerakan per Tanggal <small id="summary-count"></small></div>
     <div class="rank-table-wrap">
       <table class="rank-table">
@@ -604,6 +614,7 @@ const el = {
   summarySection: document.getElementById('summary-section'),
   summaryTbody: document.getElementById('summary-tbody'),
   summaryCount: document.getElementById('summary-count'),
+  summaryOverview: document.getElementById('summary-overview'),
   searchInput: document.getElementById('search-input'),
   btnClearSearch: document.getElementById('btn-clear-search'),
   selectedChip: document.getElementById('selected-chip'),
@@ -871,8 +882,12 @@ function applyLoadedCSV(text){
   state.lastDateLabel = dateList[newIndex] ? dateList[newIndex].label : null;
   state.records = dateList[newIndex] ? dateList[newIndex].records : [];
   renderDateTabs();
-  updateCutoffBadge(state.lastDateLabel || '');
-  if (state.view === 'summary') renderSummary();
+  if (state.view === 'summary'){
+    if (el.cutoffBadge) el.cutoffBadge.classList.add('hidden');
+    renderSummary();
+  } else {
+    updateCutoffBadge(state.lastDateLabel || '');
+  }
   return dateList;
 }
 
@@ -1248,19 +1263,22 @@ el.viewTabs.addEventListener('click', (e) => {
   if (state.view === 'summary'){
     el.dateView.classList.add('hidden');
     el.summarySection.classList.remove('hidden');
+    if (el.cutoffBadge) el.cutoffBadge.classList.add('hidden');
     renderSummary();
   } else {
     el.summarySection.classList.add('hidden');
     el.dateView.classList.remove('hidden');
+    updateCutoffBadge(state.lastDateLabel || '');
   }
 });
 
 // Ringkasan pergerakan 4 status (Lunas/Kurang/Siap/Kosong & Sisa Kirim) untuk SEMUA tanggal
 // sekaligus, biar ketahuan tren-nya. Ini cuma tampilan ringkas — detail per baris tetap
 // dibuka lewat tab tanggal masing-masing (klik baris di sini akan lompat ke tab itu).
-function renderSummary(){
-  if (!el.summaryTbody) return;
-  const summaries = state.dateList.map(d => {
+// Hitung ringkasan per tanggal (dipakai bareng oleh tampilan tabel, kartu ringkasan,
+// serta export cetak/Excel dari tab Ringkasan & Pergerakan).
+function computeDateSummaries(){
+  return state.dateList.map(d => {
     const counts = { lunas:0, kurang:0, siap:0, kosong:0 };
     const tonase = { lunas:0, kurang:0, siap:0, kosong:0 };
     const tonaseDo = { lunas:0, kurang:0, siap:0, kosong:0 };
@@ -1274,6 +1292,54 @@ function renderSummary(){
     });
     return { label: d.label, total: d.records.length, counts, tonase, tonaseDo, totalTonase, totalTonaseDO, totalSisa: totalTonase - totalTonaseDO };
   });
+}
+
+// Kartu & narasi ringkasan keseluruhan di atas tabel Pergerakan per Tanggal — merangkum
+// kondisi tanggal terbaru serta tren dibanding tanggal sebelumnya.
+function renderSummaryOverview(summaries){
+  if (!el.summaryOverview) return;
+  if (!summaries.length){ el.summaryOverview.innerHTML = ''; return; }
+  const latest = summaries[summaries.length - 1];
+  const prev = summaries.length > 1 ? summaries[summaries.length - 2] : null;
+  const pct = (n, t) => t ? Math.round(n / t * 100) : 0;
+  const avgLunasPct = Math.round(summaries.reduce((s, x) => s + pct(x.counts.lunas, x.total), 0) / summaries.length);
+  const deltaDO = prev ? latest.totalTonaseDO - prev.totalTonaseDO : null;
+  const deltaLine = prev ? latest.total - prev.total : null;
+  let trendTxt = 'belum ada tanggal pembanding.';
+  if (deltaDO !== null){
+    if (Math.abs(deltaDO) < 0.005) trendTxt = `stabil dibanding <b>${escapeHtml(prev.label)}</b>.`;
+    else if (deltaDO > 0) trendTxt = `naik <b>${fmtNum(deltaDO)}</b> dibanding <b>${escapeHtml(prev.label)}</b>.`;
+    else trendTxt = `turun <b>${fmtNum(Math.abs(deltaDO))}</b> dibanding <b>${escapeHtml(prev.label)}</b>.`;
+  }
+  const lineTrendTxt = deltaLine === null ? '' : (
+    deltaLine === 0 ? ' Jumlah line tetap sama dengan tanggal sebelumnya.' :
+    deltaLine > 0 ? ` Jumlah line bertambah ${deltaLine} dibanding tanggal sebelumnya.` :
+    ` Jumlah line berkurang ${Math.abs(deltaLine)} dibanding tanggal sebelumnya.`
+  );
+
+  el.summaryOverview.innerHTML = `
+    <div class="summary-kpi-grid">
+      <div class="summary-kpi-card"><div class="k">Total Tanggal Tercatat</div><div class="v">${summaries.length}</div></div>
+      <div class="summary-kpi-card"><div class="k">Line Terbaru (${escapeHtml(latest.label)})</div><div class="v">${latest.total}</div></div>
+      <div class="summary-kpi-card"><div class="k">Rata-rata % Lunas</div><div class="v">${avgLunasPct}%</div></div>
+      <div class="summary-kpi-card"><div class="k">Tonase Memo Terbaru</div><div class="v">${fmtNum(latest.totalTonase)}</div></div>
+      <div class="summary-kpi-card"><div class="k">Tonase DO Terbaru</div><div class="v" style="color:var(--green);">${fmtNum(latest.totalTonaseDO)}</div></div>
+      <div class="summary-kpi-card"><div class="k">Tonase Sisa Terbaru</div><div class="v" style="color:var(--red);">${fmtNum(latest.totalSisa)}</div></div>
+    </div>
+    <p class="summary-narrative">
+      Pada tanggal terbaru <b>${escapeHtml(latest.label)}</b>, tercatat <b>${latest.total}</b> line dengan
+      <b>${latest.counts.lunas}</b> lunas (${pct(latest.counts.lunas, latest.total)}%),
+      <b>${latest.counts.kurang}</b> kekurangan (${pct(latest.counts.kurang, latest.total)}%),
+      <b>${latest.counts.siap}</b> siap kirim (${pct(latest.counts.siap, latest.total)}%), dan
+      <b>${latest.counts.kosong}</b> kosong &amp; sisa kirim (${pct(latest.counts.kosong, latest.total)}%).
+      Tonase DO terkirim ${trendTxt}${lineTrendTxt}
+    </p>`;
+}
+
+function renderSummary(){
+  if (!el.summaryTbody) return;
+  const summaries = computeDateSummaries();
+  renderSummaryOverview(summaries);
   el.summaryCount.textContent = summaries.length + ' tanggal';
   if (!summaries.length){
     el.summaryTbody.innerHTML = '<tr><td colspan="9" class="empty-note">Belum ada data</td></tr>';
@@ -1348,8 +1414,38 @@ el.btnSaveSettings.addEventListener('click', () => {
 el.btnRefresh.addEventListener('click', () => loadData(true));
 
 /* ---------- excel export ---------- */
+// Export khusus tab Ringkasan & Pergerakan — satu sheet berisi rekap pergerakan per tanggal
+// persis seperti yang tampil di tabel, bukan detail tanggal yang lagi aktif di tab lain.
+function downloadSummaryExcel(){
+  if (!state.dateList.length){ showToast('Belum ada data untuk diunduh'); return; }
+  showToast('Menyiapkan file Excel…');
+  try{
+    const summaries = computeDateSummaries();
+    const pct = (n, t) => t ? Math.round(n / t * 100) + '%' : '0%';
+    const rows = summaries.map(s => ({
+      Tanggal: s.label,
+      'Total Line': s.total,
+      'Tonase Memo': Math.round(s.totalTonase * 100) / 100,
+      'Tonase DO': Math.round(s.totalTonaseDO * 100) / 100,
+      'Tonase Sisa': Math.round(s.totalSisa * 100) / 100,
+      Lunas: s.counts.lunas, '% Lunas': pct(s.counts.lunas, s.total),
+      Kurang: s.counts.kurang, '% Kurang': pct(s.counts.kurang, s.total),
+      Siap: s.counts.siap, '% Siap': pct(s.counts.siap, s.total),
+      'Kosong & Sisa Kirim': s.counts.kosong, '% Kosong': pct(s.counts.kosong, s.total),
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Pergerakan per Tanggal');
+    const today = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, 'Ringkasan_Pergerakan_' + today + '.xlsx');
+    showToast('File Excel diunduh');
+  }catch(err){
+    console.error(err);
+    showToast('Gagal membuat file Excel: ' + (err && err.message ? err.message : 'coba lagi'));
+  }
+}
 el.btnDownload.addEventListener('click', () => {
   if (typeof XLSX === 'undefined'){ showToast('Komponen Excel gagal dimuat, cek koneksi'); return; }
+  if (state.view === 'summary'){ downloadSummaryExcel(); return; }
   if (!state.records.length){ showToast('Belum ada data untuk diunduh'); return; }
   showToast('Menyiapkan file Excel…');
   try{
@@ -1555,10 +1651,45 @@ function buildPrintArea(){
 
   document.getElementById('print-area').innerHTML = html;
 }
+function prSummaryTable(summaries){
+  if (!summaries.length) return '<div class="pr-empty">Tidak ada data.</div>';
+  const pct = (n, t) => t ? Math.round(n / t * 100) : 0;
+  const rows = summaries.map(s => `<tr>
+    <td>${escapeHtml(s.label)}</td><td>${s.total}</td>
+    <td>${fmtNum(s.totalTonase)}</td><td>${fmtNum(s.totalTonaseDO)}</td><td>${fmtNum(s.totalSisa)}</td>
+    <td>${s.counts.lunas} (${pct(s.counts.lunas, s.total)}%)</td>
+    <td>${s.counts.kurang} (${pct(s.counts.kurang, s.total)}%)</td>
+    <td>${s.counts.siap} (${pct(s.counts.siap, s.total)}%)</td>
+    <td>${s.counts.kosong} (${pct(s.counts.kosong, s.total)}%)</td>
+  </tr>`).join('');
+  return `<table class="pr-table">
+    <thead><tr>
+      <th>Tanggal</th><th>Total Line</th><th>Tonase Memo</th><th>Tonase DO</th><th>Tonase Sisa</th>
+      <th>Lunas</th><th>Kurang</th><th>Siap</th><th>Kosong &amp; Sisa Kirim</th>
+    </tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+// Cetak khusus tab Ringkasan & Pergerakan — isinya HANYA rekap pergerakan per tanggal
+// (bukan detail item tanggal yang sedang aktif di tab Data Harian).
+function buildSummaryPrintArea(){
+  const summaries = computeDateSummaries();
+  const html = `<div class="pr-page">
+    ${prHeader('Ringkasan &amp; Pergerakan per Tanggal')}
+    <div class="pr-section-title">Pergerakan per Tanggal <span style="font-weight:400;font-size:11px;color:#667085;">(${summaries.length} tanggal)</span></div>
+    ${prSummaryTable(summaries)}
+    <div class="pr-footer">Ringkasan &amp; Pergerakan — ${summaries.length} tanggal</div>
+  </div>`;
+  document.getElementById('print-area').innerHTML = html;
+}
 el.btnPrint = document.getElementById('btn-print');
 el.btnPrint.addEventListener('click', () => {
-  if (!state.records.length){ showToast('Belum ada data untuk dicetak'); return; }
-  buildPrintArea();
+  if (state.view === 'summary'){
+    if (!state.dateList.length){ showToast('Belum ada data untuk dicetak'); return; }
+    buildSummaryPrintArea();
+  } else {
+    if (!state.records.length){ showToast('Belum ada data untuk dicetak'); return; }
+    buildPrintArea();
+  }
   setTimeout(() => window.print(), 60);
 });
 
