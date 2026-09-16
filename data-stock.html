@@ -1872,7 +1872,7 @@ el.editForm.addEventListener('submit', async (e) => {
 
 el.btnOpenMaster.addEventListener('click', openMaster);
 el.btnCloseMaster.addEventListener('click', closeMaster);
-el.masterOverlay.addEventListener('click', (e) => { if (e.target === el.masterOverlay) closeMaster(); });
+el.masterOverlay.addEventListener('click', () => {}); // sentuh area luar TIDAK menutup tab Master MC, harus tekan tombol ✕
 el.btnMasterSearch.addEventListener('click', runMasterSearch);
 el.masterSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runMasterSearch(); });
 el.masterSearchInput.addEventListener('input', () => updateClearBtn(el.masterSearchInput, el.btnClearMasterSearch));
@@ -1936,6 +1936,13 @@ function runMasterSearch() {
     || String(r.model).toLowerCase().includes(q)
     || String(r.customer).toLowerCase().includes(q)
     || String(r.so).toLowerCase().includes(q)
+    || String(r.berat).toLowerCase().includes(q)
+    || String(r.sales).toLowerCase().includes(q)
+    || String(r.internal).toLowerCase().includes(q)
+    || String(r.ccode).toLowerCase().includes(q)
+    || String(r.pic).toLowerCase().includes(q)
+    || String(r.ukuran).toLowerCase().includes(q)
+    || String(r.flute).toLowerCase().includes(q)
   );
 
   const truncated = matches.length > MAX_RESULTS;
