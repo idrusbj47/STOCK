@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>ANALISA MEMO</title>
+<meta name="theme-color" content="#12161B" id="meta-theme-color" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
+<style>
+:root{
+  --bg:#12161B; --panel:#181D24; --panel2:#1D232B; --border:#2A323C; --text:#EDF1F5; --sub:#9AA6B2; --mute:#6B7684;
+  --accent:#4C8DFF; --lunas:#38C172; --kurang:#F0483E; --siap:#F5A623; --kosong:#8A93A6;
+  --radius:14px; --font-ui:'Inter',sans-serif; --font-disp:'Barlow Condensed',sans-serif; --font-mono:'JetBrains Mono',monospace;
+}
+:root[data-theme="light"]{
+  --bg:#F4F6F9; --panel:#FFFFFF; --panel2:#F0F3F7; --border:#E1E6EC; --text:#151A21; --sub:#5C6773; --mute:#8894A0;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-ui);-webkit-font-smoothing:antialiased;}
+h1,h2,h3{font-family:var(--font-disp);font-weight:700;margin:0;letter-spacing:.2px;}
+button{font-family:inherit;cursor:pointer;}
+input,select{font-family:inherit;}
+.wrap{max-width:1280px;margin:0 auto;padding:16px 16px 60px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 0 18px;border-bottom:1px solid var(--border);margin-bottom:18px;}
+.brand{display:flex;flex-direction:column;gap:2px;}
+.brand h1{font-size:26px;}
+.brand .sub{color:var(--sub);font-size:12.5px;}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:.15s;}
+.btn:hover{border-color:var(--accent);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.badge{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--sub);}
+.date-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.date-tab{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:9px 16px;font-size:13.5px;font-weight:600;color:var(--sub);}
+.date-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+@media (max-width:820px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+.kpi-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:.15s;border-left:4px solid transparent;}
+.kpi-card:hover{transform:translateY(-2px);}
+.kpi-card.active{outline:2px solid var(--accent);}
+.kpi-card[data-status="lunas"]{border-left-color:var(--lunas);}
+.kpi-card[data-status="kurang"]{border-left-color:var(--kurang);}
+.kpi-card[data-status="siap"]{border-left-color:var(--siap);}
+.kpi-card[data-status="kosong"]{border-left-color:var(--kosong);}
+.kpi-card .lbl{font-size:12.5px;color:var(--sub);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.kpi-card .val{font-family:var(--font-disp);font-size:34px;font-weight:700;margin:4px 0;}
+.kpi-card .sub{font-size:12px;color:var(--mute);}
+.kpi-card .t2{font-size:11.5px;color:var(--mute);margin-top:2px;}
+.summary-strip{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+.summary-chip{flex:1;min-width:160px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+.summary-chip .lbl{font-size:11.5px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;}
+.summary-chip .val{font-family:var(--font-mono);font-size:18px;font-weight:600;margin-top:4px;}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+.search{flex:1;min-width:220px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:13.5px;}
+.select{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;}
+.table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:auto;}
+table{width:100%;border-collapse:collapse;font-size:12.8px;white-space:nowrap;}
+thead th{position:sticky;top:0;background:var(--panel2);color:var(--sub);text-align:left;padding:10px 12px;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid var(--border);}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--border);}
+tbody tr:hover{background:var(--panel2);cursor:pointer;}
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;}
+.status-pill.lunas{background:rgba(56,193,114,.15);color:var(--lunas);}
+.status-pill.kurang{background:rgba(240,72,62,.15);color:var(--kurang);}
+.status-pill.siap{background:rgba(245,166,35,.15);color:var(--siap);}
+.status-pill.kosong{background:rgba(138,147,166,.18);color:var(--kosong);}
+.mono{font-family:var(--font-mono);}
+.empty{padding:40px;text-align:center;color:var(--mute);}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:50;}
+.overlay.show{display:flex;}
+@media (min-width:720px){.overlay{align-items:center;}}
+.sheet{background:var(--panel);border:1px solid var(--border);border-radius:16px 16px 0 0;max-width:640px;width:100%;max-height:86vh;overflow:auto;padding:20px;}
+@media (min-width:720px){.sheet{border-radius:16px;}}
+.sheet h3{font-size:20px;margin-bottom:10px;}
+.sheet .row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--border);font-size:13px;}
+.sheet .row span:first-child{color:var(--sub);}
+.sheet .close{position:absolute;top:14px;right:14px;}
+.sheet-inner{position:relative;}
+.mini-title{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--sub);margin:16px 0 6px;font-weight:700;}
+.mini-table{width:100%;border-collapse:collapse;font-size:12px;}
+.mini-table td,.mini-table th{padding:5px 6px;border-bottom:1px solid var(--border);text-align:left;}
+.settings-form label{display:block;font-size:12px;color:var(--sub);margin:12px 0 6px;font-weight:600;}
+.settings-form input{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;color:var(--text);font-size:12.5px;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:60;}
+.toast.show{opacity:1;}
+.data-banner{background:rgba(245,166,35,.12);border:1px solid var(--siap);color:var(--siap);border-radius:10px;padding:10px 14px;font-size:12.5px;margin-bottom:14px;display:none;}
+.data-banner.show{display:block;}
+.hidden{display:none !important;}
+.icon{width:16px;height:16px;}
+.note{font-size:12px;color:var(--mute);margin:6px 0 16px;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <h1>Analisa Memo</h1>
+      <div class="sub" id="cutoff-label">Memuat data…</div>
+    </div>
+    <div class="top-actions">
+      <span class="badge" id="rows-badge">–</span>
+      <button class="btn" id="btn-theme"><span id="theme-label">☀︎ Terang</span></button>
+      <button class="btn" id="btn-settings">⚙ Sumber Data</button>
+      <button class="btn primary" id="btn-refresh">⟳ Refresh</button>
+    </div>
+  </div>
+
+  <div class="data-banner" id="data-banner"></div>
+  <p class="note">Qty &amp; tonase yang <b>sudah dikirim</b> diambil dari kolom A–K (sumber Qview, 1 sumber pembanding). Pencocokan stok CPS dengan tabel Memo menggunakan <b>MCS# + PART#</b> (bukan MCS# saja) karena satu MCS# bisa punya baris Box dan Layer terpisah di Stock FG.</p>
+
+  <div class="date-tabs" id="date-tabs"></div>
+
+  <div class="kpi-grid" id="kpi-grid">
+    <div class="kpi-card" data-status="lunas">
+      <div class="lbl">Lunas Memo</div>
+      <div class="val" id="kpi-lunas-val">0%</div>
+      <div class="sub" id="kpi-lunas-sub">0 line</div>
+      <div class="t2" id="kpi-lunas-tonase">Tonase: 0</div>
+    </div>
+    <div class="kpi-card" data-status="kurang">
+      <div class="lbl">Kekurangan Memo</div>
+      <div class="val" id="kpi-kurang-val">0%</div>
+      <div class="sub" id="kpi-kurang-sub">0 line</div>
+      <div class="t2" id="kpi-kurang-tonase">Tonase: 0</div>
+    </div>
+    <div class="kpi-card" data-status="siap">
+      <div class="lbl">Siap Kirim</div>
+      <div class="val" id="kpi-siap-val">0%</div>
+      <div class="sub" id="kpi-siap-sub">0 line</div>
+      <div class="t2" id="kpi-siap-tonase">Tonase: 0</div>
+    </div>
+    <div class="kpi-card" data-status="kosong">
+      <div class="lbl">Memo Kosong</div>
+      <div class="val" id="kpi-kosong-val">0%</div>
+      <div class="sub" id="kpi-kosong-sub">0 line</div>
+      <div class="t2" id="kpi-kosong-tonase">Tonase: 0</div>
+    </div>
+  </div>
+
+  <div class="summary-strip">
+    <div class="summary-chip"><div class="lbl">Total Memo Qty</div><div class="val" id="sum-memoqty">0</div></div>
+    <div class="summary-chip"><div class="lbl">Total Tonase Memo</div><div class="val" id="sum-tonase">0</div></div>
+    <div class="summary-chip"><div class="lbl">Total Sudah Dikirim (Qty)</div><div class="val" id="sum-sent">0</div></div>
+    <div class="summary-chip"><div class="lbl">Total Sisa Qty</div><div class="val" id="sum-sisa">0</div></div>
+  </div>
+
+  <div class="toolbar">
+    <input class="search" id="search" placeholder="Cari No / Customer / SO Num / MCS Num / Sales / Remark…" />
+    <select class="select" id="filter-status">
+      <option value="">Semua status</option>
+      <option value="lunas">Lunas Memo</option>
+      <option value="kurang">Kekurangan Memo</option>
+      <option value="siap">Siap Kirim</option>
+      <option value="kosong">Memo Kosong</option>
+    </select>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>No</th><th>Sales</th><th>Customer</th><th>Comp / Model</th><th>SO Num</th><th>MCS Num</th>
+          <th>Order Qty</th><th>Memo Qty</th><th>Tonase</th><th>Sudah Kirim</th><th>Sisa</th><th>Stok CPS</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty hidden" id="empty-state">Tidak ada data untuk filter saat ini.</div>
+  </div>
+</div>
+
+<div class="overlay" id="detail-overlay">
+  <div class="sheet sheet-inner">
+    <button class="btn close" id="detail-close">✕</button>
+    <h3 id="detail-title">Detail</h3>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="settings-overlay">
+  <div class="sheet sheet-inner">
+    <button class="btn close" id="settings-close">✕</button>
+    <h3>Sumber Data (CSV)</h3>
+    <div class="settings-form">
+      <label>Link CSV (Google Sheet publish-to-web)</label>
+      <input id="csv-url-input" />
+      <div style="margin-top:16px;display:flex;gap:8px;">
+        <button class="btn primary" id="btn-save-settings">Simpan & Muat</button>
+        <button class="btn" id="btn-reset-settings">Kembalikan Default</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=25616349&single=true&output=csv';
+const STORAGE_KEY = 'analisamemo.settings.v2';
+const CSV_CACHE_KEY = 'analisamemo.csv.cache.v2';
+
+const state = {
+  settings: loadSettings(),
+  dateBlocks: [],     // [{label, records:[...]}]
+  dateIndex: 0,
+  lastDateLabel: null,
+  records: [],
+  search: '',
+  statusFilter: '',
+};
+
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const s = raw ? JSON.parse(raw) : {};
+    return { csvUrl: s.csvUrl || DEFAULT_CSV_URL };
+  }catch(e){ return { csvUrl: DEFAULT_CSV_URL }; }
+}
+function saveSettings(s){ state.settings = s; localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+
+/* ================= THEME ================= */
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('analisamemo.theme', theme);
+  document.getElementById('theme-label').textContent = theme === 'dark' ? '☀︎ Terang' : '🌙 Gelap';
+}
+function getCurrentTheme(){ return document.documentElement.getAttribute('data-theme') || 'dark'; }
+(function(){
+  const saved = localStorage.getItem('analisamemo.theme');
+  applyTheme(saved || 'dark');
+})();
+document.getElementById('btn-theme').addEventListener('click', ()=> applyTheme(getCurrentTheme()==='dark' ? 'light' : 'dark'));
+
+/* ================= CSV PARSE ================= */
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (inQuotes){
+      if (c === '"'){ if (text[i+1] === '"'){ field += '"'; i++; } else { inQuotes = false; } }
+      else field += c;
+    } else if (c === '"'){ inQuotes = true; }
+    else if (c === ','){ row.push(field); field=''; }
+    else if (c === '\r'){ /* skip */ }
+    else if (c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+    else field += c;
+  }
+  if (field.length>0 || row.length>0){ row.push(field); rows.push(row); }
+  return rows;
+}
+function numParse(s){
+  s = (s==null? '' : String(s)).trim();
+  if (s === '' || s === '-') return 0;
+  s = s.replace(/\./g,'').replace(',', '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+function normKey(s){ return String(s||'').trim().toUpperCase().replace(/\s+/g,' '); }
+
+/* ================= NEW STRUCTURE PARSER =================
+   Kolom A-K (idx 0-10): Tahun,Sales,SO Num,Customer,MCS Num,Comp /,Model,Bulan,day,DO Qty,Total KIM (Kg)
+   -> sumber pembanding "sudah dikirim berapa" (dari Qview), 1 baris = 1 shipment.
+   Lalu berulang per tanggal, tiap blok lebar 30 kolom dimulai di kolom yang berisi label "Tanggal Memo":
+     offset+0..10  = tabel Memo  (No,Sales,Sales,Customer,Comp / Model,SO Num,MCS Num,Order Qty,Memo Qty,Tonase,Remark)
+     offset+12..28 = tabel Stock FG (NO.,CODE,NAME,NAME,AC#,MCS#,MC MODEL,C#,DESIGN,MEASUREMENT,PART#,STS,PCS,SCH.DATE,IN,OUT,BALANCE)
+   Pencocokan stok CPS ke baris Memo: MCS Num (memo) == MCS# (stock) DAN Comp-prefix dari "Comp / Model" == PART# (stock).
+*/
+function buildSentMap(rows){
+  const map = {};
+  for (let i=1; i<rows.length; i++){
+    const r = rows[i]; if (!r) continue;
+    const tahun = String(r[0]||'').trim();
+    const soNum = String(r[2]||'').trim();
+    const mcsNum = String(r[4]||'').trim();
+    if (!soNum || !mcsNum || tahun.toLowerCase()==='total') continue;
+    const key = normKey(soNum) + '|' + normKey(mcsNum);
+    if (!map[key]) map[key] = { doQty:0, tonase:0, n:0 };
+    map[key].doQty += numParse(r[9]);
+    map[key].tonase += numParse(r[10]);
+    map[key].n++;
+  }
+  return map;
+}
+
+function findBlockStarts(row0){
+  const starts = [];
+  for (let i=0;i<row0.length;i++){
+    if (normKey(row0[i]) === 'TANGGAL MEMO') starts.push(i);
+  }
+  return starts;
+}
+
+function extractMemoRows(rows, memoStart){
+  const out = [];
+  for (let i=2;i<rows.length;i++){
+    const r = rows[i]; if (!r) continue;
+    const s = r.slice(memoStart, memoStart+11);
+    const no = String(s[0]||'').trim();
+    if (!no) continue;
+    const lower = no.toLowerCase();
+    if (lower==='subtotal' || lower==='total' || !/[0-9]/.test(no)) continue;
+    const compModelRaw = String(s[4]||'').trim();
+    const slashIdx = compModelRaw.indexOf('/');
+    const comp = slashIdx === -1 ? compModelRaw : compModelRaw.slice(0, slashIdx);
+    const modelName = slashIdx === -1 ? '' : compModelRaw.slice(slashIdx+1).trim();
+    out.push({
+      no,
+      salesInt: String(s[1]||'').trim(),
+      salesExt: String(s[2]||'').trim(),
+      customer: String(s[3]||'').trim(),
+      compModelRaw, comp: normKey(comp), modelName,
+      soNum: String(s[5]||'').trim(),
+      mcsNum: String(s[6]||'').trim(),
+      orderQty: numParse(s[7]),
+      memoQty: numParse(s[8]),
+      tonase: numParse(s[9]),
+      remark: String(s[10]||'').trim(),
+    });
+  }
+  return out;
+}
+
+function extractStockRows(rows, stockStart){
+  const out = [];
+  for (let i=2;i<rows.length;i++){
+    const r = rows[i]; if (!r) continue;
+    const s = r.slice(stockStart, stockStart+17);
+    const no = String(s[0]||'').trim();
+    if (!no || !/[0-9]/.test(no)) continue;
+    out.push({
+      no, code:String(s[1]||'').trim(), name1:String(s[2]||'').trim(), name2:String(s[3]||'').trim(),
+      ac:String(s[4]||'').trim(), mcs:String(s[5]||'').trim(), mcModel:String(s[6]||'').trim(),
+      cnum:String(s[7]||'').trim(), design:String(s[8]||'').trim(), measurement:String(s[9]||'').trim(),
+      part:String(s[10]||'').trim(), sts:String(s[11]||'').trim(), pcs:numParse(s[12]),
+      schDate:String(s[13]||'').trim(), inQ:numParse(s[14]), outQ:numParse(s[15]), balance:numParse(s[16]),
+    });
+  }
+  return out;
+}
+
+function buildStockIndex(stockRows){
+  const idx = {};
+  stockRows.forEach(sr => {
+    const key = normKey(sr.mcs) + '|' + normKey(sr.part);
+    if (!idx[key]) idx[key] = [];
+    idx[key].push(sr);
+  });
+  return idx;
+}
+
+function statusFor(memoQty, sentQty, cps){
+  const sisa = Math.max(0, memoQty - sentQty);
+  if (memoQty > 0 && sentQty >= memoQty - 0.001) return 'lunas';
+  if (cps <= 0) return 'kosong';
+  if (cps >= sisa - 0.001) return 'siap';
+  return 'kurang';
+}
+
+function extractRecordsByDate(rows){
+  if (!rows.length) throw new Error('CSV kosong.');
+  const row0 = rows[0];
+  const starts = findBlockStarts(row0);
+  if (!starts.length) throw new Error('Blok "Tanggal Memo" tidak ditemukan di baris pertama CSV.');
+  const sentMap = buildSentMap(rows);
+
+  const dateBlocks = starts.map((memoStart, bi) => {
+    const label = String(row0[memoStart+1] || ('Blok ' + (bi+1))).trim();
+    const stockStart = memoStart + 12;
+    const memoRows = extractMemoRows(rows, memoStart);
+    const stockRows = extractStockRows(rows, stockStart);
+    const stockIdx = buildStockIndex(stockRows);
+
+    const records = memoRows.map(m => {
+      const sentKey = normKey(m.soNum) + '|' + normKey(m.mcsNum);
+      const sent = sentMap[sentKey] || { doQty:0, tonase:0, n:0 };
+      const stockKey = normKey(m.mcsNum) + '|' + m.comp;
+      const matches = stockIdx[stockKey] || [];
+      const cps = matches.reduce((a,x)=>a+x.balance, 0);
+      const sisa = Math.max(0, m.memoQty - sent.doQty);
+      const status = statusFor(m.memoQty, sent.doQty, cps);
+      return Object.assign({}, m, {
+        sentQty: sent.doQty, sentTonase: sent.tonase, sentN: sent.n,
+        cps, stockMatches: matches, sisa, status,
+        internal: m.salesInt || '(Kosong)', sales: m.salesExt || '(Kosong)',
+      });
+    });
+    return { label, records, stockRows };
+  });
+  return dateBlocks;
+}
+
+/* ================= LOAD ================= */
+function updateCutoff(){
+  const d = state.dateBlocks[state.dateIndex];
+  document.getElementById('cutoff-label').textContent = d ? ('Data memo per ' + d.label) : '—';
+}
+function renderDateTabs(){
+  const wrap = document.getElementById('date-tabs');
+  wrap.innerHTML = '';
+  state.dateBlocks.forEach((d,i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'date-tab' + (i===state.dateIndex ? ' active' : '');
+    btn.textContent = d.label;
+    btn.addEventListener('click', ()=>{
+      if (state.dateIndex===i) return;
+      state.dateIndex = i;
+      state.lastDateLabel = d.label;
+      state.records = d.records;
+      renderDateTabs();
+      renderAll();
+    });
+    wrap.appendChild(btn);
+  });
+}
+
+function applyLoadedCSV(text){
+  const rows = parseCSV(text);
+  const dateBlocks = extractRecordsByDate(rows);
+  state.dateBlocks = dateBlocks;
+  let newIndex = dateBlocks.length - 1;
+  if (state.lastDateLabel){
+    const f = dateBlocks.findIndex(d => d.label === state.lastDateLabel);
+    if (f !== -1) newIndex = f;
+  }
+  state.dateIndex = newIndex;
+  state.lastDateLabel = dateBlocks[newIndex] ? dateBlocks[newIndex].label : null;
+  state.records = dateBlocks[newIndex] ? dateBlocks[newIndex].records : [];
+  renderDateTabs();
+  updateCutoff();
+  document.getElementById('rows-badge').textContent = rows.length.toLocaleString('id-ID') + ' baris CSV';
+}
+
+async function loadData(forceRefresh){
+  const base = state.settings.csvUrl;
+  const url = base + (forceRefresh ? (base.includes('?') ? '&' : '?') + '_ts=' + Date.now() : '');
+  try{
+    const res = await fetch(url, { cache: forceRefresh ? 'no-store' : 'default' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    applyLoadedCSV(text);
+    localStorage.setItem(CSV_CACHE_KEY, JSON.stringify({ text, ts: Date.now() }));
+    document.getElementById('data-banner').classList.remove('show');
+    renderAll();
+    showToast('Data dimuat: ' + state.records.length + ' baris memo · ' + (state.lastDateLabel||''));
+  }catch(err){
+    console.error(err);
+    try{
+      const cached = JSON.parse(localStorage.getItem(CSV_CACHE_KEY) || 'null');
+      if (cached){
+        applyLoadedCSV(cached.text);
+        const waktu = new Date(cached.ts).toLocaleString('id-ID');
+        const b = document.getElementById('data-banner');
+        b.classList.add('show');
+        b.innerHTML = 'Gagal ambil data terbaru — memakai cache ' + waktu + '. <button class="btn" id="btn-retry">Coba lagi</button>';
+        document.getElementById('btn-retry').addEventListener('click', ()=> loadData(true));
+        renderAll();
+        return;
+      }
+    }catch(e2){}
+    const b = document.getElementById('data-banner');
+    b.classList.add('show');
+    b.textContent = 'Gagal memuat data CSV. Cek link CSV di pengaturan & koneksi internet.';
+  }
+}
+
+/* ================= FILTER / RENDER ================= */
+function matchesSearch(r,q){
+  if (!q) return true;
+  q = q.toLowerCase();
+  return [r.no,r.customer,r.compModelRaw,r.soNum,r.mcsNum,r.internal,r.sales,r.remark].join(' ').toLowerCase().includes(q);
+}
+function currentScope(){
+  return state.records.filter(r=>{
+    if (state.statusFilter && r.status !== state.statusFilter) return false;
+    if (state.search && !matchesSearch(r, state.search)) return false;
+    return true;
+  });
+}
+function fmtInt(n){ return Math.round(n).toLocaleString('id-ID'); }
+function fmtNum(n){ return n.toLocaleString('id-ID',{maximumFractionDigits:2}); }
+function statusLabel(s){ return {lunas:'Lunas',kurang:'Kekurangan',siap:'Siap Kirim',kosong:'Kosong'}[s] || s; }
+
+function renderKPI(){
+  const scope = currentScope();
+  const total = scope.length || 1;
+  const counts = {lunas:0,kurang:0,siap:0,kosong:0};
+  const tonase = {lunas:0,kurang:0,siap:0,kosong:0};
+  scope.forEach(r=>{ counts[r.status]++; tonase[r.status]+=r.tonase; });
+  ['lunas','kurang','siap','kosong'].forEach(s=>{
+    document.getElementById('kpi-'+s+'-val').textContent = Math.round(counts[s]/total*100)+'%';
+    document.getElementById('kpi-'+s+'-sub').textContent = fmtInt(counts[s]) + ' dari ' + scope.length + ' line';
+    document.getElementById('kpi-'+s+'-tonase').textContent = 'Tonase: ' + fmtNum(tonase[s]);
+  });
+  document.querySelectorAll('.kpi-card').forEach(c=>{
+    c.classList.toggle('active', state.statusFilter === c.dataset.status);
+  });
+}
+function renderSummary(){
+  const scope = currentScope();
+  let memoQty=0, tonase=0, sent=0, sisa=0;
+  scope.forEach(r=>{ memoQty+=r.memoQty; tonase+=r.tonase; sent+=r.sentQty; sisa+=r.sisa; });
+  document.getElementById('sum-memoqty').textContent = fmtNum(memoQty);
+  document.getElementById('sum-tonase').textContent = fmtNum(tonase);
+  document.getElementById('sum-sent').textContent = fmtNum(sent);
+  document.getElementById('sum-sisa').textContent = fmtNum(sisa);
+}
+function renderTable(){
+  const scope = currentScope();
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  document.getElementById('empty-state').classList.toggle('hidden', scope.length>0);
+  scope.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${escapeHtml(r.no)}</td>
+      <td>${escapeHtml(r.sales)}</td>
+      <td>${escapeHtml(r.customer)}</td>
+      <td>${escapeHtml(r.compModelRaw)}</td>
+      <td class="mono">${escapeHtml(r.soNum)}</td>
+      <td class="mono">${escapeHtml(r.mcsNum)}</td>
+      <td>${fmtNum(r.orderQty)}</td>
+      <td>${fmtNum(r.memoQty)}</td>
+      <td>${fmtNum(r.tonase)}</td>
+      <td>${fmtNum(r.sentQty)}</td>
+      <td>${fmtNum(r.sisa)}</td>
+      <td>${fmtNum(r.cps)}</td>
+      <td><span class="status-pill ${r.status}">${statusLabel(r.status)}</span></td>
+    `;
+    tr.addEventListener('click', ()=> openDetail(r));
+    tbody.appendChild(tr);
+  });
+}
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function renderAll(){
+  renderKPI();
+  renderSummary();
+  renderTable();
+}
+
+/* ================= DETAIL DRAWER ================= */
+function openDetail(r){
+  document.getElementById('detail-title').textContent = 'MCS ' + r.mcsNum + ' — ' + r.customer;
+  const rows = [
+    ['No', r.no], ['Sales (internal)', r.internal], ['Sales (customer)', r.sales],
+    ['Customer', r.customer], ['Comp / Model', r.compModelRaw], ['SO Num', r.soNum], ['MCS Num', r.mcsNum],
+    ['Order Qty', fmtNum(r.orderQty)], ['Memo Qty', fmtNum(r.memoQty)], ['Tonase', fmtNum(r.tonase)],
+    ['Sudah Dikirim (Qty)', fmtNum(r.sentQty) + (r.sentN? (' · '+r.sentN+' shipment') : '')],
+    ['Sudah Dikirim (Tonase)', fmtNum(r.sentTonase)],
+    ['Sisa Qty', fmtNum(r.sisa)], ['Stok CPS (match MCS#+PART#)', fmtNum(r.cps)],
+    ['Status', statusLabel(r.status)], ['Remark', r.remark || '—'],
+  ];
+  let html = rows.map(([k,v])=>`<div class="row"><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join('');
+  html += '<div class="mini-title">Baris Stock FG yang cocok (MCS# = '+escapeHtml(r.mcsNum)+', PART# = '+escapeHtml(r.comp)+')</div>';
+  if (r.stockMatches.length){
+    html += '<table class="mini-table"><thead><tr><th>MCS#</th><th>PART#</th><th>Design</th><th>Measurement</th><th>Balance</th><th>Sch.Date</th></tr></thead><tbody>';
+    r.stockMatches.forEach(m=>{
+      html += `<tr><td>${escapeHtml(m.mcs)}</td><td>${escapeHtml(m.part)}</td><td>${escapeHtml(m.design)}</td><td>${escapeHtml(m.measurement)}</td><td>${fmtNum(m.balance)}</td><td>${escapeHtml(m.schDate)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+  } else {
+    html += '<div class="sub" style="font-size:12.5px;color:var(--mute);">Tidak ditemukan baris Stock FG yang cocok — barang belum masuk gudang.</div>';
+  }
+  document.getElementById('detail-body').innerHTML = html;
+  document.getElementById('detail-overlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+document.getElementById('detail-close').addEventListener('click', ()=>{
+  document.getElementById('detail-overlay').classList.remove('show');
+  document.body.style.overflow = '';
+});
+document.getElementById('detail-overlay').addEventListener('click', e=>{
+  if (e.target.id === 'detail-overlay'){ document.getElementById('detail-close').click(); }
+});
+
+/* ================= KPI FILTER / SEARCH / SETTINGS ================= */
+document.querySelectorAll('.kpi-card').forEach(c=>{
+  c.addEventListener('click', ()=>{
+    const s = c.dataset.status;
+    state.statusFilter = state.statusFilter === s ? '' : s;
+    document.getElementById('filter-status').value = state.statusFilter;
+    renderAll();
+  });
+});
+document.getElementById('filter-status').addEventListener('change', e=>{
+  state.statusFilter = e.target.value;
+  renderAll();
+});
+document.getElementById('search').addEventListener('input', e=>{
+  state.search = e.target.value.trim();
+  renderAll();
+});
+document.getElementById('btn-refresh').addEventListener('click', ()=> loadData(true));
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+document.getElementById('btn-settings').addEventListener('click', ()=>{
+  document.getElementById('csv-url-input').value = state.settings.csvUrl;
+  document.getElementById('settings-overlay').classList.add('show');
+});
+document.getElementById('settings-close').addEventListener('click', ()=> document.getElementById('settings-overlay').classList.remove('show'));
+document.getElementById('settings-overlay').addEventListener('click', e=>{
+  if (e.target.id==='settings-overlay') document.getElementById('settings-close').click();
+});
+document.getElementById('btn-save-settings').addEventListener('click', ()=>{
+  const url = document.getElementById('csv-url-input').value.trim();
+  if (!url) return;
+  saveSettings({ csvUrl: url });
+  document.getElementById('settings-overlay').classList.remove('show');
+  loadData(true);
+});
+document.getElementById('btn-reset-settings').addEventListener('click', ()=>{
+  document.getElementById('csv-url-input').value = DEFAULT_CSV_URL;
+});
+
+/* ================= INIT ================= */
+(function init(){
+  try{
+    const cached = JSON.parse(localStorage.getItem(CSV_CACHE_KEY) || 'null');
+    if (cached){ applyLoadedCSV(cached.text); renderAll(); }
+  }catch(e){}
+  loadData(false);
+})();
+</script>
+</body>
+</html>
