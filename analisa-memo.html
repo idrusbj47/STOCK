@@ -1553,6 +1553,16 @@ header.topbar{
 .qv-badge.hanya-memo{ background: rgba(220,62,78,.14); color:#DC3E4E; }
 .qv-badge.hanya-qview{ background: rgba(94,120,255,.16); color:#5E78FF; }
 .qview-row-total td{ font-weight:700; border-top:2px solid var(--border); }
+.qv-filter-row{ display:flex; flex-wrap:wrap; gap:8px; margin: 10px 0 4px; }
+.qv-filter-chip{
+  border:1px solid var(--border); background: var(--surface); color: var(--muted);
+  border-radius:999px; padding:6px 12px; font-size:12.5px; font-weight:600; cursor:pointer;
+  display:flex; align-items:center; gap:6px; opacity:.62; transition: opacity .12s ease, transform .1s ease;
+}
+.qv-filter-chip:hover{ opacity:1; }
+.qv-filter-chip.active{ opacity:1; box-shadow: 0 0 0 2px var(--violet) inset; }
+.qv-filter-chip small{ font-weight:700; background: rgba(127,127,127,.18); border-radius:999px; padding:1px 7px; }
+.qv-filter-chip[data-status="all"]{ color: var(--text); }
 
 .dim-switch{ display:flex; gap:6px; background: var(--surface); border:1px solid var(--border); border-radius:12px; padding:4px; margin-bottom:14px; }
 .dim-switch button{
@@ -1974,7 +1984,7 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
   <div id="qview-section" class="hidden">
     <div class="section-title">Komparasi Tonase — Memo vs Qview <small id="qview-count"></small></div>
     <p class="muted" style="font-size:12px;margin-bottom:12px;">
-      Membandingkan total tonase per Sales–Customer antara data Analisa Memo dengan data stok gudang (Qview).
+      Membandingkan total tonase <b>terkirim (DO)</b> per Sales–Customer dari Analisa Memo dengan data stok gudang (Qview).
       Idealnya kedua angka sama; selisih biasanya menandakan ada barang yang belum/tidak masuk memo.
     </p>
 
@@ -1992,7 +2002,7 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
     <p class="muted" id="qview-status" style="font-size:12px;margin:6px 0 14px;"></p>
 
     <div class="total-tonase-bar" id="qview-total-memo-bar">
-      <span class="k">Total Tonase Memo (tanggal terpilih)</span>
+      <span class="k">Total Tonase Memo Terkirim / DO (tanggal terpilih)</span>
       <span class="v" id="qview-total-memo-val">0</span>
     </div>
     <div class="total-tonase-bar do" id="qview-total-qview-bar">
@@ -2000,17 +2010,25 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
       <span class="v" id="qview-total-qview-val">0</span>
     </div>
     <div class="total-tonase-bar" id="qview-total-selisih-bar" style="border-color: var(--red);">
-      <span class="k">Selisih (Memo − Qview)</span>
+      <span class="k">Selisih (Memo DO − Qview)</span>
       <span class="v" id="qview-total-selisih-val">0</span>
     </div>
 
-    <div class="rank-table-wrap" style="margin-top:14px;">
+    <div class="qv-filter-row" id="qview-filter-row">
+      <button type="button" class="qv-filter-chip active" data-status="all">Semua <small id="qvf-count-all">0</small></button>
+      <button type="button" class="qv-filter-chip qv-badge cocok" data-status="cocok">Cocok <small id="qvf-count-cocok">0</small></button>
+      <button type="button" class="qv-filter-chip qv-badge selisih" data-status="selisih">Selisih <small id="qvf-count-selisih">0</small></button>
+      <button type="button" class="qv-filter-chip qv-badge hanya-memo" data-status="hanya-memo">Hanya di Memo <small id="qvf-count-hanya-memo">0</small></button>
+      <button type="button" class="qv-filter-chip qv-badge hanya-qview" data-status="hanya-qview">Hanya di Qview <small id="qvf-count-hanya-qview">0</small></button>
+    </div>
+
+    <div class="rank-table-wrap" style="margin-top:10px;">
       <table class="rank-table">
         <thead>
           <tr>
             <th>Sales</th>
             <th>Customer</th>
-            <th>Tonase Memo</th>
+            <th>Tonase Memo (DO)</th>
             <th>Tonase Qview</th>
             <th>Selisih</th>
             <th>Status</th>
@@ -2114,6 +2132,7 @@ const state = {
     rows: [],          // [{ sales, customer, values: [num,...] }]
     dateColumns: [],   // [{ index, label, month, day }]
     selectedIndex: -1, // memilih dateColumns index yang aktif
+    statusFilter: 'all',
   },
 };
 
@@ -2169,6 +2188,7 @@ const el = {
   qviewTotalQviewVal: document.getElementById('qview-total-qview-val'),
   qviewTotalSelisihVal: document.getElementById('qview-total-selisih-val'),
   qviewTbody: document.getElementById('qview-tbody'),
+  qviewFilterRow: document.getElementById('qview-filter-row'),
 };
 
 function loadSettings(){
@@ -3068,14 +3088,18 @@ async function initQviewView(){
   renderQviewComparison();
 }
 
-function renderQviewComparison(){
-  if (!el.qviewTbody) return;
+// Simpan hasil komparasi (belum difilter status) supaya klik chip filter tidak perlu hitung ulang.
+let qviewCombinedCache = [];
+
+function computeQviewComparison(){
   const memoRecords = (state.dateList[state.dateIndex] || {}).records || [];
   const memoGroups = {};
   memoRecords.forEach(r => {
     const key = normKey(r.sales) + '|||' + normKey(r.customer);
-    if (!memoGroups[key]) memoGroups[key] = { sales: r.sales, customer: r.customer, tonase: 0 };
-    memoGroups[key].tonase += r.tonase;
+    if (!memoGroups[key]) memoGroups[key] = { sales: r.sales, customer: r.customer, tonaseDO: 0 };
+    // Tonase memo yang dibandingkan ke Qview memakai Tonase DO (yang sudah benar-benar
+    // terkirim), bukan Tonase Memo mentah, supaya sepadan dengan data stok gudang Qview.
+    memoGroups[key].tonaseDO += r.tonaseDO;
   });
 
   const qIdx = state.qview.selectedIndex;
@@ -3095,7 +3119,7 @@ function renderQviewComparison(){
     const q = qviewGroups[key];
     const sales = (m && m.sales) || (q && q.sales) || '(Kosong)';
     const customer = (m && m.customer) || (q && q.customer) || '(Kosong)';
-    const tonaseMemo = m ? m.tonase : 0;
+    const tonaseMemo = m ? m.tonaseDO : 0;
     const tonaseQview = q ? q.tonase : 0;
     const selisih = tonaseMemo - tonaseQview;
     let status;
@@ -3106,17 +3130,45 @@ function renderQviewComparison(){
     return { sales, customer, tonaseMemo, tonaseQview, selisih, status };
   }).filter(g => g.tonaseMemo > 0.0001 || g.tonaseQview > 0.0001)
     .sort((a,b) => Math.abs(b.selisih) - Math.abs(a.selisih));
+  return combined;
+}
 
-  const statusLabelMap = { cocok:'Cocok', selisih:'Selisih', 'hanya-memo':'Hanya di Memo', 'hanya-qview':'Hanya di Qview' };
+const QV_STATUS_LABEL = { cocok:'Cocok', selisih:'Selisih', 'hanya-memo':'Hanya di Memo', 'hanya-qview':'Hanya di Qview' };
+
+function renderQviewComparison(){
+  if (!el.qviewTbody) return;
+  qviewCombinedCache = computeQviewComparison();
+  renderQviewFilterChips(qviewCombinedCache);
+  renderQviewTable();
+}
+
+function renderQviewFilterChips(combined){
+  if (!el.qviewFilterRow) return;
+  const counts = { all: combined.length, cocok:0, selisih:0, 'hanya-memo':0, 'hanya-qview':0 };
+  combined.forEach(g => counts[g.status]++);
+  Object.keys(counts).forEach(st => {
+    const elCount = document.getElementById('qvf-count-' + st);
+    if (elCount) elCount.textContent = counts[st];
+  });
+  el.qviewFilterRow.querySelectorAll('.qv-filter-chip').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.status === state.qview.statusFilter);
+  });
+}
+
+function renderQviewTable(){
+  const combined = state.qview.statusFilter === 'all'
+    ? qviewCombinedCache
+    : qviewCombinedCache.filter(g => g.status === state.qview.statusFilter);
+
   const totalMemo = combined.reduce((s,g)=>s+g.tonaseMemo,0);
   const totalQview = combined.reduce((s,g)=>s+g.tonaseQview,0);
   el.qviewTotalMemoVal.textContent = fmtNum(totalMemo);
   el.qviewTotalQviewVal.textContent = fmtNum(totalQview);
   el.qviewTotalSelisihVal.textContent = fmtNum(totalMemo - totalQview);
-  if (el.qviewCount) el.qviewCount.textContent = combined.length + ' pasangan sales-customer';
+  if (el.qviewCount) el.qviewCount.textContent = combined.length + ' dari ' + qviewCombinedCache.length + ' pasangan sales-customer';
 
   if (!combined.length){
-    el.qviewTbody.innerHTML = '<tr><td colspan="6" class="empty-note">Tidak ada data untuk dibandingkan. Cek tanggal Memo/Qview yang dipilih.</td></tr>';
+    el.qviewTbody.innerHTML = '<tr><td colspan="6" class="empty-note">Tidak ada data untuk filter/tanggal ini.</td></tr>';
     return;
   }
   el.qviewTbody.innerHTML = combined.map(g => `
@@ -3126,16 +3178,24 @@ function renderQviewComparison(){
       <td class="mono">${fmtNum(g.tonaseMemo)}</td>
       <td class="mono">${fmtNum(g.tonaseQview)}</td>
       <td class="mono" style="color:${g.selisih>0?'var(--red)':(g.selisih<0?'var(--green)':'inherit')};">${fmtNum(g.selisih)}</td>
-      <td><span class="qv-badge ${g.status}">${statusLabelMap[g.status]}</span></td>
+      <td><span class="qv-badge ${g.status}">${QV_STATUS_LABEL[g.status]}</span></td>
     </tr>`).join('') + `
     <tr class="qview-row-total">
-      <td colspan="2">TOTAL</td>
+      <td colspan="2">TOTAL${state.qview.statusFilter!=='all' ? ' (' + QV_STATUS_LABEL[state.qview.statusFilter] + ')' : ''}</td>
       <td class="mono">${fmtNum(totalMemo)}</td>
       <td class="mono">${fmtNum(totalQview)}</td>
       <td class="mono">${fmtNum(totalMemo-totalQview)}</td>
       <td></td>
     </tr>`;
 }
+
+if (el.qviewFilterRow) el.qviewFilterRow.addEventListener('click', (e) => {
+  const btn = e.target.closest('.qv-filter-chip');
+  if (!btn) return;
+  state.qview.statusFilter = btn.dataset.status;
+  renderQviewFilterChips(qviewCombinedCache);
+  renderQviewTable();
+});
 
 if (el.qviewMemoDateSel) el.qviewMemoDateSel.addEventListener('change', () => {
   const i = parseInt(el.qviewMemoDateSel.value, 10);
@@ -3928,11 +3988,11 @@ function buildQviewPrintArea(){
   const html = `<div class="pr-page">
     ${prHeader('Komparasi Tonase · Memo (' + escapeHtml(memoLabel) + ') vs Qview (' + escapeHtml(qviewLabel) + ')')}
     <div class="pr-section-title">Komparasi Tonase — Memo vs Qview <span style="font-weight:400;font-size:11px;color:#667085;">(${el.qviewCount ? el.qviewCount.textContent : ''})</span></div>
-    <div class="pr-tonase"><span>Total Tonase Memo</span><b>${el.qviewTotalMemoVal.textContent}</b></div>
+    <div class="pr-tonase"><span>Total Tonase Memo Terkirim (DO)</span><b>${el.qviewTotalMemoVal.textContent}</b></div>
     <div class="pr-tonase"><span>Total Tonase Qview</span><b style="color:#12996B;">${el.qviewTotalQviewVal.textContent}</b></div>
-    <div class="pr-tonase"><span>Selisih (Memo − Qview)</span><b style="color:#DC3E4E;">${el.qviewTotalSelisihVal.textContent}</b></div>
+    <div class="pr-tonase"><span>Selisih (Memo DO − Qview)</span><b style="color:#DC3E4E;">${el.qviewTotalSelisihVal.textContent}</b></div>
     <table class="pr-table">
-      <thead><tr><th>Sales</th><th>Customer</th><th>Tonase Memo</th><th>Tonase Qview</th><th>Selisih</th><th>Status</th></tr></thead>
+      <thead><tr><th>Sales</th><th>Customer</th><th>Tonase Memo (DO)</th><th>Tonase Qview</th><th>Selisih</th><th>Status</th></tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>
     <div class="pr-footer">Komparasi Tonase — Memo vs Qview</div>
