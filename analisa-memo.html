@@ -1544,6 +1544,16 @@ header.topbar{
 .date-tab.active{ background: var(--amber); border-color: var(--amber); color: var(--on-accent); }
 .date-tab:hover:not(.active){ border-color: var(--amber); color: var(--text); }
 
+.qview-controls{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:6px; }
+.qview-field{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); min-width:200px; flex:1; }
+.qview-field select{ background: var(--surface); border:1px solid var(--border); color: var(--text); border-radius:10px; padding:9px 10px; font-size:13.5px; font-family: var(--font-body); }
+.qv-badge{ display:inline-block; padding:2px 9px; border-radius:999px; font-size:11.5px; font-weight:700; white-space:nowrap; }
+.qv-badge.cocok{ background: rgba(18,153,107,.15); color:#12996B; }
+.qv-badge.selisih{ background: rgba(230,162,0,.16); color:#B37B00; }
+.qv-badge.hanya-memo{ background: rgba(220,62,78,.14); color:#DC3E4E; }
+.qv-badge.hanya-qview{ background: rgba(94,120,255,.16); color:#5E78FF; }
+.qview-row-total td{ font-weight:700; border-top:2px solid var(--border); }
+
 .dim-switch{ display:flex; gap:6px; background: var(--surface); border:1px solid var(--border); border-radius:12px; padding:4px; margin-bottom:14px; }
 .dim-switch button{
   flex:1; border:none; background:none; color: var(--muted); font-family: var(--font-display); font-weight:600;
@@ -1824,6 +1834,7 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
   <div class="view-tabs" id="view-tabs">
     <button data-view="date" class="active">📅 Data Harian</button>
     <button data-view="summary">📊 Ringkasan &amp; Pergerakan</button>
+    <button data-view="qview">⚖️ Komparasi Qview</button>
   </div>
 
   <div id="date-view">
@@ -1960,6 +1971,56 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
     <p class="muted" style="font-size:12px;margin-top:12px;">Klik salah satu baris tanggal atau titik grafik untuk langsung membuka detail lengkapnya di tab Data Harian.</p>
   </div>
 
+  <div id="qview-section" class="hidden">
+    <div class="section-title">Komparasi Tonase — Memo vs Qview <small id="qview-count"></small></div>
+    <p class="muted" style="font-size:12px;margin-bottom:12px;">
+      Membandingkan total tonase per Sales–Customer antara data Analisa Memo dengan data stok gudang (Qview).
+      Idealnya kedua angka sama; selisih biasanya menandakan ada barang yang belum/tidak masuk memo.
+    </p>
+
+    <div class="qview-controls">
+      <label class="qview-field">
+        <span>Tanggal Memo (dari tab Data Harian)</span>
+        <select id="qview-memo-date"></select>
+      </label>
+      <label class="qview-field">
+        <span>Tanggal Qview</span>
+        <select id="qview-date"></select>
+      </label>
+      <button class="btn-clear" id="btn-qview-refresh" title="Muat ulang data Qview">↻ Muat Ulang Qview</button>
+    </div>
+    <p class="muted" id="qview-status" style="font-size:12px;margin:6px 0 14px;"></p>
+
+    <div class="total-tonase-bar" id="qview-total-memo-bar">
+      <span class="k">Total Tonase Memo (tanggal terpilih)</span>
+      <span class="v" id="qview-total-memo-val">0</span>
+    </div>
+    <div class="total-tonase-bar do" id="qview-total-qview-bar">
+      <span class="k">Total Tonase Qview (tanggal terpilih)</span>
+      <span class="v" id="qview-total-qview-val">0</span>
+    </div>
+    <div class="total-tonase-bar" id="qview-total-selisih-bar" style="border-color: var(--red);">
+      <span class="k">Selisih (Memo − Qview)</span>
+      <span class="v" id="qview-total-selisih-val">0</span>
+    </div>
+
+    <div class="rank-table-wrap" style="margin-top:14px;">
+      <table class="rank-table">
+        <thead>
+          <tr>
+            <th>Sales</th>
+            <th>Customer</th>
+            <th>Tonase Memo</th>
+            <th>Tonase Qview</th>
+            <th>Selisih</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="qview-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
 </main>
 
 <div class="fab-row">
@@ -2031,8 +2092,10 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
 
 <script>
 const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=451953694&single=true&output=csv';
+const QVIEW_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=268754226&single=true&output=csv';
 const STORAGE_KEY = 'analisamemo.settings';
 const CSV_CACHE_KEY = 'analisamemo.csv.cache';
+const QVIEW_CACHE_KEY = 'analisamemo.qview.cache';
 
 const state = {
   dim: 'int',
@@ -2044,6 +2107,14 @@ const state = {
   dateIndex: 0,
   lastDateLabel: null,
   settings: loadSettings(),
+  qview: {
+    loaded: false,
+    loading: false,
+    error: null,
+    rows: [],          // [{ sales, customer, values: [num,...] }]
+    dateColumns: [],   // [{ index, label, month, day }]
+    selectedIndex: -1, // memilih dateColumns index yang aktif
+  },
 };
 
 const el = {
@@ -2088,6 +2159,16 @@ const el = {
   cutoffBadge: document.getElementById('cutoff-badge'),
   cutoffValue: document.getElementById('cutoff-value'),
   totalDoVal: document.getElementById('total-do-val'),
+  qviewSection: document.getElementById('qview-section'),
+  qviewCount: document.getElementById('qview-count'),
+  qviewMemoDateSel: document.getElementById('qview-memo-date'),
+  qviewDateSel: document.getElementById('qview-date'),
+  btnQviewRefresh: document.getElementById('btn-qview-refresh'),
+  qviewStatus: document.getElementById('qview-status'),
+  qviewTotalMemoVal: document.getElementById('qview-total-memo-val'),
+  qviewTotalQviewVal: document.getElementById('qview-total-qview-val'),
+  qviewTotalSelisihVal: document.getElementById('qview-total-selisih-val'),
+  qviewTbody: document.getElementById('qview-tbody'),
 };
 
 function loadSettings(){
@@ -2709,13 +2790,18 @@ el.viewTabs.addEventListener('click', (e) => {
   el.viewTabs.querySelectorAll('button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   state.view = btn.dataset.view;
+  el.dateView.classList.add('hidden');
+  el.summarySection.classList.add('hidden');
+  if (el.qviewSection) el.qviewSection.classList.add('hidden');
   if (state.view === 'summary'){
-    el.dateView.classList.add('hidden');
     el.summarySection.classList.remove('hidden');
     if (el.cutoffBadge) el.cutoffBadge.classList.add('hidden');
     renderSummary();
+  } else if (state.view === 'qview'){
+    if (el.qviewSection) el.qviewSection.classList.remove('hidden');
+    if (el.cutoffBadge) el.cutoffBadge.classList.add('hidden');
+    initQviewView();
   } else {
-    el.summarySection.classList.add('hidden');
     el.dateView.classList.remove('hidden');
     updateCutoffBadge(state.lastDateLabel || '');
   }
@@ -2828,6 +2914,257 @@ function openDateDetail(label){
   el.dateView.classList.remove('hidden');
   render();
 }
+
+/* ---------- Tab Komparasi Qview ---------- */
+// Angka di CSV Qview memakai format internasional (koma = pemisah ribuan, titik = desimal),
+// beda dengan numParse() di atas yang memakai format Indonesia. Jadi pakai parser sendiri.
+function numParseIntl(s){
+  s = (s==null? '' : String(s)).trim();
+  if (s === '' || s === '-') return 0;
+  s = s.replace(/,/g, '');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function normKey(s){ return String(s||'').trim().toUpperCase().replace(/\s+/g,' '); }
+
+// Baris "Tahun/Sales/Customer/day" adalah header asli tabel Qview. Baris gabungan tanggal
+// (mis. "September18") ada 3 baris di atasnya, hasil publish Google Sheets.
+function findQviewHeaderRowIndex(rows){
+  for (let i=0;i<rows.length;i++){
+    const up = rows[i].map(c => String(c||'').trim().toUpperCase());
+    if (up.includes('TAHUN') && up.includes('SALES') && up.includes('CUSTOMER')) return i;
+  }
+  return -1;
+}
+
+function parseQviewCSV(text){
+  const rows = parseCSV(text);
+  const headerIdx = findQviewHeaderRowIndex(rows);
+  if (headerIdx === -1) throw new Error('Header Qview (Tahun/Sales/Customer) tidak ditemukan.');
+  const header = rows[headerIdx];
+  const combinedLabelRow = rows[headerIdx-3] || [];
+  const monthRow = rows[headerIdx-1] || [];
+  const upHeader = header.map(h => String(h||'').trim().toUpperCase());
+  const salesIdx = upHeader.indexOf('SALES');
+  const custIdx = upHeader.indexOf('CUSTOMER');
+  const firstDayIdx = Math.max(salesIdx, custIdx, upHeader.indexOf('DAY')) + 1;
+
+  const dateColumns = [];
+  for (let c = firstDayIdx; c < header.length; c++){
+    const label = String(combinedLabelRow[c] || '').trim();
+    const month = String(monthRow[c] || '').trim();
+    const day = String(header[c] || '').trim();
+    if (!label && !month) continue;
+    dateColumns.push({ index: c, label: label || (month + day), month, day });
+  }
+
+  const dataRows = [];
+  for (let i = headerIdx+1; i < rows.length; i++){
+    const r = rows[i];
+    if (!r || !r.length) continue;
+    const sales = String(r[salesIdx] || '').trim();
+    const customer = String(r[custIdx] || '').trim();
+    if (!sales && !customer) continue;
+    const values = dateColumns.map(dc => numParseIntl(r[dc.index]));
+    dataRows.push({ sales, customer, values });
+  }
+  return { dateColumns, rows: dataRows };
+}
+
+async function loadQviewData(forceRefresh){
+  state.qview.loading = true;
+  state.qview.error = null;
+  if (el.qviewStatus) el.qviewStatus.textContent = 'Memuat data Qview…';
+  try{
+    const url = QVIEW_CSV_URL + (forceRefresh ? (QVIEW_CSV_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now() : '');
+    const res = await fetch(url, { cache: forceRefresh ? 'no-store' : 'default' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const parsed = parseQviewCSV(text);
+    state.qview.dateColumns = parsed.dateColumns;
+    state.qview.rows = parsed.rows;
+    state.qview.loaded = true;
+    localStorage.setItem(QVIEW_CACHE_KEY, JSON.stringify({ text, ts: Date.now() }));
+    if (el.qviewStatus) el.qviewStatus.textContent = '';
+  }catch(err){
+    console.error(err);
+    try{
+      const cached = JSON.parse(localStorage.getItem(QVIEW_CACHE_KEY) || 'null');
+      if (cached){
+        const parsed = parseQviewCSV(cached.text);
+        state.qview.dateColumns = parsed.dateColumns;
+        state.qview.rows = parsed.rows;
+        state.qview.loaded = true;
+        const waktu = new Date(cached.ts).toLocaleString('id-ID');
+        if (el.qviewStatus) el.qviewStatus.textContent = 'Gagal ambil data Qview terbaru — memakai cache ' + waktu + '.';
+      } else {
+        state.qview.error = err.message || String(err);
+        if (el.qviewStatus) el.qviewStatus.textContent = 'Gagal memuat data Qview: ' + state.qview.error;
+      }
+    }catch(e2){
+      state.qview.error = err.message || String(err);
+      if (el.qviewStatus) el.qviewStatus.textContent = 'Gagal memuat data Qview: ' + state.qview.error;
+    }
+  }
+  state.qview.loading = false;
+}
+
+// Coba tebak kolom tanggal Qview yang sesuai dengan label tanggal blok memo yang sedang aktif
+// (mis. label memo "18 September 2026" atau "Rabu, 18 Sep" -> dicocokkan ke "September18").
+const MONTH_MAP_ID_EN = {
+  jan:'January', januari:'January', january:'January',
+  feb:'February', februari:'February', february:'February',
+  mar:'March', maret:'March', march:'March',
+  apr:'April', april:'April',
+  mei:'May', may:'May',
+  jun:'June', juni:'June', june:'June',
+  jul:'July', juli:'July', july:'July',
+  agu:'August', agt:'August', agustus:'August', aug:'August', august:'August',
+  sep:'September', sept:'September', september:'September',
+  okt:'October', oktober:'October', oct:'October', october:'October',
+  nov:'November', november:'November',
+  des:'December', desember:'December', dec:'December', december:'December',
+};
+function guessQviewIndexFromMemoLabel(label){
+  if (!label || !state.qview.dateColumns.length) return -1;
+  const lower = label.toLowerCase();
+  let month = null;
+  for (const k in MONTH_MAP_ID_EN){
+    if (new RegExp('\\b'+k, 'i').test(lower)){ month = MONTH_MAP_ID_EN[k]; break; }
+  }
+  if (!month) return -1;
+  const nums = (lower.match(/\d{1,2}(?!\d)/g) || []).map(n => parseInt(n,10)).filter(n => n>=1 && n<=31);
+  if (!nums.length) return -1;
+  const day = nums[0];
+  const wanted = normKey(month + day);
+  const idx = state.qview.dateColumns.findIndex(dc => normKey(dc.label) === wanted);
+  return idx;
+}
+
+function populateQviewMemoDateSelect(){
+  if (!el.qviewMemoDateSel) return;
+  el.qviewMemoDateSel.innerHTML = state.dateList.map((d,i) =>
+    `<option value="${i}">${escapeHtml(d.label)}</option>`).join('');
+  el.qviewMemoDateSel.value = String(state.dateIndex);
+}
+function populateQviewDateSelect(){
+  if (!el.qviewDateSel) return;
+  el.qviewDateSel.innerHTML = state.qview.dateColumns.map((dc,i) =>
+    `<option value="${i}">${escapeHtml(dc.label)}</option>`).join('');
+  if (state.qview.selectedIndex === -1){
+    const guess = guessQviewIndexFromMemoLabel(state.lastDateLabel);
+    state.qview.selectedIndex = guess !== -1 ? guess : (state.qview.dateColumns.length - 1);
+  }
+  el.qviewDateSel.value = String(state.qview.selectedIndex);
+}
+
+async function initQviewView(){
+  populateQviewMemoDateSelect();
+  if (!state.qview.loaded && !state.qview.loading){
+    await loadQviewData(false);
+  }
+  populateQviewDateSelect();
+  renderQviewComparison();
+}
+
+function renderQviewComparison(){
+  if (!el.qviewTbody) return;
+  const memoRecords = (state.dateList[state.dateIndex] || {}).records || [];
+  const memoGroups = {};
+  memoRecords.forEach(r => {
+    const key = normKey(r.sales) + '|||' + normKey(r.customer);
+    if (!memoGroups[key]) memoGroups[key] = { sales: r.sales, customer: r.customer, tonase: 0 };
+    memoGroups[key].tonase += r.tonase;
+  });
+
+  const qIdx = state.qview.selectedIndex;
+  const qviewGroups = {};
+  if (qIdx !== -1 && state.qview.rows.length){
+    state.qview.rows.forEach(r => {
+      const key = normKey(r.sales) + '|||' + normKey(r.customer);
+      const v = r.values[qIdx] || 0;
+      if (!qviewGroups[key]) qviewGroups[key] = { sales: r.sales, customer: r.customer, tonase: 0 };
+      qviewGroups[key].tonase += v;
+    });
+  }
+
+  const allKeys = new Set([...Object.keys(memoGroups), ...Object.keys(qviewGroups)]);
+  const combined = Array.from(allKeys).map(key => {
+    const m = memoGroups[key];
+    const q = qviewGroups[key];
+    const sales = (m && m.sales) || (q && q.sales) || '(Kosong)';
+    const customer = (m && m.customer) || (q && q.customer) || '(Kosong)';
+    const tonaseMemo = m ? m.tonase : 0;
+    const tonaseQview = q ? q.tonase : 0;
+    const selisih = tonaseMemo - tonaseQview;
+    let status;
+    if (!m && q) status = 'hanya-qview';
+    else if (m && !q) status = 'hanya-memo';
+    else if (Math.abs(selisih) < 0.5 || (tonaseMemo>0 && Math.abs(selisih)/tonaseMemo < 0.005)) status = 'cocok';
+    else status = 'selisih';
+    return { sales, customer, tonaseMemo, tonaseQview, selisih, status };
+  }).filter(g => g.tonaseMemo > 0.0001 || g.tonaseQview > 0.0001)
+    .sort((a,b) => Math.abs(b.selisih) - Math.abs(a.selisih));
+
+  const statusLabelMap = { cocok:'Cocok', selisih:'Selisih', 'hanya-memo':'Hanya di Memo', 'hanya-qview':'Hanya di Qview' };
+  const totalMemo = combined.reduce((s,g)=>s+g.tonaseMemo,0);
+  const totalQview = combined.reduce((s,g)=>s+g.tonaseQview,0);
+  el.qviewTotalMemoVal.textContent = fmtNum(totalMemo);
+  el.qviewTotalQviewVal.textContent = fmtNum(totalQview);
+  el.qviewTotalSelisihVal.textContent = fmtNum(totalMemo - totalQview);
+  if (el.qviewCount) el.qviewCount.textContent = combined.length + ' pasangan sales-customer';
+
+  if (!combined.length){
+    el.qviewTbody.innerHTML = '<tr><td colspan="6" class="empty-note">Tidak ada data untuk dibandingkan. Cek tanggal Memo/Qview yang dipilih.</td></tr>';
+    return;
+  }
+  el.qviewTbody.innerHTML = combined.map(g => `
+    <tr>
+      <td>${escapeHtml(g.sales)}</td>
+      <td>${escapeHtml(g.customer)}</td>
+      <td class="mono">${fmtNum(g.tonaseMemo)}</td>
+      <td class="mono">${fmtNum(g.tonaseQview)}</td>
+      <td class="mono" style="color:${g.selisih>0?'var(--red)':(g.selisih<0?'var(--green)':'inherit')};">${fmtNum(g.selisih)}</td>
+      <td><span class="qv-badge ${g.status}">${statusLabelMap[g.status]}</span></td>
+    </tr>`).join('') + `
+    <tr class="qview-row-total">
+      <td colspan="2">TOTAL</td>
+      <td class="mono">${fmtNum(totalMemo)}</td>
+      <td class="mono">${fmtNum(totalQview)}</td>
+      <td class="mono">${fmtNum(totalMemo-totalQview)}</td>
+      <td></td>
+    </tr>`;
+}
+
+if (el.qviewMemoDateSel) el.qviewMemoDateSel.addEventListener('change', () => {
+  const i = parseInt(el.qviewMemoDateSel.value, 10);
+  if (isNaN(i) || !state.dateList[i]) return;
+  state.dateIndex = i;
+  state.lastDateLabel = state.dateList[i].label;
+  state.records = state.dateList[i].records;
+  updateSelectedChip();
+  renderDateTabs();
+  // Tebak ulang kolom Qview yang cocok dengan tanggal memo baru ini
+  const guess = guessQviewIndexFromMemoLabel(state.lastDateLabel);
+  if (guess !== -1){
+    state.qview.selectedIndex = guess;
+    if (el.qviewDateSel) el.qviewDateSel.value = String(guess);
+  }
+  renderQviewComparison();
+});
+if (el.qviewDateSel) el.qviewDateSel.addEventListener('change', () => {
+  const i = parseInt(el.qviewDateSel.value, 10);
+  if (isNaN(i)) return;
+  state.qview.selectedIndex = i;
+  renderQviewComparison();
+});
+if (el.btnQviewRefresh) el.btnQviewRefresh.addEventListener('click', async () => {
+  await loadQviewData(true);
+  populateQviewDateSelect();
+  renderQviewComparison();
+  showToast('Data Qview dimuat ulang');
+});
 
 /* ---------- grafik tab Ringkasan & Pergerakan ---------- */
 let charts = { memoDo: null, status: null, outstanding: null };
@@ -3583,11 +3920,33 @@ function buildSummaryPrintArea(){
   </div>`;
   document.getElementById('print-area').innerHTML = html;
 }
+// Cetak khusus tab Komparasi Qview — tabel perbandingan tonase per sales-customer.
+function buildQviewPrintArea(){
+  const memoLabel = state.lastDateLabel || '—';
+  const qviewLabel = (state.qview.dateColumns[state.qview.selectedIndex] || {}).label || '—';
+  const rowsHtml = el.qviewTbody.innerHTML;
+  const html = `<div class="pr-page">
+    ${prHeader('Komparasi Tonase · Memo (' + escapeHtml(memoLabel) + ') vs Qview (' + escapeHtml(qviewLabel) + ')')}
+    <div class="pr-section-title">Komparasi Tonase — Memo vs Qview <span style="font-weight:400;font-size:11px;color:#667085;">(${el.qviewCount ? el.qviewCount.textContent : ''})</span></div>
+    <div class="pr-tonase"><span>Total Tonase Memo</span><b>${el.qviewTotalMemoVal.textContent}</b></div>
+    <div class="pr-tonase"><span>Total Tonase Qview</span><b style="color:#12996B;">${el.qviewTotalQviewVal.textContent}</b></div>
+    <div class="pr-tonase"><span>Selisih (Memo − Qview)</span><b style="color:#DC3E4E;">${el.qviewTotalSelisihVal.textContent}</b></div>
+    <table class="pr-table">
+      <thead><tr><th>Sales</th><th>Customer</th><th>Tonase Memo</th><th>Tonase Qview</th><th>Selisih</th><th>Status</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <div class="pr-footer">Komparasi Tonase — Memo vs Qview</div>
+  </div>`;
+  document.getElementById('print-area').innerHTML = html;
+}
 el.btnPrint = document.getElementById('btn-print');
 el.btnPrint.addEventListener('click', () => {
   if (state.view === 'summary'){
     if (!state.dateList.length){ showToast('Belum ada data untuk dicetak'); return; }
     buildSummaryPrintArea();
+  } else if (state.view === 'qview'){
+    if (!el.qviewTbody || !el.qviewTbody.children.length){ showToast('Belum ada data komparasi untuk dicetak'); return; }
+    buildQviewPrintArea();
   } else {
     if (!state.records.length){ showToast('Belum ada data untuk dicetak'); return; }
     buildPrintArea();
