@@ -2110,10 +2110,10 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
 
 <script>
 const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=25616349&single=true&output=csv';
-const QVIEW_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=268754226&single=true&output=csv';
+const OLD_DEFAULT_GID = 'gid=451953694';   // link format lama -> otomatis dipindah ke link format baru
 const STORAGE_KEY = 'analisamemo.settings';
 const CSV_CACHE_KEY = 'analisamemo.csv.cache';
-const QVIEW_CACHE_KEY = 'analisamemo.qview.cache';
+try{ localStorage.removeItem('analisamemo.qview.cache'); }catch(e){}
 
 const state = {
   dim: 'int',
@@ -2194,8 +2194,9 @@ const el = {
 function loadSettings(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    const s = raw ? JSON.parse(raw) : {};
-    return { csvUrl: s.csvUrl || DEFAULT_CSV_URL };
+    const st = raw ? JSON.parse(raw) : {};
+    const saved = st.csvUrl && !String(st.csvUrl).includes(OLD_DEFAULT_GID) ? st.csvUrl : '';
+    return { csvUrl: saved || DEFAULT_CSV_URL };
   }catch(e){ return { csvUrl: DEFAULT_CSV_URL }; }
 }
 function saveSettings(s){
@@ -2283,138 +2284,215 @@ function updateCutoffBadge(label){
   }
 }
 
-/* ---------- parsing data per-tanggal (format baru) ----------
-   Kolom A-K (idx 0-10): Tahun,Sales,SO Num,Customer,MCS Num,Comp /,Model,Bulan,day,DO Qty,Total KIM (Kg)
-   -> ini sumber pembanding "sudah dikirim berapa" (dari Qview digabung jadi 1 sumber), dikunci per SO Num + MCS Num.
-   Lalu berulang ke samping per tanggal (baris pertama berisi label "Tanggal Memo" + tanggalnya), tiap blok
-   lebar 30 kolom: offset+0..10 = tabel Memo (No,Sales,Sales,Customer,Comp / Model,SO Num,MCS Num,Order Qty,
-   Memo Qty,Tonase,Remark), lalu spacer, offset+12..28 = tabel Stock FG (NO.,CODE,NAME,NAME,AC#,MCS#,MC MODEL,
-   C#,DESIGN,MEASUREMENT,PART#,STS,PCS,SCH.DATE,IN,OUT,BALANCE).
-   Pencocokan stok CPS ke baris Memo TIDAK cukup pakai MCS Num saja (karena satu MCS# bisa punya baris Box
-   dan Layer terpisah di Stock FG) -> dicocokkan pakai MCS Num + prefix "Comp" dari "Comp / Model" (mis. "BOX"
-   atau "LAYER") terhadap kolom PART# di Stock FG.
-*/
-function buildSentMap(rows){
-  const map = {};
-  for (let i=1; i<rows.length; i++){
-    const r = rows[i]; if (!r) continue;
-    const tahun = String(r[0]||'').trim();
-    const soNum = String(r[2]||'').trim();
-    const mcsNum = String(r[4]||'').trim();
-    if (!soNum || !mcsNum || tahun.toLowerCase()==='total') continue;
-    const key = normKeyStr(soNum) + '|' + normKeyStr(mcsNum);
-    if (!map[key]) map[key] = { doQty:0, tonase:0, n:0 };
-    map[key].doQty += numParse(r[9]);
-    map[key].tonase += numParse(r[10]);
-    map[key].n++;
-  }
-  return map;
-}
-function normKeyStr(s){ return String(s||'').trim().toUpperCase().replace(/\s+/g,' '); }
+/* ---------- parsing format CSV baru (data mentah, semua diproses langsung di sini) ---------- */
+// Struktur 1 sheet:
+//  • Kolom A–K   : tabel DO/Qview mentah  -> Tahun | Sales | SO Num | Customer | MCS Num | Comp / | Model | Bulan | day | DO Qty | Total KIM (Kg)
+//  • Kolom M dst : blok per tanggal memo (bertambah ke samping). Tiap blok berisi
+//        Memo       : No | Sales (Int) | Sales | Customer | Comp / Model | SO Num | MCS Num | Order Qty | Memo Qty | Tonase | Remark
+//        Stock CPS  : NO. | CODE | NAME | NAME | AC# | MCS# | MC MODEL | C# | DESIGN | MEASUREMENT | PART# | STS | PCS | SCH.DATE | IN | OUT | BALANCE
+//    Tanggal memo ada di baris paling atas blok ("Tanggal Memo | 14/09/2026").
+// Kolom turunan yang di format lama dihitung di sheet, sekarang dihitung di sini:
+//    CPS          = BALANCE dari tabel Stock CPS (cocokkan MCS# & PART#  dengan  MCS Num & Comp)
+//    Memo         = Memo Qty
+//    DO           = total DO Qty dari tabel A–K yang cocok MCS Num & Comp & SO Num
+//                   DAN tanggalnya (I = day, H = Bulan, A = Tahun) sama dengan tanggal memo
+//    % Terpenuhi  = DO / Memo (maks 100%)
+//    % Siap Kirim = CPS / (Memo - DO) (maks 100%, 0 bila sudah tidak ada sisa)
+const MONTH_NUM = {
+  jan:1, januari:1, january:1, feb:2, februari:2, pebruari:2, february:2,
+  mar:3, maret:3, march:3, apr:4, april:4, mei:5, may:5,
+  jun:6, juni:6, june:6, jul:7, juli:7, july:7,
+  agu:8, agt:8, agus:8, agustus:8, aug:8, august:8,
+  sep:9, sept:9, september:9, okt:10, oktober:10, oct:10, october:10,
+  nov:11, november:11, des:12, desember:12, dec:12, december:12,
+};
+const MONTH_SHORT_ID = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const MONTH_FULL_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-function findBlockStarts(row0){
+function monthNumOf(s){
+  const k = String(s == null ? '' : s).trim().toLowerCase().replace(/\.$/, '');
+  if (MONTH_NUM[k]) return MONTH_NUM[k];
+  const n = parseInt(k, 10);
+  return (/^\d{1,2}$/.test(k) && n >= 1 && n <= 12) ? n : 0;
+}
+function nrm(s){ return String(s == null ? '' : s).trim().replace(/\s+/g, ' ').toUpperCase(); }
+function dateKeyOf(y, m, d){ return y * 10000 + m * 100 + d; }
+
+// Angka di sheet baru memakai format internasional (koma = ribuan, titik = desimal, mis. "1,821.26"),
+// tapi tetap dibuat toleran kalau ada format Indonesia (mis. "1.821,26").
+function numFlex(s){
+  s = (s == null ? '' : String(s)).trim().replace(/\s/g, '');
+  if (s === '' || s === '-') return 0;
+  const hasC = s.includes(','), hasD = s.includes('.');
+  if (hasC && hasD){
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+    else s = s.replace(/,/g, '');
+  } else if (hasC){
+    s = /^-?\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
+  } else if (hasD && /^-?\d{1,3}(\.\d{3}){2,}$/.test(s)){
+    s = s.replace(/\./g, '');
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+// "14/09/2026" (dd/mm/yyyy) -> {y,m,d}. Juga menerima "2026-09-14" dan "14 September 2026".
+function parseMemoDate(s){
+  s = String(s == null ? '' : s).trim();
+  let m = s.match(/^(\d{1,4})[\/\-.](\d{1,2})[\/\-.](\d{1,4})$/);
+  let out = null;
+  if (m){
+    const a = +m[1], b = +m[2]; let c = +m[3];
+    if (m[1].length === 4) out = { y: a, m: b, d: c };
+    else { if (c < 100) c += 2000; out = { y: c, m: b, d: a }; }
+  } else {
+    m = s.match(/(\d{1,2})\s+([A-Za-z]+)\.?\s+(\d{4})/);
+    if (m){ const mo = monthNumOf(m[2]); if (mo) out = { y: +m[3], m: mo, d: +m[1] }; }
+  }
+  if (out && out.m >= 1 && out.m <= 12 && out.d >= 1 && out.d <= 31) return out;
+  return null;
+}
+
+// Baris header blok memo = baris yang punya kolom "No" diikuti "Sales".
+function findMemoHeaderRow(rows){
+  for (let i = 0; i < Math.min(rows.length, 40); i++){
+    const up = (rows[i] || []).map(nrm);
+    for (let c = 0; c < up.length - 1; c++){
+      if ((up[c] === 'NO' || up[c] === 'NO.') && up[c+1] === 'SALES') return i;
+    }
+  }
+  return -1;
+}
+
+function parseNewFormat(rows){
+  const headerIdx = findMemoHeaderRow(rows);
+  if (headerIdx === -1) throw new Error('Header blok memo (No / Sales / Customer) tidak ditemukan di CSV.');
+  const header = rows[headerIdx].map(nrm);
+
+  /* 1) Tabel DO/Qview kolom A-K: A=Tahun, B=Sales, C=SO Num, D=Customer, E=MCS Num, F=Comp, H=Bulan, I=day, J=DO Qty, K=Total KIM (Kg) */
+  const doMap = new Map();      // "MCS|COMP|SO@yyyymmdd" -> total DO Qty
+  const qGroups = new Map();    // "SALES|||CUSTOMER" -> { sales, customer, byDate: Map(yyyymmdd -> kg) }
+  const dateSet = new Set();
+  for (let i = 0; i < rows.length; i++){
+    const r = rows[i];
+    if (!r || r.length < 10) continue;
+    if (!/^\d{4}$/.test(String(r[0] || '').trim())) continue;   // lewati header, baris kosong & baris "Total"
+    const mo = monthNumOf(r[7]);
+    const day = parseInt(r[8], 10);
+    if (!mo || !(day >= 1 && day <= 31)) continue;
+    const dk = dateKeyOf(parseInt(r[0], 10), mo, day);
+    const doQty = numFlex(r[9]);
+    const kg = numFlex(r[10]);
+    const k = nrm(r[4]) + '|' + nrm(r[5]) + '|' + nrm(r[2]) + '@' + dk;
+    doMap.set(k, (doMap.get(k) || 0) + doQty);
+
+    const sales = String(r[1] || '').trim();
+    const customer = String(r[3] || '').trim();
+    if (!sales && !customer) continue;
+    const gk = normKey(sales) + '|||' + normKey(customer);
+    let g = qGroups.get(gk);
+    if (!g){ g = { sales, customer, byDate: new Map() }; qGroups.set(gk, g); }
+    g.byDate.set(dk, (g.byDate.get(dk) || 0) + kg);
+    dateSet.add(dk);
+  }
+
+  /* 2) Blok per tanggal memo (kolom M dst) */
   const starts = [];
-  for (let i=0;i<row0.length;i++){
-    if (normKeyStr(row0[i]) === 'TANGGAL MEMO') starts.push(i);
+  for (let c = 0; c < header.length - 1; c++){
+    if ((header[c] === 'NO' || header[c] === 'NO.') && header[c+1] === 'SALES') starts.push(c);
   }
-  return starts;
-}
+  const dateList = [];
+  starts.forEach((start, b) => {
+    const end = b + 1 < starts.length ? starts[b+1] : header.length;
+    const h = header.slice(start, end);
+    const col = (name) => h.indexOf(name);
+    const need = (name) => { const i = col(name); if (i === -1) throw new Error('Kolom "' + name + '" tidak ditemukan di blok memo ke-' + (b+1)); return i; };
 
-function extractMemoRowsNew(rows, memoStart){
-  const out = [];
-  for (let i=2;i<rows.length;i++){
-    const r = rows[i]; if (!r) continue;
-    const s = r.slice(memoStart, memoStart+11);
-    const no = String(s[0]||'').trim();
-    if (!no) continue;
-    const lower = no.toLowerCase();
-    if (lower==='subtotal' || lower==='total' || !/[0-9]/.test(no)) continue;
-    const compModelRaw = String(s[4]||'').trim();
-    const slashIdx = compModelRaw.indexOf('/');
-    const comp = slashIdx === -1 ? compModelRaw : compModelRaw.slice(0, slashIdx);
-    out.push({
-      no,
-      internal: String(s[1]||'').trim() || '(Kosong)',
-      sales: String(s[2]||'').trim() || '(Kosong)',
-      customer: String(s[3]||'').trim(),
-      compModel: compModelRaw,
-      compKey: normKeyStr(comp),
-      soNum: String(s[5]||'').trim(),
-      mcsNum: String(s[6]||'').trim(),
-      orderQty: numParse(s[7]),
-      memoQty: numParse(s[8]),
-      tonase: numParse(s[9]),
-      remark: String(s[10]||'').trim(),
-    });
-  }
-  return out;
-}
+    const salesIdxs = []; h.forEach((x, i) => { if (x === 'SALES') salesIdxs.push(i); });
+    let iInt = col('INT'), iSales;
+    if (iInt !== -1) iSales = salesIdxs[0];
+    else if (salesIdxs.length >= 2){ iInt = salesIdxs[0]; iSales = salesIdxs[1]; }
+    else { iSales = salesIdxs[0]; }
+    const iCust = need('CUSTOMER'), iComp = need('COMP / MODEL'), iSO = need('SO NUM'), iMcs = need('MCS NUM');
+    const iOrder = need('ORDER QTY'), iMemo = need('MEMO QTY'), iTon = need('TONASE'), iRemark = col('REMARK');
+    const iStkMcs = col('MCS#'), iStkPart = col('PART#'), iStkBal = col('BALANCE');
 
-function extractStockRowsNew(rows, stockStart){
-  const out = [];
-  for (let i=2;i<rows.length;i++){
-    const r = rows[i]; if (!r) continue;
-    const s = r.slice(stockStart, stockStart+17);
-    const no = String(s[0]||'').trim();
-    if (!no || !/[0-9]/.test(no)) continue;
-    out.push({
-      mcs: String(s[5]||'').trim(),
-      part: String(s[10]||'').trim(),
-      design: String(s[8]||'').trim(),
-      measurement: String(s[9]||'').trim(),
-      schDate: String(s[13]||'').trim(),
-      balance: numParse(s[16]),
-    });
-  }
-  return out;
-}
+    // tanggal memo: baris di atas header, sel "Tanggal Memo" lalu tanggalnya di sel sebelah kanan
+    let dateObj = null, rawDate = '';
+    for (let ri = headerIdx - 1; ri >= 0 && !dateObj; ri--){
+      const dr = rows[ri] || [];
+      for (let c = start; c < Math.min(end, dr.length); c++){
+        if (nrm(dr[c]) === 'TANGGAL MEMO'){
+          rawDate = String(dr[c+1] || '').trim();
+          dateObj = parseMemoDate(rawDate);
+          break;
+        }
+      }
+    }
+    if (!dateObj){   // cadangan: cari sel tanggal apa pun di blok ini pada baris di atas header
+      for (let ri = headerIdx - 1; ri >= 0 && !dateObj; ri--){
+        const dr = rows[ri] || [];
+        for (let c = start; c < Math.min(end, dr.length) && !dateObj; c++){
+          const p = parseMemoDate(dr[c]); if (p){ dateObj = p; rawDate = String(dr[c]).trim(); }
+        }
+      }
+    }
+    if (dateObj) dateSet.add(dateKeyOf(dateObj.y, dateObj.m, dateObj.d));
+    const label = dateObj ? (dateObj.d + '-' + MONTH_SHORT_ID[dateObj.m - 1]) : (rawDate || ('Data ' + (b + 1)));
+    const dk = dateObj ? dateKeyOf(dateObj.y, dateObj.m, dateObj.d) : null;
 
-function buildStockIndex(stockRows){
-  const idx = {};
-  stockRows.forEach(sr => {
-    const key = normKeyStr(sr.mcs) + '|' + normKeyStr(sr.part);
-    if (!idx[key]) idx[key] = [];
-    idx[key].push(sr);
-  });
-  return idx;
-}
+    // tabel Stock CPS milik blok ini (vlookup = ambil baris pertama yang cocok)
+    const stock = new Map();
+    if (iStkMcs !== -1 && iStkBal !== -1){
+      for (let i = headerIdx + 1; i < rows.length; i++){
+        const r = rows[i];
+        if (!r || r.length <= start + iStkMcs) continue;
+        const mcs = nrm(r[start + iStkMcs]);
+        if (!mcs || /^-+$/.test(mcs)) continue;
+        const part = iStkPart !== -1 ? nrm(r[start + iStkPart]) : '';
+        const key = mcs + '|' + part;
+        if (!stock.has(key)) stock.set(key, numFlex(r[start + iStkBal]));
+      }
+    }
+    // PART# di tabel stock terpotong 15 karakter, jadi kalau Comp panjang & tidak ketemu persis, coba 15 karakter pertamanya
+    const lookupCps = (mcs, comp) => {
+      let v = stock.get(mcs + '|' + comp);
+      if (v === undefined && comp.length > 15) v = stock.get(mcs + '|' + comp.slice(0, 15).trim());
+      return v === undefined ? 0 : v;
+    };
 
-// Sheet-nya berisi kolom pembanding A-K, lalu blok Memo+Stock FG berulang ke samping per tanggal.
-// Fungsi ini memecah rows jadi array { label, records } per tanggal, dengan bentuk record SAMA PERSIS
-// seperti format lama (no, internal, sales, customer, compModel, soNum, mcsNum, orderQty, memoQty, tonase,
-// remark, cps, memoAK, doAK, pctTerpenuhi, siapPct, sisa, status) supaya seluruh tampilan & fitur lain
-// (KPI, rank table, detail, chart, export, AI text) tidak perlu diubah sama sekali.
-function extractRecordsByDate(rows){
-  if (!rows.length) throw new Error('CSV kosong.');
-  const row0 = rows[0];
-  const starts = findBlockStarts(row0);
-  if (!starts.length) throw new Error('Blok "Tanggal Memo" tidak ditemukan di baris pertama CSV.');
-  const sentMap = buildSentMap(rows);
+    const records = [];
+    for (let i = headerIdx + 1; i < rows.length; i++){
+      const r = rows[i];
+      if (!r || r.length <= start) continue;
+      const no = String(r[start] || '').trim();
+      if (/total/i.test(no) || /^-+$/.test(no)) continue;          // Subtotal / Grand Total / garis pemisah
+      const mcsNum = String(r[start + iMcs] || '').trim();
+      const customer = String(r[start + iCust] || '').trim();
+      if (!mcsNum && !customer) continue;
+      const internal = iInt !== -1 ? String(r[start + iInt] || '').trim() : '';
+      const sales = String(r[start + iSales] || '').trim();
+      if (!no && !internal && !sales) continue;
 
-  const dates = starts.map((memoStart, bi) => {
-    let label = String(row0[memoStart+1] || '').trim();
-    if (!label) label = 'Data ' + (bi + 1);
-    const stockStart = memoStart + 12;
-    const memoRows = extractMemoRowsNew(rows, memoStart);
-    const stockRows = extractStockRowsNew(rows, stockStart);
-    const stockIdx = buildStockIndex(stockRows);
+      const compModel = String(r[start + iComp] || '').trim();
+      const soNum = String(r[start + iSO] || '').trim();
+      const comp = nrm(compModel.split('/')[0]);                   // Comp = teks sebelum garis "/"
+      const mcsKey = nrm(mcsNum);
 
-    const records = memoRows.map(m => {
-      const sentKey = normKeyStr(m.soNum) + '|' + normKeyStr(m.mcsNum);
-      const sent = sentMap[sentKey] || { doQty:0, tonase:0, n:0 };
-      const stockKey = normKeyStr(m.mcsNum) + '|' + m.compKey;
-      const matches = stockIdx[stockKey] || [];
-      const cps = matches.reduce((a,x)=>a+x.balance, 0);
+      const memoQtyCol = numFlex(r[start + iMemo]);
+      const tonaseCol = numFlex(r[start + iTon]);
+      const memoQtyAK = memoQtyCol;                                // kolom "memo" = copy Memo Qty
+      const cps = lookupCps(mcsKey, comp);
+      const doQtyAK = dk === null ? 0 : (doMap.get(mcsKey + '|' + comp + '|' + nrm(soNum) + '@' + dk) || 0);
 
-      const memoQtyAK = m.memoQty;
-      const doQtyAK = sent.doQty;
-      const siapPct = memoQtyAK > 0 ? Math.min(100, (doQtyAK + cps) / memoQtyAK * 100) : (cps > 0 ? 100 : 0);
-      const pctTerpenuhi = memoQtyAK > 0 ? Math.min(100, doQtyAK / memoQtyAK * 100) : 0;
+      const pctTerpenuhi = memoQtyAK > 0 ? Math.min(100, Math.round(doQtyAK * 100 / memoQtyAK)) : 0;
+      const sisaDO = memoQtyAK - doQtyAK;
+      const siapPct = (sisaDO > 0 && cps > 0) ? Math.min(100, Math.round(cps * 100 / sisaDO)) : 0;
 
-      // Urutan pengecekan status (identik dengan logika lama):
-      // 1) Lunas: DO sudah memenuhi/melebihi Memo
-      // 2) Kosong: qty Memo ada tapi qty CPS tidak ada/0 -> barang belum masuk gudang
-      // 3) Siap Kirim: DO belum penuh, tapi stok CPS sudah cukup untuk sisa memo
+      // Urutan pengecekan status:
+      // 1) Lunas: DO sudah memenuhi/melebihi Memo (selesai, apapun kondisi stok CPS saat ini)
+      // 2) Kosong: qty Memo ada tapi qty CPS tidak ada/0 -> barang belum masuk gudang / belum diproduksi
+      // 3) Siap Kirim: DO belum penuh, tapi stok CPS sudah cukup untuk sisa memo -> tinggal dibuatkan DO
       // 4) Kekurangan: DO belum penuh dan stok CPS pun belum cukup
       let status;
       if (memoQtyAK > 0 && doQtyAK >= memoQtyAK - 0.001) status = 'lunas';
@@ -2422,21 +2500,38 @@ function extractRecordsByDate(rows){
       else if (siapPct >= 99.5) status = 'siap';
       else status = 'kurang';
 
-      const beratPerPcs = m.memoQty > 0 ? m.tonase / m.memoQty : 0;
+      // Berat per pcs = Tonase (kolom U) / Memo Qty (kolom T); Tonase DO = berat per pcs x Qty DO
+      const beratPerPcs = memoQtyCol > 0 ? tonaseCol / memoQtyCol : 0;
       const tonaseDO = beratPerPcs * doQtyAK;
 
-      return {
-        no: m.no, internal: m.internal, sales: m.sales, customer: m.customer,
-        compModel: m.compModel, soNum: m.soNum, mcsNum: m.mcsNum,
-        orderQty: m.orderQty, memoQty: m.memoQty, tonase: m.tonase, remark: m.remark,
+      records.push({
+        no, internal: internal || '(Kosong)', sales: sales || '(Kosong)',
+        customer, compModel, soNum, mcsNum,
+        orderQty: numFlex(r[start + iOrder]),
+        memoQty: memoQtyCol,
+        tonase: tonaseCol,
+        remark: iRemark !== -1 ? String(r[start + iRemark] || '').trim() : '',
         cps, memoAK: memoQtyAK, doAK: doQtyAK, pctTerpenuhi, siapPct,
         sisa: Math.max(0, memoQtyAK - doQtyAK),
-        beratPerPcs, tonaseDO, status,
-      };
-    });
-    return { label, records };
+        beratPerPcs, tonaseDO,
+        status,
+      });
+    }
+    dateList.push({ label, records });
   });
-  return dates;
+  if (!dateList.length) throw new Error('Blok tanggal memo tidak ditemukan di CSV.');
+
+  /* 3) Data Qview per tanggal (dari tabel A-K), termasuk tanggal-tanggal memo supaya komparasi selalu punya kolom */
+  const dks = Array.from(dateSet).sort((a, b) => a - b);
+  const dateColumns = dks.map((dk, i) => {
+    const mo = Math.floor(dk / 100) % 100, day = dk % 100;
+    return { index: i, label: MONTH_FULL_EN[mo - 1] + day, month: MONTH_FULL_EN[mo - 1], day: String(day), key: dk };
+  });
+  const qRows = [];
+  qGroups.forEach(g => {
+    qRows.push({ sales: g.sales, customer: g.customer, values: dks.map(dk => g.byDate.get(dk) || 0) });
+  });
+  return { dateList, qview: { dateColumns, rows: qRows } };
 }
 
 function renderDateTabs(){
@@ -2463,11 +2558,9 @@ function renderDateTabs(){
   });
 }
 
-// Ambil teks CSV mentah -> pecah per tanggal -> pilih tab yang aktif (pertahankan pilihan
-// sebelumnya kalau tanggalnya masih ada, kalau tidak pakai tanggal paling kanan / terbaru).
-function applyLoadedCSV(text){
-  const rows = parseCSV(text);
-  const dateList = extractRecordsByDate(rows);
+// Pilih tab yang aktif (pertahankan pilihan sebelumnya kalau tanggalnya masih ada,
+// kalau tidak pakai tanggal paling kanan / terbaru).
+function applyDateList(dateList){
   state.dateList = dateList;
   let newIndex = dateList.length - 1;
   if (state.lastDateLabel){
@@ -2487,6 +2580,25 @@ function applyLoadedCSV(text){
   return dateList;
 }
 
+// Ambil teks CSV mentah -> hitung semua (CPS, DO, %, status) -> tab per tanggal memo + data Qview.
+function applyLoadedCSV(text){
+  const parsed = parseNewFormat(parseCSV(text));
+  applyDateList(parsed.dateList);
+  applyQviewData(parsed.qview);
+  return parsed;
+}
+
+// Simpan hasil olahan (bukan CSV mentah yang besar) sebagai cadangan kalau koneksi gagal.
+function saveCsvCache(parsed){
+  try{ localStorage.setItem(CSV_CACHE_KEY, JSON.stringify({ data: parsed, ts: Date.now() })); }catch(e){ /* storage penuh: abaikan */ }
+}
+function readCsvCache(){
+  try{
+    const c = JSON.parse(localStorage.getItem(CSV_CACHE_KEY) || 'null');
+    return (c && c.data && c.data.dateList && c.data.qview) ? c : null;
+  }catch(e){ return null; }
+}
+
 /* ---------- data load ---------- */
 async function loadData(forceRefresh){
   const url = state.settings.csvUrl + (forceRefresh ? (state.settings.csvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now() : '');
@@ -2494,17 +2606,18 @@ async function loadData(forceRefresh){
     const res = await fetch(url, { cache: forceRefresh ? 'no-store' : 'default' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
-    applyLoadedCSV(text);
-    localStorage.setItem(CSV_CACHE_KEY, JSON.stringify({ text, ts: Date.now() }));
+    const parsed = applyLoadedCSV(text);
+    saveCsvCache(parsed);
     el.dataBanner.classList.add('hidden');
     render();
     showToast('Data dimuat: ' + state.records.length + ' baris memo' + (state.lastDateLabel ? ' · ' + state.lastDateLabel : ''));
   }catch(err){
     console.error(err);
     try{
-      const cached = JSON.parse(localStorage.getItem(CSV_CACHE_KEY) || 'null');
+      const cached = readCsvCache();
       if (cached){
-        applyLoadedCSV(cached.text);
+        applyDateList(cached.data.dateList);
+        applyQviewData(cached.data.qview);
         const waktu = new Date(cached.ts).toLocaleString('id-ID');
         el.dataBanner.classList.remove('hidden');
         el.dataBanner.innerHTML = 'Gagal ambil data terbaru — memakai cache ' + waktu + ' <button id="btn-retry-load">Coba lagi</button>';
@@ -2994,48 +3107,15 @@ function numParseIntl(s){
 
 function normKey(s){ return String(s||'').trim().toUpperCase().replace(/\s+/g,' '); }
 
-// Baris "Tahun/Sales/Customer/day" adalah header asli tabel Qview. Baris gabungan tanggal
-// (mis. "September18") ada 3 baris di atasnya, hasil publish Google Sheets.
-function findQviewHeaderRowIndex(rows){
-  for (let i=0;i<rows.length;i++){
-    const up = rows[i].map(c => String(c||'').trim().toUpperCase());
-    if (up.includes('TAHUN') && up.includes('SALES') && up.includes('CUSTOMER')) return i;
-  }
-  return -1;
-}
-
-function parseQviewCSV(text){
-  const rows = parseCSV(text);
-  const headerIdx = findQviewHeaderRowIndex(rows);
-  if (headerIdx === -1) throw new Error('Header Qview (Tahun/Sales/Customer) tidak ditemukan.');
-  const header = rows[headerIdx];
-  const combinedLabelRow = rows[headerIdx-3] || [];
-  const monthRow = rows[headerIdx-1] || [];
-  const upHeader = header.map(h => String(h||'').trim().toUpperCase());
-  const salesIdx = upHeader.indexOf('SALES');
-  const custIdx = upHeader.indexOf('CUSTOMER');
-  const firstDayIdx = Math.max(salesIdx, custIdx, upHeader.indexOf('DAY')) + 1;
-
-  const dateColumns = [];
-  for (let c = firstDayIdx; c < header.length; c++){
-    const label = String(combinedLabelRow[c] || '').trim();
-    const month = String(monthRow[c] || '').trim();
-    const day = String(header[c] || '').trim();
-    if (!label && !month) continue;
-    dateColumns.push({ index: c, label: label || (month + day), month, day });
-  }
-
-  const dataRows = [];
-  for (let i = headerIdx+1; i < rows.length; i++){
-    const r = rows[i];
-    if (!r || !r.length) continue;
-    const sales = String(r[salesIdx] || '').trim();
-    const customer = String(r[custIdx] || '').trim();
-    if (!sales && !customer) continue;
-    const values = dateColumns.map(dc => numParseIntl(r[dc.index]));
-    dataRows.push({ sales, customer, values });
-  }
-  return { dateColumns, rows: dataRows };
+// Data Qview sekarang berasal dari kolom A-K sheet yang sama dengan memo (lihat parseNewFormat),
+// jadi tidak ada lagi link/sheet Qview terpisah.
+function applyQviewData(q){
+  const prevLabel = (state.qview.dateColumns[state.qview.selectedIndex] || {}).label;
+  state.qview.dateColumns = q.dateColumns;
+  state.qview.rows = q.rows;
+  state.qview.loaded = true;
+  // pertahankan tanggal Qview yang sedang dipilih; kalau tidak ada -> -1 (nanti ditebak dari tanggal memo)
+  state.qview.selectedIndex = prevLabel ? q.dateColumns.findIndex(dc => dc.label === prevLabel) : -1;
 }
 
 async function loadQviewData(forceRefresh){
@@ -3043,25 +3123,20 @@ async function loadQviewData(forceRefresh){
   state.qview.error = null;
   if (el.qviewStatus) el.qviewStatus.textContent = 'Memuat data Qview…';
   try{
-    const url = QVIEW_CSV_URL + (forceRefresh ? (QVIEW_CSV_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now() : '');
+    const base = state.settings.csvUrl;
+    const url = base + (forceRefresh ? (base.includes('?') ? '&' : '?') + '_ts=' + Date.now() : '');
     const res = await fetch(url, { cache: forceRefresh ? 'no-store' : 'default' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
-    const parsed = parseQviewCSV(text);
-    state.qview.dateColumns = parsed.dateColumns;
-    state.qview.rows = parsed.rows;
-    state.qview.loaded = true;
-    localStorage.setItem(QVIEW_CACHE_KEY, JSON.stringify({ text, ts: Date.now() }));
+    const parsed = applyLoadedCSV(text);   // memo & Qview dari 1 sheet, jadi keduanya ikut diperbarui
+    saveCsvCache(parsed);
     if (el.qviewStatus) el.qviewStatus.textContent = '';
   }catch(err){
     console.error(err);
     try{
-      const cached = JSON.parse(localStorage.getItem(QVIEW_CACHE_KEY) || 'null');
+      const cached = readCsvCache();
       if (cached){
-        const parsed = parseQviewCSV(cached.text);
-        state.qview.dateColumns = parsed.dateColumns;
-        state.qview.rows = parsed.rows;
-        state.qview.loaded = true;
+        applyQviewData(cached.data.qview);
         const waktu = new Date(cached.ts).toLocaleString('id-ID');
         if (el.qviewStatus) el.qviewStatus.textContent = 'Gagal ambil data Qview terbaru — memakai cache ' + waktu + '.';
       } else {
@@ -3267,6 +3342,7 @@ if (el.qviewDateSel) el.qviewDateSel.addEventListener('change', () => {
 });
 if (el.btnQviewRefresh) el.btnQviewRefresh.addEventListener('click', async () => {
   await loadQviewData(true);
+  populateQviewMemoDateSelect();
   populateQviewDateSelect();
   renderQviewComparison();
   showToast('Data Qview dimuat ulang');
