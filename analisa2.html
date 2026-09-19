@@ -1553,6 +1553,16 @@ header.topbar{
 .qv-badge.hanya-memo{ background: rgba(220,62,78,.14); color:#DC3E4E; }
 .qv-badge.hanya-qview{ background: rgba(94,120,255,.16); color:#5E78FF; }
 .qview-row-total td{ font-weight:700; border-top:2px solid var(--border); }
+.btn-qv-detail{ border:1px solid var(--border); background: var(--surface); color: var(--text); border-radius:8px; padding:4px 11px; font-size:12px; font-weight:700; cursor:pointer; font-family: var(--font-body); }
+.btn-qv-detail:hover{ border-color: var(--violet); color: var(--violet); }
+.sheet.sheet-wide{ max-width:1000px; }
+.qvd-summary{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin-bottom:6px; }
+.qvd-stat{ background: var(--surface); border:1px solid var(--border); border-radius:12px; padding:9px 12px; }
+.qvd-stat .k{ display:block; font-family: var(--font-mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase; color: var(--muted); }
+.qvd-stat .v{ display:block; font-family: var(--font-display); font-weight:700; font-size:20px; margin-top:2px; }
+.qvd-note{ font-size:12px; color: var(--muted); margin:2px 0 6px; }
+table.qvd-table{ min-width:760px; }
+table.qvd-table td.wrap{ white-space:normal; min-width:160px; }
 .qv-filter-row{ display:flex; flex-wrap:wrap; gap:8px; margin: 10px 0 4px; }
 .qv-filter-chip{
   border:1px solid var(--border); background: var(--surface); color: var(--muted);
@@ -2032,6 +2042,7 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
             <th>Tonase Qview</th>
             <th>Selisih</th>
             <th>Status</th>
+            <th class="qv-detail-cell">Detail</th>
           </tr>
         </thead>
         <tbody id="qview-tbody"></tbody>
@@ -2085,6 +2096,42 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
   </div>
 </div>
 
+<div id="qvdetail-overlay" class="sheet-overlay">
+  <div class="sheet sheet-wide" role="dialog" aria-modal="true">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <div class="sheet-eyebrow" id="qvd-eyebrow">DETAIL BARANG</div>
+        <h2 class="sheet-title" id="qvd-title">—</h2>
+      </div>
+      <button class="icon-btn" id="btn-close-qvdetail">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="qvd-note" id="qvd-note"></div>
+      <div class="qvd-summary">
+        <div class="qvd-stat"><span class="k">Tonase Memo (DO)</span><span class="v" id="qvd-total-memo">0</span></div>
+        <div class="qvd-stat"><span class="k">Tonase Qview</span><span class="v" id="qvd-total-qview" style="color:var(--green);">0</span></div>
+        <div class="qvd-stat"><span class="k">Selisih</span><span class="v" id="qvd-total-selisih">0</span></div>
+      </div>
+      <div class="qv-filter-row" id="qvd-filter-row">
+        <button type="button" class="qv-filter-chip active" data-status="all">Semua <small id="qvdf-count-all">0</small></button>
+        <button type="button" class="qv-filter-chip qv-badge cocok" data-status="cocok">Cocok <small id="qvdf-count-cocok">0</small></button>
+        <button type="button" class="qv-filter-chip qv-badge selisih" data-status="selisih">Selisih <small id="qvdf-count-selisih">0</small></button>
+        <button type="button" class="qv-filter-chip qv-badge hanya-memo" data-status="hanya-memo">Hanya di Memo <small id="qvdf-count-hanya-memo">0</small></button>
+        <button type="button" class="qv-filter-chip qv-badge hanya-qview" data-status="hanya-qview">Hanya di Qview <small id="qvdf-count-hanya-qview">0</small></button>
+      </div>
+      <div class="rank-table-wrap" style="margin-top:8px;">
+        <table class="rank-table qvd-table">
+          <thead>
+            <tr><th>MC</th><th>Comp</th><th>Model</th><th>Tonase Memo (DO)</th><th>Tonase Qview</th><th>Selisih</th><th>Status</th></tr>
+          </thead>
+          <tbody id="qvd-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="settings-overlay" class="sheet-overlay">
   <div class="sheet" role="dialog" aria-modal="true">
     <div class="sheet-handle"></div>
@@ -2131,6 +2178,7 @@ const state = {
     error: null,
     rows: [],          // [{ sales, customer, values: [num,...] }]
     dateColumns: [],   // [{ index, label, month, day }]
+    items: [],         // [{ sales, customer, mcs, comp, model, values: [num,...] }] (detail barang)
     selectedIndex: -1, // memilih dateColumns index yang aktif
     statusFilter: 'all',
   },
@@ -2372,6 +2420,7 @@ function parseNewFormat(rows){
   /* 1) Tabel DO/Qview kolom A-K: A=Tahun, B=Sales, C=SO Num, D=Customer, E=MCS Num, F=Comp, H=Bulan, I=day, J=DO Qty, K=Total KIM (Kg) */
   const doMap = new Map();      // "MCS|COMP|SO@yyyymmdd" -> total DO Qty
   const qGroups = new Map();    // "SALES|||CUSTOMER" -> { sales, customer, byDate: Map(yyyymmdd -> kg) }
+  const qItems = new Map();     // "SALES|||CUSTOMER|||MCS|||COMP" -> { sales, customer, mcs, comp, model, byDate }
   const dateSet = new Set();
   for (let i = 0; i < rows.length; i++){
     const r = rows[i];
@@ -2393,6 +2442,14 @@ function parseNewFormat(rows){
     let g = qGroups.get(gk);
     if (!g){ g = { sales, customer, byDate: new Map() }; qGroups.set(gk, g); }
     g.byDate.set(dk, (g.byDate.get(dk) || 0) + kg);
+    const ik = gk + '|||' + nrm(r[4]) + '|||' + nrm(r[5]);
+    let it = qItems.get(ik);
+    if (!it){
+      it = { sales, customer, mcs: String(r[4] || '').trim(), comp: String(r[5] || '').trim(), model: String(r[6] || '').trim(), byDate: new Map() };
+      qItems.set(ik, it);
+    }
+    if (!it.model) it.model = String(r[6] || '').trim();
+    it.byDate.set(dk, (it.byDate.get(dk) || 0) + kg);
     dateSet.add(dk);
   }
 
@@ -2531,7 +2588,11 @@ function parseNewFormat(rows){
   qGroups.forEach(g => {
     qRows.push({ sales: g.sales, customer: g.customer, values: dks.map(dk => g.byDate.get(dk) || 0) });
   });
-  return { dateList, qview: { dateColumns, rows: qRows } };
+  const qItemRows = [];
+  qItems.forEach(it => {
+    qItemRows.push({ sales: it.sales, customer: it.customer, mcs: it.mcs, comp: it.comp, model: it.model, values: dks.map(dk => it.byDate.get(dk) || 0) });
+  });
+  return { dateList, qview: { dateColumns, rows: qRows, items: qItemRows } };
 }
 
 function renderDateTabs(){
@@ -2595,7 +2656,7 @@ function saveCsvCache(parsed){
 function readCsvCache(){
   try{
     const c = JSON.parse(localStorage.getItem(CSV_CACHE_KEY) || 'null');
-    return (c && c.data && c.data.dateList && c.data.qview) ? c : null;
+    return (c && c.data && c.data.dateList && c.data.qview && Array.isArray(c.data.qview.items)) ? c : null;
   }catch(e){ return null; }
 }
 
@@ -3113,6 +3174,7 @@ function applyQviewData(q){
   const prevLabel = (state.qview.dateColumns[state.qview.selectedIndex] || {}).label;
   state.qview.dateColumns = q.dateColumns;
   state.qview.rows = q.rows;
+  state.qview.items = q.items || [];
   state.qview.loaded = true;
   // pertahankan tanggal Qview yang sedang dipilih; kalau tidak ada -> -1 (nanti ditebak dari tanggal memo)
   state.qview.selectedIndex = prevLabel ? q.dateColumns.findIndex(dc => dc.label === prevLabel) : -1;
@@ -3211,6 +3273,7 @@ async function initQviewView(){
 
 // Simpan hasil komparasi (belum difilter status) supaya klik chip filter tidak perlu hitung ulang.
 let qviewCombinedCache = [];
+let qviewRenderedList = [];   // baris yang sedang tampil di tabel (untuk tombol Detail)
 
 function computeQviewComparison(){
   const memoRecords = (state.dateList[state.dateIndex] || {}).records || [];
@@ -3289,10 +3352,12 @@ function renderQviewTable(){
   if (el.qviewCount) el.qviewCount.textContent = combined.length + ' dari ' + qviewCombinedCache.length + ' pasangan sales-customer';
 
   if (!combined.length){
-    el.qviewTbody.innerHTML = '<tr><td colspan="6" class="empty-note">Tidak ada data untuk filter/tanggal ini.</td></tr>';
+    qviewRenderedList = [];
+    el.qviewTbody.innerHTML = '<tr><td colspan="7" class="empty-note">Tidak ada data untuk filter/tanggal ini.</td></tr>';
     return;
   }
-  el.qviewTbody.innerHTML = combined.map(g => `
+  qviewRenderedList = combined;
+  el.qviewTbody.innerHTML = combined.map((g, gi) => `
     <tr>
       <td>${escapeHtml(g.sales)}</td>
       <td>${escapeHtml(g.customer)}</td>
@@ -3300,6 +3365,7 @@ function renderQviewTable(){
       <td class="mono">${fmtNum(g.tonaseQview)}</td>
       <td class="mono" style="color:${g.selisih>0?'var(--red)':(g.selisih<0?'var(--green)':'inherit')};">${fmtNum(g.selisih)}</td>
       <td><span class="qv-badge ${g.status}">${QV_STATUS_LABEL[g.status]}</span></td>
+      <td class="qv-detail-cell"><button type="button" class="btn-qv-detail" data-i="${gi}" title="Lihat detail barang">Detail</button></td>
     </tr>`).join('') + `
     <tr class="qview-row-total">
       <td colspan="2">TOTAL${state.qview.statusFilter!=='all' ? ' (' + QV_STATUS_LABEL[state.qview.statusFilter] + ')' : ''}</td>
@@ -3307,8 +3373,128 @@ function renderQviewTable(){
       <td class="mono">${fmtNum(totalQview)}</td>
       <td class="mono">${fmtNum(totalMemo-totalQview)}</td>
       <td></td>
+      <td class="qv-detail-cell"></td>
     </tr>`;
 }
+
+/* ---------- Detail barang (MC x Comp x Model) per pasangan sales-customer ---------- */
+let qvdCtx = null;   // { sales, customer, filter }
+let qvdCache = [];
+
+function computeQviewDetail(sales, customer){
+  const key = normKey(sales) + '|||' + normKey(customer);
+  const memoRecords = (state.dateList[state.dateIndex] || {}).records || [];
+  const items = new Map();   // "MCS|COMP" -> { mcs, comp, model, tonaseMemo, tonaseQview }
+  const getItem = (mcs, comp, model) => {
+    const k = nrm(mcs) + '|' + nrm(comp);
+    let it = items.get(k);
+    if (!it){ it = { mcs, comp, model: model || '', tonaseMemo: 0, tonaseQview: 0, inMemo: false, inQview: false }; items.set(k, it); }
+    if (!it.model && model) it.model = model;
+    return it;
+  };
+  memoRecords.forEach(r => {
+    if (normKey(r.sales) + '|||' + normKey(r.customer) !== key) return;
+    const parts = String(r.compModel || '').split('/');
+    const comp = (parts[0] || '').trim();
+    const model = parts.slice(1).join('/').trim();
+    const it = getItem(String(r.mcsNum || '').trim(), comp, model);
+    it.tonaseMemo += r.tonaseDO;
+    it.inMemo = true;
+  });
+  const qIdx = state.qview.selectedIndex;
+  if (qIdx !== -1){
+    state.qview.items.forEach(q => {
+      if (normKey(q.sales) + '|||' + normKey(q.customer) !== key) return;
+      const v = q.values[qIdx] || 0;
+      if (!v) return;
+      const it = getItem(q.mcs, q.comp, q.model);
+      it.tonaseQview += v;
+      it.inQview = true;
+    });
+  }
+  return Array.from(items.values()).map(it => {
+    const selisih = it.tonaseMemo - it.tonaseQview;
+    const m = it.tonaseMemo > 0.0001, q = it.tonaseQview > 0.0001;
+    let status;
+    if (!m && q) status = 'hanya-qview';
+    else if (m && !q) status = 'hanya-memo';
+    else if (Math.abs(selisih) < 0.5 || (it.tonaseMemo > 0 && Math.abs(selisih) / it.tonaseMemo < 0.005)) status = 'cocok';
+    else status = 'selisih';
+    return Object.assign(it, { selisih, status });
+  }).filter(it => it.tonaseMemo > 0.0001 || it.tonaseQview > 0.0001)
+    .sort((a, b) => Math.abs(b.selisih) - Math.abs(a.selisih));
+}
+
+function renderQviewDetail(){
+  if (!qvdCtx) return;
+  qvdCache = computeQviewDetail(qvdCtx.sales, qvdCtx.customer);
+  const counts = { all: qvdCache.length, cocok:0, selisih:0, 'hanya-memo':0, 'hanya-qview':0 };
+  qvdCache.forEach(g => counts[g.status]++);
+  Object.keys(counts).forEach(st => {
+    const c = document.getElementById('qvdf-count-' + st);
+    if (c) c.textContent = counts[st];
+  });
+  document.querySelectorAll('#qvd-filter-row .qv-filter-chip').forEach(b => b.classList.toggle('active', b.dataset.status === qvdCtx.filter));
+
+  const shown = qvdCtx.filter === 'all' ? qvdCache : qvdCache.filter(g => g.status === qvdCtx.filter);
+  const totalMemo = shown.reduce((s, g) => s + g.tonaseMemo, 0);
+  const totalQview = shown.reduce((s, g) => s + g.tonaseQview, 0);
+  const totalSel = totalMemo - totalQview;
+  document.getElementById('qvd-total-memo').textContent = fmtNum(totalMemo);
+  document.getElementById('qvd-total-qview').textContent = fmtNum(totalQview);
+  const selEl = document.getElementById('qvd-total-selisih');
+  selEl.textContent = fmtNum(totalSel);
+  selEl.style.color = totalSel > 0 ? 'var(--red)' : (totalSel < 0 ? 'var(--green)' : 'inherit');
+
+  const tb = document.getElementById('qvd-tbody');
+  if (!shown.length){
+    tb.innerHTML = '<tr><td colspan="7" class="empty-note">Tidak ada barang untuk filter ini.</td></tr>';
+    return;
+  }
+  tb.innerHTML = shown.map(g => `
+    <tr>
+      <td class="mono">${escapeHtml(g.mcs)}</td>
+      <td>${escapeHtml(g.comp)}</td>
+      <td class="wrap">${escapeHtml(g.model)}</td>
+      <td class="mono">${fmtNum(g.tonaseMemo)}</td>
+      <td class="mono">${fmtNum(g.tonaseQview)}</td>
+      <td class="mono" style="color:${g.selisih>0?'var(--red)':(g.selisih<0?'var(--green)':'inherit')};">${fmtNum(g.selisih)}</td>
+      <td><span class="qv-badge ${g.status}">${QV_STATUS_LABEL[g.status]}</span></td>
+    </tr>`).join('') + `
+    <tr class="qview-row-total">
+      <td colspan="3">TOTAL${qvdCtx.filter!=='all' ? ' (' + QV_STATUS_LABEL[qvdCtx.filter] + ')' : ''}</td>
+      <td class="mono">${fmtNum(totalMemo)}</td>
+      <td class="mono">${fmtNum(totalQview)}</td>
+      <td class="mono">${fmtNum(totalSel)}</td>
+      <td></td>
+    </tr>`;
+}
+
+function openQviewDetail(g){
+  qvdCtx = { sales: g.sales, customer: g.customer, filter: 'all' };
+  const memoLabel = state.lastDateLabel || '—';
+  const qviewLabel = (state.qview.dateColumns[state.qview.selectedIndex] || {}).label || '—';
+  document.getElementById('qvd-eyebrow').textContent = 'DETAIL BARANG · ' + (g.sales || '(Kosong)');
+  document.getElementById('qvd-title').textContent = g.customer || '(Kosong)';
+  document.getElementById('qvd-note').textContent = 'Memo ' + memoLabel + ' (tonase DO) vs Qview ' + qviewLabel + ' · dicocokkan per MC + Comp';
+  renderQviewDetail();
+  showOverlay(document.getElementById('qvdetail-overlay'));
+}
+
+if (el.qviewTbody) el.qviewTbody.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn-qv-detail');
+  if (!btn) return;
+  const g = qviewRenderedList[parseInt(btn.dataset.i, 10)];
+  if (g) openQviewDetail(g);
+});
+document.getElementById('btn-close-qvdetail').addEventListener('click', () => hideOverlay(document.getElementById('qvdetail-overlay')));
+document.getElementById('qvdetail-overlay').addEventListener('click', (e) => { if (e.target.id === 'qvdetail-overlay') hideOverlay(document.getElementById('qvdetail-overlay')); });
+document.getElementById('qvd-filter-row').addEventListener('click', (e) => {
+  const btn = e.target.closest('.qv-filter-chip');
+  if (!btn || !qvdCtx) return;
+  qvdCtx.filter = btn.dataset.status;
+  renderQviewDetail();
+});
 
 if (el.qviewFilterRow) el.qviewFilterRow.addEventListener('click', (e) => {
   const btn = e.target.closest('.qv-filter-chip');
@@ -4106,7 +4292,10 @@ function buildSummaryPrintArea(){
 function buildQviewPrintArea(){
   const memoLabel = state.lastDateLabel || '—';
   const qviewLabel = (state.qview.dateColumns[state.qview.selectedIndex] || {}).label || '—';
-  const rowsHtml = el.qviewTbody.innerHTML;
+  const tmpBody = document.createElement('tbody');
+  tmpBody.innerHTML = el.qviewTbody.innerHTML;
+  tmpBody.querySelectorAll('.qv-detail-cell').forEach(c => c.remove());   // tombol Detail tidak ikut dicetak
+  const rowsHtml = tmpBody.innerHTML;
   const html = `<div class="pr-page">
     ${prHeader('Komparasi Tonase · Memo (' + escapeHtml(memoLabel) + ') vs Qview (' + escapeHtml(qviewLabel) + ')')}
     <div class="pr-section-title">Komparasi Tonase — Memo vs Qview <span style="font-weight:400;font-size:11px;color:#667085;">(${el.qviewCount ? el.qviewCount.textContent : ''})</span></div>
