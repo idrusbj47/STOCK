@@ -1995,6 +1995,11 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
       <p class="chart-card-sub">Pergerakan tonase yang masih harus dipenuhi</p>
       <div class="chart-canvas-wrap tall"><canvas id="chart-outstanding"></canvas></div>
     </div>
+    <div class="chart-card full">
+      <div class="chart-card-title">Tren Tonase DO vs Qview per Hari</div>
+      <p class="chart-card-sub">Tonase DO terkirim menurut memo dibandingkan tonase Qview di tanggal yang sama</p>
+      <div class="chart-canvas-wrap tall"><canvas id="chart-do-qview"></canvas></div>
+    </div>
 
     <p class="muted" style="font-size:12px;margin-top:12px;">Klik salah satu baris tanggal atau titik grafik untuk langsung membuka detail lengkapnya di tab Data Harian.</p>
   </div>
@@ -3576,7 +3581,7 @@ if (el.btnQviewRefresh) el.btnQviewRefresh.addEventListener('click', async () =>
 });
 
 /* ---------- grafik tab Ringkasan & Pergerakan ---------- */
-let charts = { memoDo: null, status: null, outstanding: null };
+let charts = { memoDo: null, status: null, outstanding: null, doQview: null };
 
 function cssVar(name){
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -3811,6 +3816,84 @@ function renderSummaryCharts(summaries){
                     }
                   }
                   return lines;
+                },
+              },
+            },
+          },
+          scales: {
+            x: { ...baseScale, ticks: { ...baseScale.ticks, callback: xTickCallback(labels), maxRotation: 0, autoSkip: false } },
+            y: { ...baseScale, ticks: { ...baseScale.ticks, callback: (v) => fmtNum(v) }, beginAtZero: true },
+          },
+        },
+      });
+    }
+  }
+
+  /* --- 4) Tren Tonase DO (memo) vs Qview per hari --- */
+  const elDQ = document.getElementById('chart-do-qview');
+  if (elDQ){
+    if (charts.doQview) charts.doQview.destroy();
+    if (!summaries.length){
+      elDQ.getContext('2d').clearRect(0,0,elDQ.width,elDQ.height);
+    } else {
+      // total tonase Qview di tanggal yang sama dengan tiap tanggal memo (semua sales & customer)
+      const qTotals = summaries.map(s => {
+        const qi = guessQviewIndexFromMemoLabel(s.label);
+        return qi === -1 ? 0 : state.qview.rows.reduce((a, r) => a + (r.values[qi] || 0), 0);
+      });
+      const doTotals = summaries.map(s => s.totalTonaseDO);
+      charts.doQview = new Chart(elDQ, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Tonase DO (Memo)',
+              data: doTotals,
+              borderColor: c.green, backgroundColor: c.green,
+              pointBackgroundColor: c.green, pointBorderColor: c.green,
+              tension: .3, pointRadius: 3.5, pointHoverRadius: 5.5, borderWidth: 2.5,
+              datalabels: {
+                display: showLabels, color: c.green, anchor: 'end', align: 'bottom', offset: 6,
+                font: labelFont, formatter: (v) => fmtNum(v),
+              },
+            },
+            {
+              label: 'Tonase Qview',
+              data: qTotals,
+              borderColor: c.amber, backgroundColor: c.amber,
+              pointBackgroundColor: c.amber, pointBorderColor: c.amber,
+              tension: .3, pointRadius: 3.5, pointHoverRadius: 5.5, borderWidth: 2.5,
+              datalabels: {
+                display: showLabels, color: c.amber, anchor: 'end', align: 'top', offset: 6,
+                font: labelFont, formatter: (v) => fmtNum(v),
+              },
+            },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          layout: { padding: { top: 22, bottom: 4 } },
+          onClick: onClickDate,
+          onHover: (evt, els, chart) => { chart.canvas.style.cursor = els.length ? 'pointer' : 'default'; },
+          plugins: {
+            legend: {
+              position: 'bottom', labels: { color: c.muted, boxWidth: 10, boxHeight: 10, padding: 14, font: { size: 11.5 } },
+            },
+            tooltip: {
+              backgroundColor: c.surface, titleColor: c.text, bodyColor: c.text,
+              borderColor: c.border, borderWidth: 1, padding: 10, boxPadding: 4,
+              titleFont: { family: "'Barlow Condensed', sans-serif", size: 13, weight: '700' },
+              bodyFont: { family: "'Inter', sans-serif", size: 11.5 },
+              callbacks: {
+                title: (items) => items[0].label,
+                label: (item) => item.dataset.label + ': ' + fmtNum(item.parsed.y),
+                afterBody: (items) => {
+                  const i = items[0].dataIndex;
+                  const sel = doTotals[i] - qTotals[i];
+                  const pct = qTotals[i] > 0 ? Math.round(doTotals[i] / qTotals[i] * 100) : 0;
+                  return ['Selisih (DO − Qview): ' + fmtNum(sel), 'DO / Qview: ' + pct + '%'];
                 },
               },
             },
