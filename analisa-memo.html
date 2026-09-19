@@ -1563,6 +1563,14 @@ header.topbar{
 .qvd-note{ font-size:12px; color: var(--muted); margin:2px 0 6px; }
 table.qvd-table{ min-width:1040px; }
 table.qvd-table td.wrap{ white-space:normal; min-width:160px; }
+/* Desktop: popup dilebarkan & tabel dipadatkan supaya semua kolom muat tanpa geser horizontal (mobile tetap bisa geser) */
+@media (min-width: 900px){
+  .sheet.sheet-wide{ max-width:min(1400px, 96vw); }
+  table.qvd-table{ min-width:0; table-layout:auto; }
+  table.qvd-table th{ white-space:normal; line-height:1.25; padding:9px 8px; }
+  table.qvd-table td{ padding:9px 8px; }
+  table.qvd-table td.wrap{ min-width:0; }
+}
 .qv-filter-row{ display:flex; flex-wrap:wrap; gap:8px; margin: 10px 0 4px; }
 .qv-filter-chip{
   border:1px solid var(--border); background: var(--surface); color: var(--muted);
@@ -2418,7 +2426,7 @@ function parseNewFormat(rows){
   const header = rows[headerIdx].map(nrm);
 
   /* 1) Tabel DO/Qview kolom A-K: A=Tahun, B=Sales, C=SO Num, D=Customer, E=MCS Num, F=Comp, H=Bulan, I=day, J=DO Qty, K=Total KIM (Kg) */
-  const doMap = new Map();      // "MCS|COMP|SO@yyyymmdd" -> total DO Qty
+  const doMap = new Map();      // "MCS|COMP|SO@yyyymmdd" -> { q: total DO Qty, kg: total KIM (Kg) }
   const qGroups = new Map();    // "SALES|||CUSTOMER" -> { sales, customer, byDate: Map(yyyymmdd -> kg) }
   const qItems = new Map();     // "SALES|||CUSTOMER|||MCS|||COMP" -> { sales, customer, mcs, comp, model, byDate }
   const dateSet = new Set();
@@ -2433,7 +2441,9 @@ function parseNewFormat(rows){
     const doQty = numFlex(r[9]);
     const kg = numFlex(r[10]);
     const k = nrm(r[4]) + '|' + nrm(r[5]) + '|' + nrm(r[2]) + '@' + dk;
-    doMap.set(k, (doMap.get(k) || 0) + doQty);
+    const di = doMap.get(k) || { q: 0, kg: 0 };
+    di.q += doQty; di.kg += kg;
+    doMap.set(k, di);
 
     const sales = String(r[1] || '').trim();
     const customer = String(r[3] || '').trim();
@@ -2519,6 +2529,30 @@ function parseNewFormat(rows){
       return v === undefined ? 0 : v;
     };
 
+    // Hitung semua kolom yang bergantung pada DO (dipanggil lagi kalau DO perlu dibagi antar baris memo)
+    const applyDO = (rec, doQty, doKg) => {
+      const memo = rec.memoAK;
+      rec.doAK = doQty;
+      rec.pctTerpenuhi = memo > 0 ? Math.min(100, Math.round(doQty * 100 / memo)) : 0;
+      const sisaDO = memo - doQty;
+      rec.siapPct = (sisaDO > 0 && rec.cps > 0) ? Math.min(100, Math.round(rec.cps * 100 / sisaDO)) : 0;
+      // Urutan pengecekan status:
+      // 1) Lunas: DO sudah memenuhi/melebihi Memo (selesai, apapun kondisi stok CPS saat ini)
+      // 2) Kosong: qty Memo ada tapi qty CPS tidak ada/0 -> barang belum masuk gudang / belum diproduksi
+      // 3) Siap Kirim: DO belum penuh, tapi stok CPS sudah cukup untuk sisa memo -> tinggal dibuatkan DO
+      // 4) Kekurangan: DO belum penuh dan stok CPS pun belum cukup
+      if (memo > 0 && doQty >= memo - 0.001) rec.status = 'lunas';
+      else if (rec.cps <= 0) rec.status = 'kosong';
+      else if (rec.siapPct >= 99.5) rec.status = 'siap';
+      else rec.status = 'kurang';
+      rec.sisa = Math.max(0, memo - doQty);
+      // Berat per pcs = Tonase memo / Memo Qty; Tonase DO = berat per pcs x Qty DO.
+      // Kalau Tonase di memo kosong/0 (berat per pcs tidak diketahui), pakai Total KIM (Kg) dari tabel DO/Qview (kolom K).
+      const berat = rec.memoQty > 0 ? rec.tonase / rec.memoQty : 0;
+      if (berat > 0){ rec.beratPerPcs = berat; rec.tonaseDO = berat * doQty; }
+      else { rec.tonaseDO = doQty > 0 ? doKg : 0; rec.beratPerPcs = doQty > 0 ? doKg / doQty : 0; }
+    };
+
     const records = [];
     for (let i = headerIdx + 1; i < rows.length; i++){
       const r = rows[i];
@@ -2539,42 +2573,39 @@ function parseNewFormat(rows){
 
       const memoQtyCol = numFlex(r[start + iMemo]);
       const tonaseCol = numFlex(r[start + iTon]);
-      const memoQtyAK = memoQtyCol;                                // kolom "memo" = copy Memo Qty
       const cps = lookupCps(mcsKey, comp);
-      const doQtyAK = dk === null ? 0 : (doMap.get(mcsKey + '|' + comp + '|' + nrm(soNum) + '@' + dk) || 0);
+      const dKey = dk === null ? null : (mcsKey + '|' + comp + '|' + nrm(soNum) + '@' + dk);
+      const doInfo = dKey ? doMap.get(dKey) : null;
 
-      const pctTerpenuhi = memoQtyAK > 0 ? Math.min(100, Math.round(doQtyAK * 100 / memoQtyAK)) : 0;
-      const sisaDO = memoQtyAK - doQtyAK;
-      const siapPct = (sisaDO > 0 && cps > 0) ? Math.min(100, Math.round(cps * 100 / sisaDO)) : 0;
-
-      // Urutan pengecekan status:
-      // 1) Lunas: DO sudah memenuhi/melebihi Memo (selesai, apapun kondisi stok CPS saat ini)
-      // 2) Kosong: qty Memo ada tapi qty CPS tidak ada/0 -> barang belum masuk gudang / belum diproduksi
-      // 3) Siap Kirim: DO belum penuh, tapi stok CPS sudah cukup untuk sisa memo -> tinggal dibuatkan DO
-      // 4) Kekurangan: DO belum penuh dan stok CPS pun belum cukup
-      let status;
-      if (memoQtyAK > 0 && doQtyAK >= memoQtyAK - 0.001) status = 'lunas';
-      else if (cps <= 0) status = 'kosong';
-      else if (siapPct >= 99.5) status = 'siap';
-      else status = 'kurang';
-
-      // Berat per pcs = Tonase (kolom U) / Memo Qty (kolom T); Tonase DO = berat per pcs x Qty DO
-      const beratPerPcs = memoQtyCol > 0 ? tonaseCol / memoQtyCol : 0;
-      const tonaseDO = beratPerPcs * doQtyAK;
-
-      records.push({
+      const rec = {
         no, internal: internal || '(Kosong)', sales: sales || '(Kosong)',
         customer, compModel, soNum, mcsNum,
         orderQty: numFlex(r[start + iOrder]),
         memoQty: memoQtyCol,
         tonase: tonaseCol,
         remark: iRemark !== -1 ? String(r[start + iRemark] || '').trim() : '',
-        cps, memoAK: memoQtyAK, doAK: doQtyAK, pctTerpenuhi, siapPct,
-        sisa: Math.max(0, memoQtyAK - doQtyAK),
-        beratPerPcs, tonaseDO,
-        status,
-      });
+        cps, memoAK: memoQtyCol,        // kolom "memo" = copy Memo Qty
+        _dKey: dKey,
+      };
+      applyDO(rec, doInfo ? doInfo.q : 0, doInfo ? doInfo.kg : 0);
+      records.push(rec);
     }
+
+    // Kalau ada beberapa baris memo dengan MCS+Comp+SO yang sama di tanggal yang sama, DO tanggal itu
+    // dibagi berurutan ke baris-barisnya (jangan dihitung penuh di tiap baris supaya tidak dobel).
+    const grp = new Map();
+    records.forEach(rc => { if (rc._dKey){ if (!grp.has(rc._dKey)) grp.set(rc._dKey, []); grp.get(rc._dKey).push(rc); } });
+    grp.forEach((arr, k) => {
+      const info = doMap.get(k);
+      if (!info || arr.length < 2 || info.q <= 0) return;
+      let left = info.q;
+      arr.forEach((rc, i) => {
+        const q = (i === arr.length - 1) ? left : Math.min(left, rc.memoAK);   // baris terakhir menampung sisa
+        left -= q;
+        applyDO(rc, q, info.kg * q / info.q);
+      });
+    });
+    records.forEach(rc => { delete rc._dKey; });
     dateList.push({ label, records });
   });
   if (!dateList.length) throw new Error('Blok tanggal memo tidak ditemukan di CSV.');
@@ -3458,7 +3489,7 @@ function renderQviewDetail(){
   tb.innerHTML = shown.map(g => `
     <tr>
       <td class="mono">${escapeHtml(g.mcs)}</td>
-      <td>${escapeHtml(g.comp)}</td>
+      <td class="wrap">${escapeHtml(g.comp)}</td>
       <td class="wrap">${escapeHtml(g.model)}</td>
       <td class="mono">${fmtNum(g.qtyMemo)}</td>
       <td class="mono">${fmtNum(g.qtyDO)}</td>
