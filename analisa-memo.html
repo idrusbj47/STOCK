@@ -1547,6 +1547,12 @@ header.topbar{
 .qview-controls{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:6px; }
 .qview-field{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); min-width:200px; flex:1; }
 .qview-field select{ background: var(--surface); border:1px solid var(--border); color: var(--text); border-radius:10px; padding:9px 10px; font-size:13.5px; font-family: var(--font-body); }
+.sum-filter{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin:0 0 14px; padding:12px 14px; background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); }
+.sum-filter .qview-field{ min-width:150px; flex:0 1 180px; }
+.sum-filter-btn{ font-family: var(--font-mono); font-size:12px; font-weight:600; padding:9px 16px; border-radius:10px; border:1px solid var(--border); background: var(--surface); color: var(--muted); cursor:pointer; transition: background .15s ease, color .15s ease, border-color .15s ease; }
+.sum-filter-btn:hover{ border-color: var(--violet); color: var(--text); }
+.sum-filter-btn.active{ background: var(--violet); border-color: var(--violet); color:#fff; }
+.sum-filter-info{ margin-left:auto; font-family: var(--font-mono); font-size:11px; color: var(--muted); align-self:center; }
 .qv-badge{ display:inline-block; padding:2px 9px; border-radius:999px; font-size:11.5px; font-weight:700; white-space:nowrap; }
 .qv-badge.cocok{ background: rgba(18,153,107,.15); color:#12996B; }
 .qv-badge.selisih{ background: rgba(230,162,0,.16); color:#B37B00; }
@@ -1957,6 +1963,16 @@ table.pr-table tbody tr:nth-child(even){ background:#F7F8FA; }
 
   <div id="summary-section" class="hidden">
     <div class="section-title">Pergerakan per Tanggal <small id="summary-count"></small></div>
+    <div class="sum-filter" id="summary-filter">
+      <label class="qview-field">Dari tanggal
+        <select id="summary-from"></select>
+      </label>
+      <label class="qview-field">Sampai tanggal
+        <select id="summary-to"></select>
+      </label>
+      <button type="button" class="sum-filter-btn active" id="summary-all">Semua</button>
+      <span class="sum-filter-info" id="summary-filter-info"></span>
+    </div>
     <div class="rank-table-wrap">
       <table class="rank-table">
         <thead>
@@ -2184,6 +2200,8 @@ const state = {
   dateList: [],
   dateIndex: 0,
   lastDateLabel: null,
+  sumFrom: '',
+  sumTo: '',
   settings: loadSettings(),
   qview: {
     loaded: false,
@@ -3089,8 +3107,20 @@ el.viewTabs.addEventListener('click', (e) => {
 // dibuka lewat tab tanggal masing-masing (klik baris di sini akan lompat ke tab itu).
 // Hitung ringkasan per tanggal (dipakai bareng oleh tampilan tabel, kartu ringkasan,
 // serta export cetak/Excel dari tab Ringkasan & Pergerakan).
+function getSummaryRange(){
+  const n = state.dateList.length;
+  if (!n) return { from:0, to:-1, all:true };
+  let from = state.sumFrom ? state.dateList.findIndex(d => d.label === state.sumFrom) : 0;
+  let to = state.sumTo ? state.dateList.findIndex(d => d.label === state.sumTo) : n - 1;
+  if (from < 0) from = 0;
+  if (to < 0) to = n - 1;
+  if (from > to){ const t = from; from = to; to = t; }
+  return { from, to, all: (from === 0 && to === n - 1) };
+}
+
 function computeDateSummaries(){
-  return state.dateList.map(d => {
+  const rg = getSummaryRange();
+  return state.dateList.slice(rg.from, rg.to + 1).map(d => {
     const counts = { lunas:0, kurang:0, siap:0, kosong:0 };
     const tonase = { lunas:0, kurang:0, siap:0, kosong:0 };
     const tonaseDo = { lunas:0, kurang:0, siap:0, kosong:0 };
@@ -3135,13 +3165,62 @@ function renderSummaryAverage(summaries){
     <b>${fmtNum(Math.round(avgKosong*10)/10)}</b> kosong &amp; sisa kirim (${pctOfTotal(avgKosong)}%) per tanggal.`;
 }
 
+function renderSummaryFilter(){
+  const selFrom = document.getElementById('summary-from');
+  const selTo = document.getElementById('summary-to');
+  if (!selFrom || !selTo) return;
+  const labels = state.dateList.map(d => d.label);
+  if (state.sumFrom && !labels.includes(state.sumFrom)) state.sumFrom = '';
+  if (state.sumTo && !labels.includes(state.sumTo)) state.sumTo = '';
+  const opts = (first) => `<option value="">${first}</option>` +
+    labels.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
+  selFrom.innerHTML = opts('Semua (awal)');
+  selTo.innerHTML = opts('Semua (akhir)');
+  selFrom.value = state.sumFrom || '';
+  selTo.value = state.sumTo || '';
+  const rg = getSummaryRange();
+  const allBtn = document.getElementById('summary-all');
+  if (allBtn) allBtn.classList.toggle('active', rg.all);
+  const info = document.getElementById('summary-filter-info');
+  if (info){
+    info.textContent = !state.dateList.length ? '' :
+      rg.all ? 'Menampilkan semua tanggal' :
+      'Menampilkan ' + state.dateList[rg.from].label + ' – ' + state.dateList[rg.to].label;
+  }
+}
+
+(function initSummaryFilter(){
+  const selFrom = document.getElementById('summary-from');
+  const selTo = document.getElementById('summary-to');
+  const allBtn = document.getElementById('summary-all');
+  if (!selFrom || !selTo || !allBtn) return;
+  const idxOf = (l) => state.dateList.findIndex(d => d.label === l);
+  selFrom.addEventListener('change', () => {
+    state.sumFrom = selFrom.value;
+    // kalau "dari" melewati "sampai", geser "sampai" mengikuti
+    if (state.sumFrom && state.sumTo && idxOf(state.sumFrom) > idxOf(state.sumTo)) state.sumTo = state.sumFrom;
+    renderSummary();
+  });
+  selTo.addEventListener('change', () => {
+    state.sumTo = selTo.value;
+    if (state.sumFrom && state.sumTo && idxOf(state.sumTo) < idxOf(state.sumFrom)) state.sumFrom = state.sumTo;
+    renderSummary();
+  });
+  allBtn.addEventListener('click', () => {
+    state.sumFrom = ''; state.sumTo = '';
+    renderSummary();
+  });
+})();
+
 function renderSummary(){
   if (!el.summaryTbody) return;
+  renderSummaryFilter();
   const summaries = computeDateSummaries();
-  el.summaryCount.textContent = summaries.length + ' tanggal';
+  el.summaryCount.textContent = summaries.length + ' tanggal' + (getSummaryRange().all ? '' : ' (dari ' + state.dateList.length + ')');
   renderSummaryAverage(summaries);
   if (!summaries.length){
     el.summaryTbody.innerHTML = '<tr><td colspan="10" class="empty-note">Belum ada data</td></tr>';
+    renderSummaryCharts(summaries);
     return;
   }
   el.summaryTbody.innerHTML = summaries.map((s, i) => {
@@ -4073,7 +4152,10 @@ function buildSummaryAIText(){
   const summaries = computeDateSummaries();
   let txt = `ANALISA MEMO - PT KARYA INDAH MULTIGUNA\n`;
   txt += `Tab: Ringkasan & Pergerakan\n`;
-  txt += `Cakupan Analisa: Semua Data (${summaries.length} tanggal tercatat)\n\n`;
+  const _rg = getSummaryRange();
+  txt += _rg.all
+    ? `Cakupan Analisa: Semua Data (${summaries.length} tanggal tercatat)\n\n`
+    : `Cakupan Analisa: ${summaries[0].label} s/d ${summaries[summaries.length-1].label} (${summaries.length} dari ${state.dateList.length} tanggal tercatat)\n\n`;
 
   summaries.forEach(s => {
     const pct = (n) => s.total ? Math.round(n / s.total * 100) : 0;
