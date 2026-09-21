@@ -2696,9 +2696,62 @@ function applyDateList(dateList){
   return dateList;
 }
 
+// Rekonsiliasi berat per pcs dengan Qview (berlaku untuk SEMUA tab, karena mengubah data memo-nya):
+// kalau untuk satu barang (Sales + Customer + MC + Comp) total Qty DO memo = Qty Qview di tanggal
+// yang sama, berat per pcs memo pasti keliru -> pakai berat per pcs Qview (tonase / qty), sehingga
+// Tonase Memo, Tonase DO, dan Sisa di semua tab ikut konsisten dengan Qview.
+// Qty beda / barang tidak ada di Qview / tanggal tidak ada di Qview -> tetap hitungan memo.
+// Aman dipanggil berulang (nilai asli disimpan di *Asli lalu dihitung ulang).
+function reconcileTonaseWithQview(dateList, qview){
+  if (!dateList || !qview || !qview.items || !qview.dateColumns) return 0;
+  const ik = (a,b,c,d) => normKey(a) + '|' + normKey(b) + '|' + nrm(c) + '|' + nrm(d);
+  let changed = 0;
+  dateList.forEach(d => {
+    const qIdx = guessQviewIdxFromLabel(d.label, qview.dateColumns);
+    // kembalikan nilai asli dulu (idempotent)
+    d.records.forEach(r => {
+      if (r.tonaseDOAsli != null){ r.tonaseDO = r.tonaseDOAsli; r.tonase = r.tonaseAsli; r.beratPerPcs = r.beratAsli; }
+      r.qvAdj = false;
+    });
+    if (qIdx === -1) return;
+    const qMap = new Map();   // key -> { ton, qty }
+    qview.items.forEach(q => {
+      const t = (q.values && q.values[qIdx]) || 0, n = (q.qtyValues && q.qtyValues[qIdx]) || 0;
+      if (!(t > 0 && n > 0)) return;
+      const k = ik(q.sales, q.customer, q.mcs, q.comp);
+      const a = qMap.get(k) || { ton: 0, qty: 0 };
+      a.ton += t; a.qty += n; qMap.set(k, a);
+    });
+    const groups = new Map();
+    d.records.forEach(r => {
+      const comp = String(r.compModel || '').split('/')[0].trim();
+      const k = ik(r.sales, r.customer, r.mcsNum, comp);
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(r);
+    });
+    groups.forEach((arr, k) => {
+      const q = qMap.get(k);
+      if (!q) return;
+      const qtyDO = arr.reduce((a, r) => a + (r.doAK || 0), 0);
+      if (!(qtyDO > 0) || Math.abs(qtyDO - q.qty) >= 0.5) return;
+      const w = q.ton / q.qty;
+      arr.forEach(r => {
+        if (r.tonaseDOAsli == null){ r.tonaseDOAsli = r.tonaseDO; r.tonaseAsli = r.tonase; r.beratAsli = r.beratPerPcs; }
+        r.tonaseDO = w * (r.doAK || 0);
+        if (r.memoQty > 0) r.tonase = w * r.memoQty;
+        r.beratPerPcs = w;
+        r.qvAdj = true;
+        changed++;
+      });
+    });
+  });
+  return changed;
+}
+
 // Ambil teks CSV mentah -> hitung semua (CPS, DO, %, status) -> tab per tanggal memo + data Qview.
 function applyLoadedCSV(text){
   const parsed = parseNewFormat(parseCSV(text));
+  reconcileTonaseWithQview(parsed.dateList, parsed.qview);
   applyDateList(parsed.dateList);
   applyQviewData(parsed.qview);
   return parsed;
@@ -2732,6 +2785,7 @@ async function loadData(forceRefresh){
     try{
       const cached = readCsvCache();
       if (cached){
+        reconcileTonaseWithQview(cached.data.dateList, cached.data.qview);
         applyDateList(cached.data.dateList);
         applyQviewData(cached.data.qview);
         const waktu = new Date(cached.ts).toLocaleString('id-ID');
@@ -3314,6 +3368,7 @@ async function loadQviewData(forceRefresh){
     try{
       const cached = readCsvCache();
       if (cached){
+        reconcileTonaseWithQview(state.dateList, cached.data.qview);
         applyQviewData(cached.data.qview);
         const waktu = new Date(cached.ts).toLocaleString('id-ID');
         if (el.qviewStatus) el.qviewStatus.textContent = 'Gagal ambil data Qview terbaru — memakai cache ' + waktu + '.';
@@ -3346,7 +3401,10 @@ const MONTH_MAP_ID_EN = {
   des:'December', desember:'December', dec:'December', december:'December',
 };
 function guessQviewIndexFromMemoLabel(label){
-  if (!label || !state.qview.dateColumns.length) return -1;
+  return guessQviewIdxFromLabel(label, state.qview.dateColumns);
+}
+function guessQviewIdxFromLabel(label, dateColumns){
+  if (!label || !dateColumns || !dateColumns.length) return -1;
   const lower = label.toLowerCase();
   let month = null;
   for (const k in MONTH_MAP_ID_EN){
@@ -3357,7 +3415,7 @@ function guessQviewIndexFromMemoLabel(label){
   if (!nums.length) return -1;
   const day = nums[0];
   const wanted = normKey(month + day);
-  const idx = state.qview.dateColumns.findIndex(dc => normKey(dc.label) === wanted);
+  const idx = dateColumns.findIndex(dc => normKey(dc.label) === wanted);
   return idx;
 }
 
@@ -3504,7 +3562,7 @@ function computeQviewDetail(sales, customer){
   const getItem = (mcs, comp, model) => {
     const k = nrm(mcs) + '|' + nrm(comp);
     let it = items.get(k);
-    if (!it){ it = { mcs, comp, model: model || '', tonaseMemo: 0, tonaseQview: 0, qtyMemo: 0, qtyDO: 0, qtyQview: 0, inMemo: false, inQview: false }; items.set(k, it); }
+    if (!it){ it = { mcs, comp, model: model || '', tonaseMemo: 0, tonaseMemoAsli: 0, pakaiQview: false, tonaseQview: 0, qtyMemo: 0, qtyDO: 0, qtyQview: 0, inMemo: false, inQview: false }; items.set(k, it); }
     if (!it.model && model) it.model = model;
     return it;
   };
@@ -3515,6 +3573,8 @@ function computeQviewDetail(sales, customer){
     const model = parts.slice(1).join('/').trim();
     const it = getItem(String(r.mcsNum || '').trim(), comp, model);
     it.tonaseMemo += r.tonaseDO;
+    it.tonaseMemoAsli += (r.tonaseDOAsli != null ? r.tonaseDOAsli : r.tonaseDO);
+    if (r.qvAdj) it.pakaiQview = true;
     it.qtyMemo += r.memoAK;
     it.qtyDO += r.doAK;
     it.inMemo = true;
@@ -3578,7 +3638,7 @@ function renderQviewDetail(){
       <td class="mono">${fmtNum(g.qtyMemo)}</td>
       <td class="mono">${fmtNum(g.qtyDO)}</td>
       <td class="mono">${fmtNum(g.qtyQview)}</td>
-      <td class="mono">${fmtNum(g.tonaseMemo)}</td>
+      <td class="mono"${g.pakaiQview && Math.abs(g.tonaseMemo - g.tonaseMemoAsli) > 0.5 ? ` title="Qty sama dengan Qview, berat/pcs disesuaikan ke Qview (hitungan memo asli: ${fmtNum(g.tonaseMemoAsli)})"` : ''}>${fmtNum(g.tonaseMemo)}${g.pakaiQview && Math.abs(g.tonaseMemo - g.tonaseMemoAsli) > 0.5 ? '<sup style="color:var(--amber);cursor:help;"> *</sup>' : ''}</td>
       <td class="mono">${fmtNum(g.tonaseQview)}</td>
       <td class="mono" style="color:${g.selisih>0?'var(--red)':(g.selisih<0?'var(--green)':'inherit')};">${fmtNum(g.selisih)}</td>
       <td><span class="qv-badge ${g.status}">${QV_STATUS_LABEL[g.status]}</span></td>
@@ -3601,7 +3661,7 @@ function openQviewDetail(g){
   const qviewLabel = (state.qview.dateColumns[state.qview.selectedIndex] || {}).label || '—';
   document.getElementById('qvd-eyebrow').textContent = 'DETAIL BARANG · ' + (g.sales || '(Kosong)');
   document.getElementById('qvd-title').textContent = g.customer || '(Kosong)';
-  document.getElementById('qvd-note').textContent = 'Memo ' + memoLabel + ' (tonase DO) vs Qview ' + qviewLabel + ' · dicocokkan per MC + Comp · Qty Memo = rencana di memo, Qty DO Memo = yang sudah dibuatkan DO';
+  document.getElementById('qvd-note').textContent = 'Memo ' + memoLabel + ' (tonase DO) vs Qview ' + qviewLabel + ' · dicocokkan per MC + Comp · Qty Memo = rencana di memo, Qty DO Memo = yang sudah dibuatkan DO · Bila Qty DO Memo = Qty Qview, berat/pcs memakai berat Qview di semua tab (ditandai *); bila qty beda, tetap hitungan memo';
   renderQviewDetail();
   showOverlay(document.getElementById('qvdetail-overlay'));
 }
