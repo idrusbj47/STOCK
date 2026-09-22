@@ -6,8 +6,6 @@
 <title>Temuan 5R5S - SBJApp</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root{
     --navy:#14213d;
@@ -133,6 +131,41 @@
   .save-settings{width:100%;padding:13px;border:none;border-radius:10px;background:var(--navy);color:#fff;font-weight:700;margin-top:6px;cursor:pointer;}
 
   select[multiple]{height:auto;}
+
+  /* ===== PRINT REPORT ===== */
+  #printArea{display:none;}
+  .p-page{ background:#fff; color:#111; font-family:Arial,Helvetica,sans-serif; }
+  .p-header{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .p-header h3{ margin:0; font-size:14px; }
+  .p-header .p-title{ text-align:center; flex:1; }
+  .p-header .p-title h1{ margin:4px 0 2px; font-size:20px; letter-spacing:.02em; }
+  .p-header .p-title .p-sub{ font-size:12px; }
+  .p-signbox{ display:flex; gap:8px; }
+  .p-signbox div{ border:1px solid #000; width:110px; }
+  .p-signbox div span{ display:block; text-align:center; font-weight:bold; font-size:11px; padding:4px 0; border-bottom:1px solid #000; }
+  .p-signbox div em{ display:block; height:40px; }
+  table.p-table{ width:100%; border-collapse:collapse; font-size:10.5px; margin-top:6px; }
+  table.p-table th, table.p-table td{ border:1px solid #333; padding:4px 5px; text-align:left; vertical-align:top; }
+  table.p-table thead th{ background:#14213d; color:#fff; text-align:center; font-size:10px; }
+  table.p-table td.center{ text-align:center; }
+  table.p-table td.mayor{ background:#d1445c; color:#fff; font-weight:bold; text-align:center; }
+  table.p-table td.minor{ text-align:center; color:#b8720c; font-weight:bold; }
+  .p-docs-title{ font-size:16px; margin:0 0 10px; text-align:center; }
+  .p-doc-card{ display:flex; gap:12px; border:1px solid #ccc; border-radius:6px; padding:10px; margin-bottom:10px; page-break-inside:avoid; }
+  .p-doc-card img{ width:150px; height:115px; object-fit:cover; border-radius:4px; flex-shrink:0; }
+  .p-doc-card .p-doc-text b{ font-size:13px; }
+  .p-doc-card .p-doc-text p{ margin:5px 0; font-size:12px; }
+  .p-doc-card .p-doc-level{ font-weight:bold; }
+  .p-doc-card .p-doc-level.mayor{ color:#d1445c; }
+  .p-doc-card .p-doc-level.minor{ color:#b8720c; }
+  .p-section-break{ page-break-before:always; }
+
+  @media print{
+    body *{ visibility:hidden; }
+    #printArea, #printArea *{ visibility:visible; }
+    #printArea{ display:block; position:absolute; left:0; top:0; width:100%; }
+    @page{ size:A4; margin:12mm; }
+  }
 </style>
 </head>
 <body>
@@ -198,7 +231,7 @@
   <div class="card">
     <h2 style="display:flex;justify-content:space-between;align-items:center;">
       <span>Temuan Terbaru</span>
-      <button id="btnCetak" style="background:var(--purple);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;">🖨 Cetak PDF</button>
+      <button id="btnCetak" style="background:var(--purple);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;">🖨 Cetak</button>
     </h2>
     <div id="recentList"><div class="hint">Belum ada data / memuat…</div></div>
   </div>
@@ -289,10 +322,13 @@
       <input type="checkbox" id="cetakSertakanFoto" checked style="width:auto;">
       <span style="font-weight:600;color:var(--text);font-size:13.5px;">Sertakan halaman dokumentasi foto</span>
     </label>
-    <button class="save-settings" id="btnGeneratePdf" style="margin-top:16px;">Buat PDF</button>
+    <button class="save-settings" id="btnGeneratePdf" style="margin-top:16px;">Siapkan & Buka Dialog Cetak</button>
+    <div class="hint" style="margin-top:8px;">Setelah dialog cetak browser terbuka, pilih printer fisik untuk cetak langsung, atau pilih "Save as PDF" / "Simpan sebagai PDF" untuk menyimpan sebagai file.</div>
     <div class="status-msg" id="cetakStatus"></div>
   </div>
 </div>
+
+<div id="printArea"></div>
 
 <script>
 (function(){
@@ -842,114 +878,85 @@
       if(error) throw error;
       if(!data || !data.length){ $("cetakStatus").textContent = "Tidak ada temuan pada rentang tanggal ini."; $("cetakStatus").className="status-msg err"; $("btnGeneratePdf").disabled=false; return; }
 
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ unit:"mm", format:"a4" });
-      const pageW = doc.internal.pageSize.getWidth();
       const rangeLabel = dari === sampai ? fmtTanggalID(dari) : `${fmtTanggalID(dari)} — ${fmtTanggalID(sampai)}`;
 
-      /* ---- Halaman 1: Tabel Form Temuan Sidak ---- */
-      doc.setFont("helvetica","bold"); doc.setFontSize(11);
-      doc.text("PT. KARYA INDAH MULTIGUNA", 14, 15);
-      doc.setFontSize(15);
-      doc.text("FORM TEMUAN SIDAK 5R5S", pageW/2, 24, {align:"center"});
-      doc.setFont("helvetica","normal"); doc.setFontSize(10);
-      doc.text(`Tanggal : ${rangeLabel}`, 14, 31);
-
-      // Kotak "Dibuat" & "Mengetahui" di kanan atas
-      const boxW = 30, boxH = 16, boxY = 10, box1X = pageW - 14 - (boxW*2+4), box2X = pageW - 14 - boxW;
-      doc.setFontSize(8);
-      [ [box1X,"Dibuat"], [box2X,"Mengetahui"] ].forEach(([bx,label])=>{
-        doc.setDrawColor(0);
-        doc.rect(bx, boxY, boxW, 6);
-        doc.rect(bx, boxY+6, boxW, boxH-6);
-        doc.setFont("helvetica","bold");
-        doc.text(label, bx+boxW/2, boxY+4, {align:"center"});
+      // ---- Bangun HTML halaman tabel ----
+      let html = `<div class="p-page">
+        <div class="p-header">
+          <h3>PT. KARYA INDAH<br>MULTIGUNA</h3>
+          <div class="p-title">
+            <h1>FORM TEMUAN SIDAK 5R5S</h1>
+            <div class="p-sub">Tanggal : ${rangeLabel}</div>
+          </div>
+          <div class="p-signbox">
+            <div><span>Dibuat</span><em></em></div>
+            <div><span>Mengetahui</span><em></em></div>
+          </div>
+        </div>
+        <table class="p-table">
+          <thead><tr>
+            <th>No.</th><th>Lokasi</th><th>PJ</th><th>Karu</th><th>Kode</th>
+            <th>Jenis Temuan</th><th>Level</th><th>Poin</th><th>Paraf<br>(Closed)</th>
+          </tr></thead>
+          <tbody>`;
+      data.forEach((r,i)=>{
+        const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+        html += `<tr>
+          <td class="center">${i+1}</td>
+          <td>${escapeHtml(r.area||"-")}</td>
+          <td>${escapeHtml(r.penanggung_jawab||"-")}</td>
+          <td>${escapeHtml(r.kepala_regu||"-")}</td>
+          <td class="center">${escapeHtml(r.kode||"-")}</td>
+          <td>${escapeHtml(r.uraian||"-")}</td>
+          <td class="${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'}</td>
+          <td class="center">${r.poin!=null?r.poin:"-"}</td>
+          <td></td>
+        </tr>`;
       });
+      html += `</tbody></table></div>`;
 
-      const rows = data.map((r,i)=>[
-        i+1, r.area||"-", r.penanggung_jawab||"-", r.kepala_regu||"-", r.kode||"-", r.uraian||"-",
-        (r.klasifikasi||"").toUpperCase()==="MAYOR"?"MAYOR":"minor", r.poin!=null?r.poin:"-", ""
-      ]);
-      doc.autoTable({
-        startY: 36,
-        head: [["No.","Lokasi","PJ","Karu","Kode","Jenis Temuan","Level","Poin","Paraf (Closed)"]],
-        body: rows,
-        styles:{ fontSize:8, cellPadding:1.8, valign:"middle" },
-        headStyles:{ fillColor:[20,33,61], textColor:255, fontStyle:"bold" },
-        columnStyles:{
-          0:{cellWidth:8, halign:"center"},
-          1:{cellWidth:24},
-          2:{cellWidth:18},
-          3:{cellWidth:18},
-          4:{cellWidth:12, halign:"center"},
-          5:{cellWidth:'auto'},
-          6:{cellWidth:14, halign:"center"},
-          7:{cellWidth:11, halign:"center"},
-          8:{cellWidth:18, halign:"center"}
-        },
-        didParseCell: function(d){
-          if(d.section==="body" && d.column.index===6){
-            if(d.cell.raw==="MAYOR"){ d.cell.styles.fillColor=[209,68,92]; d.cell.styles.textColor=255; d.cell.styles.fontStyle="bold"; }
-          }
-        }
-      });
-
-      /* ---- Halaman Dokumentasi Foto ---- */
+      // ---- Bangun HTML halaman dokumentasi foto ----
       if(sertakanFoto){
-        doc.addPage();
-        doc.setFont("helvetica","bold"); doc.setFontSize(11);
-        doc.text("PT. KARYA INDAH MULTIGUNA", 14, 15);
-        doc.setFontSize(13);
-        doc.text(`Dokumentasi Hasil Pemeriksaan ${rangeLabel}`, pageW/2, 23, {align:"center"});
-
-        let y = 30;
-        const imgW = 55, imgH = 42, rowH = 48, leftX = 14, textX = 14+imgW+6;
-
+        html += `<div class="p-page p-section-break">
+          <h3>PT. KARYA INDAH MULTIGUNA</h3>
+          <h2 class="p-docs-title">Dokumentasi Hasil Pemeriksaan ${rangeLabel}</h2>`;
         for(let i=0;i<data.length;i++){
           const r = data[i];
-          if(y + rowH > 285){ doc.addPage(); y = 15; }
-
-          doc.setDrawColor(200); doc.rect(leftX-2, y-4, pageW-2*(leftX-2), rowH);
-
-          const firstUrl = (r.foto_url||"").split(",")[0];
-          if(firstUrl){
-            const dataUrl = await imgUrlToDataUrl(firstUrl);
-            if(dataUrl){
-              try{ doc.addImage(dataUrl, "JPEG", leftX, y-2, imgW, imgH); }catch(e){}
-            }
-          }
-
-          doc.setFont("helvetica","bold"); doc.setFontSize(9);
-          doc.text(`${i+1}. ${r.area||"-"}  (${r.kode||"-"})`, textX, y+3);
-          doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
-          const uraianLines = doc.splitTextToSize(r.uraian||"-", pageW-textX-14);
-          doc.text(uraianLines, textX, y+9);
           const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
-          const afterUraianY = y + 9 + (uraianLines.length*4);
-          doc.setFont("helvetica","bold");
-          doc.setTextColor(isMayor?209:184, isMayor?68:114, isMayor?92:12);
-          doc.text(`${isMayor?"MAYOR":"minor"} · ${r.poin!=null?r.poin:""} poin`, textX, afterUraianY+2);
-          doc.setTextColor(0,0,0);
-          doc.setFont("helvetica","normal"); doc.setFontSize(8);
-          doc.text(`PJ: ${r.penanggung_jawab||"-"}   Karu: ${r.kepala_regu||"-"}   Zona: ${r.zona||"-"}   Tgl: ${fmtTanggalID(r.tanggal)}`, textX, afterUraianY+7);
-          if(r.catatan){
-            doc.text(doc.splitTextToSize("Catatan: "+r.catatan, pageW-textX-14), textX, afterUraianY+13);
-          }
-
-          y += rowH + 4;
+          const firstUrl = (r.foto_url||"").split(",")[0];
+          html += `<div class="p-doc-card">
+            ${firstUrl?`<img src="${firstUrl}" crossorigin="anonymous">`:""}
+            <div class="p-doc-text">
+              <b>${i+1}. ${escapeHtml(r.area||"-")} (${escapeHtml(r.kode||"-")})</b>
+              <p>${escapeHtml(r.uraian||"-")}</p>
+              <p class="p-doc-level ${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'} · ${r.poin!=null?r.poin:''} poin</p>
+              <p>PJ: ${escapeHtml(r.penanggung_jawab||"-")} &nbsp; Karu: ${escapeHtml(r.kepala_regu||"-")} &nbsp; Zona: ${escapeHtml(r.zona||"-")} &nbsp; Tgl: ${fmtTanggalID(r.tanggal)}</p>
+              ${r.catatan?`<p>Catatan: ${escapeHtml(r.catatan)}</p>`:""}
+            </div>
+          </div>`;
         }
+        html += `</div>`;
       }
 
-      doc.save(`Form-Temuan-5R5S_${dari}_${sampai}.pdf`);
-      $("cetakStatus").textContent = "PDF berhasil dibuat.";
+      $("printArea").innerHTML = html;
+      $("cetakStatus").textContent = "Menyiapkan dialog cetak…";
       $("cetakStatus").className = "status-msg ok";
+
+      // beri waktu gambar untuk mulai load sebelum print dialog dibuka
+      setTimeout(()=>{
+        cetakOverlay.classList.remove("show");
+        window.print();
+        $("btnGeneratePdf").disabled = false;
+      }, 600);
+
     }catch(e){
-      $("cetakStatus").textContent = "Gagal membuat PDF: " + (e.message||e);
+      $("cetakStatus").textContent = "Gagal menyiapkan cetakan: " + (e.message||e);
       $("cetakStatus").className = "status-msg err";
-    }finally{
       $("btnGeneratePdf").disabled = false;
     }
   });
+
+  window.addEventListener("afterprint", ()=>{ $("printArea").innerHTML = ""; });
 
   /* ---------------- INIT ---------------- */
   $("fTanggal").value = new Date().toISOString().slice(0,10);
