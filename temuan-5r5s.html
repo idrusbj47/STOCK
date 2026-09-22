@@ -173,8 +173,11 @@
     </div>
     <div id="lookupResult"></div>
 
-    <label>Penanggung Jawab</label>
+    <label>Penanggung Jawab (Penjaga Area)</label>
     <input type="text" id="fPJ" placeholder="terisi otomatis, bisa diubah">
+
+    <label>Kepala Regu / Karu</label>
+    <input type="text" id="fKaru" placeholder="nama kepala regu / karu">
 
     <label>Catatan Tambahan (opsional)</label>
     <textarea id="fCatatan" placeholder="Detail lokasi rak, kondisi khusus, dll."></textarea>
@@ -686,6 +689,7 @@
     const area = $("fArea").value.trim();
     const zona = $("fZona").value;
     const pj = $("fPJ").value.trim();
+    const karu = $("fKaru").value.trim();
     const catatan = $("fCatatan").value.trim();
 
     if(!tanggal){ setStatus("Tanggal wajib diisi.","err"); return; }
@@ -716,6 +720,7 @@
         klasifikasi: isMayor ? "MAYOR" : "MINOR",
         poin: parseInt(found.poin) || (isMayor ? -5 : -3),
         penanggung_jawab: pj,
+        kepala_regu: karu,
         catatan,
         foto_url: urls.join(",")
       };
@@ -725,7 +730,7 @@
       setStatus("Temuan berhasil disimpan ✔","ok");
       photos = []; renderPhotoPreview();
       $("fKode").value = ""; $("lookupResult").innerHTML = "";
-      $("fCatatan").value = "";
+      $("fCatatan").value = ""; $("fKaru").value = "";
       loadRecent();
     }catch(e){
       setStatus("Gagal menyimpan: " + (e.message || e), "err");
@@ -754,7 +759,7 @@
             <b>${escapeHtml(r.kode)} · ${escapeHtml(r.area||"-")}</b><br>
             ${escapeHtml(r.uraian||"")}<br>
             <span class="badge ${isMayor?'mayor':'minor'}" style="margin-top:4px;display:inline-block;">${isMayor?'MAYOR':'MINOR'}</span>
-            ${r.penanggung_jawab? " · PJ: "+escapeHtml(r.penanggung_jawab):""} · ${escapeHtml(r.tanggal||"")}
+            ${r.penanggung_jawab? " · PJ: "+escapeHtml(r.penanggung_jawab):""}${r.kepala_regu? " · Karu: "+escapeHtml(r.kepala_regu):""} · ${escapeHtml(r.tanggal||"")}
           </div>
           <button class="delBtn" data-id="${r.id}" data-fotos="${escapeHtml(r.foto_url||"")}" title="Hapus temuan">✕</button>`;
         box.appendChild(div);
@@ -850,28 +855,40 @@
       doc.setFont("helvetica","normal"); doc.setFontSize(10);
       doc.text(`Tanggal : ${rangeLabel}`, 14, 31);
 
+      // Kotak "Dibuat" & "Mengetahui" di kanan atas
+      const boxW = 30, boxH = 16, boxY = 10, box1X = pageW - 14 - (boxW*2+4), box2X = pageW - 14 - boxW;
+      doc.setFontSize(8);
+      [ [box1X,"Dibuat"], [box2X,"Mengetahui"] ].forEach(([bx,label])=>{
+        doc.setDrawColor(0);
+        doc.rect(bx, boxY, boxW, 6);
+        doc.rect(bx, boxY+6, boxW, boxH-6);
+        doc.setFont("helvetica","bold");
+        doc.text(label, bx+boxW/2, boxY+4, {align:"center"});
+      });
+
       const rows = data.map((r,i)=>[
-        i+1, r.area||"-", r.penanggung_jawab||"-", r.kode||"-", r.uraian||"-",
+        i+1, r.area||"-", r.penanggung_jawab||"-", r.kepala_regu||"-", r.kode||"-", r.uraian||"-",
         (r.klasifikasi||"").toUpperCase()==="MAYOR"?"MAYOR":"minor", r.poin!=null?r.poin:"-", ""
       ]);
       doc.autoTable({
         startY: 36,
-        head: [["No.","Lokasi","PJ","Kode","Jenis Temuan","Level","Poin","Paraf (Closed)"]],
+        head: [["No.","Lokasi","PJ","Karu","Kode","Jenis Temuan","Level","Poin","Paraf (Closed)"]],
         body: rows,
-        styles:{ fontSize:8.5, cellPadding:2, valign:"middle" },
+        styles:{ fontSize:8, cellPadding:1.8, valign:"middle" },
         headStyles:{ fillColor:[20,33,61], textColor:255, fontStyle:"bold" },
         columnStyles:{
-          0:{cellWidth:9, halign:"center"},
-          1:{cellWidth:28},
-          2:{cellWidth:22},
-          3:{cellWidth:14, halign:"center"},
-          4:{cellWidth:'auto'},
-          5:{cellWidth:16, halign:"center"},
-          6:{cellWidth:12, halign:"center"},
-          7:{cellWidth:20, halign:"center"}
+          0:{cellWidth:8, halign:"center"},
+          1:{cellWidth:24},
+          2:{cellWidth:18},
+          3:{cellWidth:18},
+          4:{cellWidth:12, halign:"center"},
+          5:{cellWidth:'auto'},
+          6:{cellWidth:14, halign:"center"},
+          7:{cellWidth:11, halign:"center"},
+          8:{cellWidth:18, halign:"center"}
         },
         didParseCell: function(d){
-          if(d.section==="body" && d.column.index===5){
+          if(d.section==="body" && d.column.index===6){
             if(d.cell.raw==="MAYOR"){ d.cell.styles.fillColor=[209,68,92]; d.cell.styles.textColor=255; d.cell.styles.fontStyle="bold"; }
           }
         }
@@ -914,9 +931,9 @@
           doc.text(`${isMayor?"MAYOR":"minor"} · ${r.poin!=null?r.poin:""} poin`, textX, afterUraianY+2);
           doc.setTextColor(0,0,0);
           doc.setFont("helvetica","normal"); doc.setFontSize(8);
-          doc.text(`PJ: ${r.penanggung_jawab||"-"}   Zona: ${r.zona||"-"}   Tgl: ${r.tanggal||"-"}`, textX, afterUraianY+7);
+          doc.text(`PJ: ${r.penanggung_jawab||"-"}   Karu: ${r.kepala_regu||"-"}   Zona: ${r.zona||"-"}   Tgl: ${fmtTanggalID(r.tanggal)}`, textX, afterUraianY+7);
           if(r.catatan){
-            doc.text(doc.splitTextToSize("Catatan: "+r.catatan, pageW-textX-14), textX, afterUraianY+12);
+            doc.text(doc.splitTextToSize("Catatan: "+r.catatan, pageW-textX-14), textX, afterUraianY+13);
           }
 
           y += rowH + 4;
