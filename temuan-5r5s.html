@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Temuan 5R5S - SBJApp</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy:#14213d;
+    --navy-2:#1c2b4d;
+    --orange:#b8720c;
+    --orange-2:#d98a1b;
+    --purple:#6c4fd1;
+    --green:#1f9d55;
+    --red:#d1445c;
+    --bg:#f2f3f7;
+    --card:#ffffff;
+    --border:#e2e5ee;
+    --text:#1c2230;
+    --muted:#7a8299;
+    --radius:14px;
+    font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);}
+  body{padding-bottom:40px;}
+  header.topbar{
+    background:linear-gradient(135deg,var(--navy),var(--navy-2));
+    color:#fff;padding:18px 20px 22px;
+    padding-top:calc(18px + env(safe-area-inset-top,0px));
+    border-bottom-left-radius:22px;border-bottom-right-radius:22px;
+    display:flex;justify-content:space-between;align-items:flex-start;
+  }
+  header.topbar .brand small{display:block;letter-spacing:.12em;font-size:11px;color:#9aa6c8;margin-bottom:2px;}
+  header.topbar .brand h1{margin:0;font-size:22px;}
+  header.topbar .brand h1 span{color:var(--orange-2);}
+  header.topbar .actions{display:flex;gap:8px;}
+  header.topbar button.icon{
+    background:rgba(255,255,255,.12);border:none;color:#fff;
+    width:38px;height:38px;border-radius:10px;font-size:16px;cursor:pointer;
+  }
+  header.topbar button.icon:active{background:rgba(255,255,255,.25);}
+
+  main{max-width:640px;margin:-8px auto 0;padding:0 16px;}
+
+  .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:16px;
+    box-shadow:0 1px 3px rgba(20,33,61,.06);border:1px solid var(--border);}
+  .card h2{margin:0 0 12px;font-size:15px;color:var(--navy);}
+
+  label{display:block;font-size:12.5px;color:var(--muted);margin:12px 0 5px;font-weight:600;}
+  label:first-of-type{margin-top:0;}
+  input[type=text],input[type=date],input[type=number],select,textarea{
+    width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--border);
+    background:#fbfbfd;font-size:15px;color:var(--text);
+  }
+  input:focus,select:focus,textarea:focus{outline:2px solid #cdd6f5;border-color:#9fb0e8;}
+  textarea{resize:vertical;min-height:60px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .kode-box{position:relative;}
+  .kode-box input{text-transform:uppercase;font-weight:700;letter-spacing:.03em;}
+  .lookup-result{margin-top:8px;padding:10px 12px;border-radius:10px;font-size:13.5px;line-height:1.4;}
+  .lookup-result.ok{background:#eef7ee;border:1px solid #bfe3c2;}
+  .lookup-result.notfound{background:#fdf1ef;border:1px solid #f3c6c0;color:#9a3b32;}
+  .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.03em;color:#fff;}
+  .badge.minor{background:var(--orange-2);}
+  .badge.mayor{background:var(--red);}
+  .poin{font-weight:800;color:var(--red);}
+
+  .photo-actions{display:flex;gap:10px;margin-top:4px;}
+  .photo-actions button{
+    flex:1;padding:12px;border-radius:10px;border:1.5px dashed #c6cde2;background:#fafbfe;
+    font-size:13.5px;font-weight:600;color:var(--navy);cursor:pointer;
+  }
+  .photo-preview{margin-top:12px;display:flex;flex-wrap:wrap;gap:10px;}
+  .photo-preview .thumb{position:relative;width:96px;height:96px;border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+  .photo-preview .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-preview .thumb .rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.55);
+    color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;}
+
+  .btn-submit{
+    width:100%;margin-top:18px;padding:15px;border:none;border-radius:12px;
+    background:linear-gradient(135deg,var(--orange),var(--orange-2));color:#fff;
+    font-size:15.5px;font-weight:800;cursor:pointer;letter-spacing:.02em;
+  }
+  .btn-submit:disabled{opacity:.55;}
+  .status-msg{margin-top:10px;font-size:13px;text-align:center;}
+  .status-msg.err{color:var(--red);}
+  .status-msg.ok{color:var(--green);}
+
+  /* recent list */
+  .list-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .list-item:last-child{border-bottom:none;}
+  .list-item img{width:54px;height:54px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#eee;}
+  .list-item .meta{font-size:12.5px;color:var(--muted);}
+  .list-item .meta b{color:var(--text);font-size:13.5px;}
+
+  /* modal generic */
+  .modal-overlay{position:fixed;inset:0;background:rgba(10,14,26,.55);display:none;
+    align-items:flex-end;justify-content:center;z-index:50;}
+  .modal-overlay.show{display:flex;}
+  .modal-sheet{background:#fff;width:100%;max-width:640px;border-top-left-radius:20px;border-top-right-radius:20px;
+    max-height:92vh;overflow-y:auto;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));}
+  .modal-sheet h3{margin:0 0 14px;font-size:16px;}
+  .modal-close{float:right;background:#f0f1f6;border:none;width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;}
+
+  /* editor */
+  #editorCanvasWrap{background:#111;border-radius:12px;overflow:hidden;position:relative;
+    display:flex;align-items:center;justify-content:center;touch-action:none;}
+  #editorCanvas{max-width:100%;display:block;touch-action:none;}
+  .tool-row{display:flex;gap:8px;overflow-x:auto;margin:12px 0 6px;padding-bottom:2px;}
+  .tool-btn{flex:0 0 auto;padding:9px 13px;border-radius:10px;border:1px solid var(--border);
+    background:#fafbfe;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+  .tool-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .slider-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
+  .slider-row input[type=range]{flex:1;}
+  .editor-footer{display:flex;gap:10px;margin-top:14px;}
+  .editor-footer button{flex:1;padding:12px;border-radius:10px;border:none;font-weight:700;cursor:pointer;}
+  .editor-footer .cancel{background:#f0f1f6;color:var(--text);}
+  .editor-footer .save{background:var(--green);color:#fff;}
+
+  /* settings */
+  .settings-field{margin-bottom:12px;}
+  .settings-field label{margin-bottom:4px;}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:3px;}
+  .save-settings{width:100%;padding:13px;border:none;border-radius:10px;background:var(--navy);color:#fff;font-weight:700;margin-top:6px;cursor:pointer;}
+
+  select[multiple]{height:auto;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <small>PT KARYA INDAH MULTIGUNA</small>
+    <h1>Temuan <span>5R5S</span></h1>
+  </div>
+  <div class="actions">
+    <button class="icon" id="btnRefresh" title="Muat ulang database">&#8635;</button>
+    <button class="icon" id="btnSettings" title="Pengaturan">&#9881;</button>
+  </div>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>Input Temuan</h2>
+
+    <label>Tanggal</label>
+    <input type="date" id="fTanggal">
+
+    <div class="row2">
+      <div>
+        <label>Area Gudang</label>
+        <input type="text" id="fArea" placeholder="mis. OIA STANDARD">
+      </div>
+      <div>
+        <label>Zona</label>
+        <select id="fZona"><option value="">Pilih zona…</option></select>
+      </div>
+    </div>
+
+    <label>Kode Temuan</label>
+    <div class="kode-box">
+      <input type="text" id="fKode" placeholder="mis. 3E" maxlength="4">
+    </div>
+    <div id="lookupResult"></div>
+
+    <label>Penanggung Jawab</label>
+    <input type="text" id="fPJ" placeholder="terisi otomatis, bisa diubah">
+
+    <label>Catatan Tambahan (opsional)</label>
+    <textarea id="fCatatan" placeholder="Detail lokasi rak, kondisi khusus, dll."></textarea>
+
+    <label>Foto Temuan</label>
+    <div class="photo-actions">
+      <button type="button" id="btnCamera">📷 Ambil Foto</button>
+      <button type="button" id="btnGallery">🖼️ Dari Galeri</button>
+    </div>
+    <input type="file" id="inputCamera" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="inputGallery" accept="image/*" style="display:none">
+    <div class="photo-preview" id="photoPreview"></div>
+
+    <button class="btn-submit" id="btnSubmit">Simpan Temuan</button>
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Temuan Terbaru</h2>
+    <div id="recentList"><div class="hint">Belum ada data / memuat…</div></div>
+  </div>
+
+</main>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeSettings">✕</button>
+    <h3>Pengaturan Sumber Data</h3>
+
+    <div class="settings-field">
+      <label>Link CSV Database Kode Temuan</label>
+      <input type="text" id="cfgCsvKode" placeholder="https://docs.google.com/.../export?format=csv">
+      <div class="hint">Kolom wajib: kode, uraian, klasifikasi (minor/mayor), poin</div>
+    </div>
+
+    <div class="settings-field">
+      <label>Link CSV Database Zona &amp; Penanggung Jawab</label>
+      <input type="text" id="cfgCsvZona" placeholder="https://docs.google.com/.../export?format=csv">
+      <div class="hint">Kolom wajib: zona, area, penanggung_jawab</div>
+    </div>
+
+    <div class="settings-field">
+      <label>Supabase Project URL</label>
+      <input type="text" id="cfgSbUrl" placeholder="https://xxxx.supabase.co">
+    </div>
+    <div class="settings-field">
+      <label>Supabase Anon Public Key</label>
+      <input type="text" id="cfgSbKey" placeholder="eyJhbGciOi...">
+    </div>
+    <div class="settings-field">
+      <label>Nama Tabel Supabase</label>
+      <input type="text" id="cfgSbTable" placeholder="temuan_5r5s">
+    </div>
+    <div class="settings-field">
+      <label>Nama Storage Bucket (untuk foto)</label>
+      <input type="text" id="cfgSbBucket" placeholder="foto-temuan">
+    </div>
+
+    <button class="save-settings" id="saveSettingsBtn">Simpan Pengaturan &amp; Muat Data</button>
+    <div class="hint" style="margin-top:10px;">
+      Struktur tabel Supabase yang disarankan (SQL):<br>
+      <code style="font-size:11px;">create table temuan_5r5s (id uuid default gen_random_uuid() primary key, tanggal date, area text, zona text, kode text, uraian text, klasifikasi text, poin int, penanggung_jawab text, catatan text, foto_url text, created_at timestamptz default now());</code>
+    </div>
+  </div>
+</div>
+
+<!-- PHOTO EDITOR MODAL -->
+<div class="modal-overlay" id="editorOverlay">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeEditor">✕</button>
+    <h3>Edit Foto Temuan</h3>
+    <div id="editorCanvasWrap">
+      <canvas id="editorCanvas"></canvas>
+    </div>
+    <div class="tool-row">
+      <button class="tool-btn" data-tool="arrow">↗ Panah</button>
+      <button class="tool-btn" data-tool="circle">⭕ Lingkari</button>
+      <button class="tool-btn" data-tool="crop">✂ Crop</button>
+      <button class="tool-btn" id="applyCrop" style="display:none;">✓ Terapkan Crop</button>
+      <button class="tool-btn" id="rotateBtn">⟳ Putar</button>
+      <button class="tool-btn" id="undoBtn">↺ Undo</button>
+    </div>
+    <div class="slider-row">
+      <span style="font-size:12px;color:var(--muted);">☀︎</span>
+      <input type="range" id="brightnessRange" min="50" max="180" value="100">
+      <span id="brightnessVal" style="font-size:12px;color:var(--muted);width:34px;">100%</span>
+    </div>
+    <div class="editor-footer">
+      <button class="cancel" id="editorCancel">Batal</button>
+      <button class="save" id="editorSave">Gunakan Foto</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- CONFIG ---------------- */
+  const CFG_KEY = "temuan5r5s_config_v1";
+  const defaultCfg = {
+    csvKode: "", csvZona: "",
+    sbUrl: "", sbKey: "", sbTable: "temuan_5r5s", sbBucket: "foto-temuan"
+  };
+  function loadCfg(){
+    try{ return Object.assign({}, defaultCfg, JSON.parse(localStorage.getItem(CFG_KEY)||"{}")); }
+    catch(e){ return Object.assign({}, defaultCfg); }
+  }
+  function saveCfg(c){ localStorage.setItem(CFG_KEY, JSON.stringify(c)); }
+  let CFG = loadCfg();
+
+  let supa = null;
+  function getSupabase(){
+    if(!CFG.sbUrl || !CFG.sbKey) return null;
+    if(!supa){ supa = window.supabase.createClient(CFG.sbUrl, CFG.sbKey); }
+    return supa;
+  }
+
+  /* ---------------- STATE ---------------- */
+  let kodeDB = [];   // [{kode,uraian,klasifikasi,poin}]
+  let zonaDB = [];   // [{zona,area,penanggung_jawab}]
+  let photos = [];   // [{blob, dataUrl}]  (single photo slot allowed, but support multiple)
+
+  const $ = id => document.getElementById(id);
+
+  /* ---------------- CSV LOADING ---------------- */
+  function fetchCsv(url){
+    return new Promise((resolve,reject)=>{
+      if(!url){ resolve([]); return; }
+      Papa.parse(url, {
+        download:true, header:true, skipEmptyLines:true,
+        complete: r => resolve(r.data || []),
+        error: err => reject(err)
+      });
+    });
+  }
+  function normKey(obj, keys){
+    // return first matching key value (case-insensitive header match)
+    const lower = {};
+    Object.keys(obj).forEach(k=> lower[k.trim().toLowerCase()] = obj[k]);
+    for(const k of keys){ if(lower[k] !== undefined) return (lower[k]||"").toString().trim(); }
+    return "";
+  }
+  async function loadAllDb(){
+    setStatus("Memuat database…","");
+    try{
+      const [k, z] = await Promise.all([fetchCsv(CFG.csvKode), fetchCsv(CFG.csvZona)]);
+      kodeDB = k.map(row=>({
+        kode: normKey(row,["kode","kode temuan","code"]).toUpperCase(),
+        uraian: normKey(row,["uraian","jenis temuan","remark","deskripsi"]),
+        klasifikasi: normKey(row,["klasifikasi","klasifikasi temuan","level"]).toUpperCase(),
+        poin: normKey(row,["poin","nilai pengurang","point","nilai"])
+      })).filter(r=>r.kode);
+
+      zonaDB = z.map(row=>({
+        zona: normKey(row,["zona","zone"]),
+        area: normKey(row,["area","area gudang","area / zone"]),
+        pj: normKey(row,["penanggung_jawab","penanggung jawab","pj","penjaga area"])
+      })).filter(r=>r.zona);
+
+      populateZonaSelect();
+      setStatus(kodeDB.length ? `Database dimuat: ${kodeDB.length} kode temuan, ${zonaDB.length} zona.` : "Database kode temuan kosong — cek link CSV di Pengaturan.", kodeDB.length?"ok":"err");
+    }catch(e){
+      setStatus("Gagal memuat database. Cek link CSV di Pengaturan.","err");
+    }
+  }
+
+  function populateZonaSelect(){
+    const sel = $("fZona");
+    sel.innerHTML = '<option value="">Pilih zona…</option>';
+    zonaDB.forEach(z=>{
+      const opt = document.createElement("option");
+      opt.value = z.zona; opt.textContent = z.zona + (z.area? " — "+z.area : "");
+      sel.appendChild(opt);
+    });
+  }
+
+  /* ---------------- KODE LOOKUP ---------------- */
+  function doLookup(){
+    const kode = $("fKode").value.trim().toUpperCase();
+    const box = $("lookupResult");
+    if(!kode){ box.innerHTML=""; return null; }
+    const found = kodeDB.find(r=>r.kode === kode);
+    if(!found){
+      box.className = "lookup-result notfound";
+      box.innerHTML = "Kode tidak ditemukan di database. Periksa penulisan kode.";
+      return null;
+    }
+    const isMayor = found.klasifikasi.toUpperCase().includes("MAYOR");
+    box.className = "lookup-result ok";
+    box.innerHTML = `<span class="badge ${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'MINOR'}</span>
+      &nbsp; <span class="poin">${found.poin || (isMayor?'-5':'-3')}</span> poin<br>
+      <div style="margin-top:6px;">${escapeHtml(found.uraian)}</div>`;
+    return found;
+  }
+  function escapeHtml(s){ return (s||"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+  $("fKode").addEventListener("input", ()=>{ $("fKode").value = $("fKode").value.toUpperCase(); doLookup(); });
+
+  $("fZona").addEventListener("change", ()=>{
+    const z = zonaDB.find(r=>r.zona === $("fZona").value);
+    if(z){
+      if(z.pj) $("fPJ").value = z.pj;
+      if(z.area && !$("fArea").value) $("fArea").value = z.area;
+    }
+  });
+
+  /* ---------------- PHOTO CAPTURE ---------------- */
+  $("btnCamera").addEventListener("click", ()=> $("inputCamera").click());
+  $("btnGallery").addEventListener("click", ()=> $("inputGallery").click());
+  $("inputCamera").addEventListener("change", e=> handleFile(e.target.files[0]));
+  $("inputGallery").addEventListener("change", e=> handleFile(e.target.files[0]));
+
+  function handleFile(file){
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=> openEditor(reader.result);
+    reader.readAsDataURL(file);
+  }
+
+  function renderPhotoPreview(){
+    const wrap = $("photoPreview");
+    wrap.innerHTML = "";
+    photos.forEach((p, idx)=>{
+      const div = document.createElement("div");
+      div.className = "thumb";
+      div.innerHTML = `<img src="${p.dataUrl}"><button class="rm" data-idx="${idx}">✕</button>`;
+      wrap.appendChild(div);
+    });
+    wrap.querySelectorAll(".rm").forEach(btn=>{
+      btn.addEventListener("click", ()=>{ photos.splice(+btn.dataset.idx,1); renderPhotoPreview(); });
+    });
+  }
+
+  /* ---------------- PHOTO EDITOR ---------------- */
+  const editorOverlay = $("editorOverlay");
+  const canvas = $("editorCanvas");
+  const ctx = canvas.getContext("2d");
+  let undoStack = [];
+  let currentTool = null;
+  let cropRect = null;
+  let drawing = false;
+  let startPt = null;
+  let preSnapshot = null;
+
+  function openEditor(dataUrl){
+    const img = new Image();
+    img.onload = ()=>{
+      const maxW = Math.min(700, window.innerWidth - 60);
+      let w = img.width, h = img.height;
+      if(w > maxW){ h = h * (maxW/w); w = maxW; }
+      canvas.width = w; canvas.height = h;
+      ctx.filter = "none";
+      ctx.drawImage(img, 0, 0, w, h);
+      undoStack = [];
+      currentTool = null;
+      cropRect = null;
+      $("brightnessRange").value = 100;
+      $("brightnessVal").textContent = "100%";
+      canvas.style.filter = "none";
+      document.querySelectorAll(".tool-btn").forEach(b=>b.classList.remove("active"));
+      $("applyCrop").style.display = "none";
+      editorOverlay.classList.add("show");
+    };
+    img.src = dataUrl;
+  }
+
+  function pushUndo(){
+    undoStack.push({w:canvas.width, h:canvas.height, data: ctx.getImageData(0,0,canvas.width,canvas.height)});
+    if(undoStack.length > 15) undoStack.shift();
+  }
+  $("undoBtn").addEventListener("click", ()=>{
+    const last = undoStack.pop();
+    if(!last) return;
+    canvas.width = last.w; canvas.height = last.h;
+    ctx.putImageData(last.data, 0, 0);
+  });
+
+  document.querySelectorAll(".tool-btn[data-tool]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const t = btn.dataset.tool;
+      currentTool = (currentTool === t) ? null : t;
+      document.querySelectorAll(".tool-btn[data-tool]").forEach(b=>b.classList.toggle("active", b.dataset.tool===currentTool));
+      $("applyCrop").style.display = (currentTool === "crop") ? "inline-block" : "none";
+      cropRect = null;
+    });
+  });
+
+  $("rotateBtn").addEventListener("click", ()=>{
+    pushUndo();
+    const w = canvas.width, h = canvas.height;
+    const tmp = document.createElement("canvas");
+    tmp.width = h; tmp.height = w;
+    const tctx = tmp.getContext("2d");
+    tctx.translate(h/2, w/2);
+    tctx.rotate(Math.PI/2);
+    tctx.drawImage(canvas, -w/2, -h/2);
+    canvas.width = h; canvas.height = w;
+    ctx.drawImage(tmp, 0, 0);
+  });
+
+  $("brightnessRange").addEventListener("input", ()=>{
+    const v = $("brightnessRange").value;
+    $("brightnessVal").textContent = v + "%";
+    canvas.style.filter = "brightness(" + v + "%)";
+  });
+
+  function getPos(evt){
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+    const t = evt.touches ? evt.touches[0] : evt;
+    return { x: (t.clientX - rect.left) * scaleX, y: (t.clientY - rect.top) * scaleY };
+  }
+
+  function canvasPointerDown(evt){
+    if(!currentTool) return;
+    evt.preventDefault();
+    drawing = true;
+    startPt = getPos(evt);
+    preSnapshot = ctx.getImageData(0,0,canvas.width,canvas.height);
+    pushUndo();
+  }
+  function canvasPointerMove(evt){
+    if(!drawing || !currentTool) return;
+    evt.preventDefault();
+    const p = getPos(evt);
+    ctx.putImageData(preSnapshot, 0, 0);
+    if(currentTool === "arrow"){ drawArrow(startPt, p); }
+    else if(currentTool === "circle"){ drawCircle(startPt, p); }
+    else if(currentTool === "crop"){ drawCropOverlay(startPt, p); cropRect = rectFrom(startPt,p); }
+  }
+  function canvasPointerUp(evt){
+    if(!drawing) return;
+    drawing = false;
+    if(currentTool === "crop"){
+      // keep overlay visible until user taps "Terapkan Crop"; snapshot already has rect baked temporarily
+    }
+  }
+  canvas.addEventListener("mousedown", canvasPointerDown);
+  canvas.addEventListener("mousemove", canvasPointerMove);
+  window.addEventListener("mouseup", canvasPointerUp);
+  canvas.addEventListener("touchstart", canvasPointerDown, {passive:false});
+  canvas.addEventListener("touchmove", canvasPointerMove, {passive:false});
+  canvas.addEventListener("touchend", canvasPointerUp);
+
+  function rectFrom(a,b){
+    return { x: Math.min(a.x,b.x), y: Math.min(a.y,b.y), w: Math.abs(b.x-a.x), h: Math.abs(b.y-a.y) };
+  }
+  function drawCropOverlay(a,b){
+    const r = rectFrom(a,b);
+    ctx.save();
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6,4]);
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+    ctx.restore();
+  }
+  function drawArrow(a,b){
+    ctx.save();
+    ctx.strokeStyle = "#ff3b30"; ctx.fillStyle = "#ff3b30";
+    ctx.lineWidth = Math.max(3, canvas.width*0.006);
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    const angle = Math.atan2(b.y-a.y, b.x-a.x);
+    const headLen = Math.max(14, canvas.width*0.03);
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x - headLen*Math.cos(angle-Math.PI/6), b.y - headLen*Math.sin(angle-Math.PI/6));
+    ctx.lineTo(b.x - headLen*Math.cos(angle+Math.PI/6), b.y - headLen*Math.sin(angle+Math.PI/6));
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  function drawCircle(a,b){
+    const rx = Math.abs(b.x-a.x)/2, ry = Math.abs(b.y-a.y)/2;
+    const cx = (a.x+b.x)/2, cy = (a.y+b.y)/2;
+    ctx.save();
+    ctx.strokeStyle = "#ff3b30";
+    ctx.lineWidth = Math.max(3, canvas.width*0.006);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, Math.max(rx,6), Math.max(ry,6), 0, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  $("applyCrop").addEventListener("click", ()=>{
+    if(!cropRect || cropRect.w < 5 || cropRect.h < 5) return;
+    // undo already pushed at pointerdown; redraw without the dashed overlay first
+    const clean = undoStack[undoStack.length-1];
+    const tmp = document.createElement("canvas");
+    tmp.width = clean.w; tmp.height = clean.h;
+    tmp.getContext("2d").putImageData(clean.data, 0, 0);
+    const out = document.createElement("canvas");
+    out.width = cropRect.w; out.height = cropRect.h;
+    out.getContext("2d").drawImage(tmp, cropRect.x, cropRect.y, cropRect.w, cropRect.h, 0, 0, cropRect.w, cropRect.h);
+    canvas.width = cropRect.w; canvas.height = cropRect.h;
+    ctx.drawImage(out, 0, 0);
+    cropRect = null;
+    currentTool = null;
+    document.querySelectorAll(".tool-btn[data-tool]").forEach(b=>b.classList.remove("active"));
+    $("applyCrop").style.display = "none";
+  });
+
+  $("editorCancel").addEventListener("click", ()=> editorOverlay.classList.remove("show"));
+  $("closeEditor").addEventListener("click", ()=> editorOverlay.classList.remove("show"));
+
+  $("editorSave").addEventListener("click", ()=>{
+    const finalCanvas = document.createElement("canvas");
+    finalCanvas.width = canvas.width; finalCanvas.height = canvas.height;
+    const fctx = finalCanvas.getContext("2d");
+    fctx.filter = "brightness(" + $("brightnessRange").value + "%)";
+    fctx.drawImage(canvas, 0, 0);
+    finalCanvas.toBlob(blob=>{
+      const dataUrl = finalCanvas.toDataURL("image/jpeg", 0.85);
+      photos.push({ blob, dataUrl });
+      renderPhotoPreview();
+      editorOverlay.classList.remove("show");
+    }, "image/jpeg", 0.85);
+  });
+
+  /* ---------------- SETTINGS MODAL ---------------- */
+  const settingsOverlay = $("settingsOverlay");
+  function openSettings(){
+    $("cfgCsvKode").value = CFG.csvKode;
+    $("cfgCsvZona").value = CFG.csvZona;
+    $("cfgSbUrl").value = CFG.sbUrl;
+    $("cfgSbKey").value = CFG.sbKey;
+    $("cfgSbTable").value = CFG.sbTable;
+    $("cfgSbBucket").value = CFG.sbBucket;
+    settingsOverlay.classList.add("show");
+  }
+  $("btnSettings").addEventListener("click", openSettings);
+  $("closeSettings").addEventListener("click", ()=> settingsOverlay.classList.remove("show"));
+  $("saveSettingsBtn").addEventListener("click", async ()=>{
+    CFG = {
+      csvKode: $("cfgCsvKode").value.trim(),
+      csvZona: $("cfgCsvZona").value.trim(),
+      sbUrl: $("cfgSbUrl").value.trim(),
+      sbKey: $("cfgSbKey").value.trim(),
+      sbTable: $("cfgSbTable").value.trim() || "temuan_5r5s",
+      sbBucket: $("cfgSbBucket").value.trim() || "foto-temuan"
+    };
+    saveCfg(CFG);
+    supa = null;
+    settingsOverlay.classList.remove("show");
+    await loadAllDb();
+    loadRecent();
+  });
+
+  $("btnRefresh").addEventListener("click", ()=>{ loadAllDb(); loadRecent(); });
+
+  /* ---------------- SUBMIT ---------------- */
+  function setStatus(msg, cls){
+    const el = $("statusMsg");
+    el.textContent = msg;
+    el.className = "status-msg" + (cls ? " "+cls : "");
+  }
+
+  $("btnSubmit").addEventListener("click", async ()=>{
+    const found = doLookup();
+    const kode = $("fKode").value.trim().toUpperCase();
+    const tanggal = $("fTanggal").value;
+    const area = $("fArea").value.trim();
+    const zona = $("fZona").value;
+    const pj = $("fPJ").value.trim();
+    const catatan = $("fCatatan").value.trim();
+
+    if(!tanggal){ setStatus("Tanggal wajib diisi.","err"); return; }
+    if(!kode || !found){ setStatus("Kode temuan tidak valid / belum ditemukan di database.","err"); return; }
+    if(!zona){ setStatus("Pilih zona terlebih dahulu.","err"); return; }
+    if(photos.length === 0){ setStatus("Foto temuan wajib diupload.","err"); return; }
+
+    const sb = getSupabase();
+    if(!sb){ setStatus("Supabase belum dikonfigurasi. Buka Pengaturan.","err"); return; }
+
+    $("btnSubmit").disabled = true;
+    setStatus("Mengupload foto & menyimpan data…","");
+
+    try{
+      const urls = [];
+      for(const p of photos){
+        const fname = `${Date.now()}_${Math.random().toString(36).slice(2,8)}.jpg`;
+        const { error: upErr } = await sb.storage.from(CFG.sbBucket).upload(fname, p.blob, { contentType:"image/jpeg" });
+        if(upErr) throw upErr;
+        const { data: pub } = sb.storage.from(CFG.sbBucket).getPublicUrl(fname);
+        urls.push(pub.publicUrl);
+      }
+
+      const isMayor = found.klasifikasi.toUpperCase().includes("MAYOR");
+      const row = {
+        tanggal, area, zona, kode,
+        uraian: found.uraian,
+        klasifikasi: isMayor ? "MAYOR" : "MINOR",
+        poin: parseInt(found.poin) || (isMayor ? -5 : -3),
+        penanggung_jawab: pj,
+        catatan,
+        foto_url: urls.join(",")
+      };
+      const { error: insErr } = await sb.from(CFG.sbTable).insert(row);
+      if(insErr) throw insErr;
+
+      setStatus("Temuan berhasil disimpan ✔","ok");
+      photos = []; renderPhotoPreview();
+      $("fKode").value = ""; $("lookupResult").innerHTML = "";
+      $("fCatatan").value = "";
+      loadRecent();
+    }catch(e){
+      setStatus("Gagal menyimpan: " + (e.message || e), "err");
+    }finally{
+      $("btnSubmit").disabled = false;
+    }
+  });
+
+  /* ---------------- RECENT LIST ---------------- */
+  async function loadRecent(){
+    const sb = getSupabase();
+    const box = $("recentList");
+    if(!sb){ box.innerHTML = '<div class="hint">Konfigurasikan Supabase di Pengaturan untuk melihat riwayat.</div>'; return; }
+    try{
+      const { data, error } = await sb.from(CFG.sbTable).select("*").order("created_at",{ascending:false}).limit(10);
+      if(error) throw error;
+      if(!data || !data.length){ box.innerHTML = '<div class="hint">Belum ada temuan tersimpan.</div>'; return; }
+      box.innerHTML = "";
+      data.forEach(r=>{
+        const thumb = (r.foto_url||"").split(",")[0] || "";
+        const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+        const div = document.createElement("div");
+        div.className = "list-item";
+        div.innerHTML = `${thumb ? `<img src="${thumb}">` : ""}
+          <div class="meta">
+            <b>${escapeHtml(r.kode)} · ${escapeHtml(r.area||"-")}</b><br>
+            ${escapeHtml(r.uraian||"")}<br>
+            <span class="badge ${isMayor?'mayor':'minor'}" style="margin-top:4px;display:inline-block;">${isMayor?'MAYOR':'MINOR'}</span>
+            ${r.penanggung_jawab? " · PJ: "+escapeHtml(r.penanggung_jawab):""} · ${escapeHtml(r.tanggal||"")}
+          </div>`;
+        box.appendChild(div);
+      });
+    }catch(e){
+      box.innerHTML = '<div class="hint">Gagal memuat riwayat: '+escapeHtml(e.message||String(e))+'</div>';
+    }
+  }
+
+  /* ---------------- INIT ---------------- */
+  $("fTanggal").value = new Date().toISOString().slice(0,10);
+  if(!CFG.csvKode && !CFG.sbUrl){ openSettings(); }
+  loadAllDb();
+  loadRecent();
+
+})();
+</script>
+</body>
+</html>
