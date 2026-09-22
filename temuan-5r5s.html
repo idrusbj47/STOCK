@@ -6,6 +6,8 @@
 <title>Temuan 5R5S - SBJApp</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root{
     --navy:#14213d;
@@ -191,7 +193,10 @@
   </div>
 
   <div class="card">
-    <h2>Temuan Terbaru</h2>
+    <h2 style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Temuan Terbaru</span>
+      <button id="btnCetak" style="background:var(--purple);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;">🖨 Cetak PDF</button>
+    </h2>
     <div id="recentList"><div class="hint">Belum ada data / memuat…</div></div>
   </div>
 
@@ -265,6 +270,24 @@
       <button class="cancel" id="editorCancel">Batal</button>
       <button class="save" id="editorSave">Gunakan Foto</button>
     </div>
+  </div>
+</div>
+
+<!-- CETAK PDF MODAL -->
+<div class="modal-overlay" id="cetakOverlay">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeCetak">✕</button>
+    <h3>Cetak Form Temuan Sidak 5R5S</h3>
+    <label>Dari Tanggal</label>
+    <input type="date" id="cetakDari">
+    <label>Sampai Tanggal</label>
+    <input type="date" id="cetakSampai">
+    <label style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+      <input type="checkbox" id="cetakSertakanFoto" checked style="width:auto;">
+      <span style="font-weight:600;color:var(--text);font-size:13.5px;">Sertakan halaman dokumentasi foto</span>
+    </label>
+    <button class="save-settings" id="btnGeneratePdf" style="margin-top:16px;">Buat PDF</button>
+    <div class="status-msg" id="cetakStatus"></div>
   </div>
 </div>
 
@@ -766,6 +789,150 @@
       btn.disabled = false;
     }
   }
+
+  /* ---------------- CETAK PDF ---------------- */
+  const cetakOverlay = $("cetakOverlay");
+  $("btnCetak").addEventListener("click", ()=>{
+    const today = new Date().toISOString().slice(0,10);
+    $("cetakDari").value = today;
+    $("cetakSampai").value = today;
+    $("cetakStatus").textContent = "";
+    cetakOverlay.classList.add("show");
+  });
+  $("closeCetak").addEventListener("click", ()=> cetakOverlay.classList.remove("show"));
+
+  function imgUrlToDataUrl(url){
+    return fetch(url)
+      .then(r=>r.blob())
+      .then(blob=> new Promise((resolve,reject)=>{
+        const reader = new FileReader();
+        reader.onload = ()=> resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      }))
+      .catch(()=> null);
+  }
+  function fmtTanggalID(iso){
+    if(!iso) return "-";
+    const d = new Date(iso+"T00:00:00");
+    const bulan = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+    return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  $("btnGeneratePdf").addEventListener("click", async ()=>{
+    const dari = $("cetakDari").value, sampai = $("cetakSampai").value;
+    const sertakanFoto = $("cetakSertakanFoto").checked;
+    if(!dari || !sampai){ $("cetakStatus").textContent = "Isi rentang tanggal."; $("cetakStatus").className="status-msg err"; return; }
+    const sb = getSupabase();
+    if(!sb){ $("cetakStatus").textContent = "Supabase belum dikonfigurasi."; $("cetakStatus").className="status-msg err"; return; }
+
+    $("btnGeneratePdf").disabled = true;
+    $("cetakStatus").textContent = "Mengambil data…";
+    $("cetakStatus").className = "status-msg";
+
+    try{
+      const { data, error } = await sb.from(CFG.sbTable).select("*")
+        .gte("tanggal", dari).lte("tanggal", sampai)
+        .order("tanggal", {ascending:true}).order("created_at",{ascending:true});
+      if(error) throw error;
+      if(!data || !data.length){ $("cetakStatus").textContent = "Tidak ada temuan pada rentang tanggal ini."; $("cetakStatus").className="status-msg err"; $("btnGeneratePdf").disabled=false; return; }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit:"mm", format:"a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const rangeLabel = dari === sampai ? fmtTanggalID(dari) : `${fmtTanggalID(dari)} — ${fmtTanggalID(sampai)}`;
+
+      /* ---- Halaman 1: Tabel Form Temuan Sidak ---- */
+      doc.setFont("helvetica","bold"); doc.setFontSize(11);
+      doc.text("PT. KARYA INDAH MULTIGUNA", 14, 15);
+      doc.setFontSize(15);
+      doc.text("FORM TEMUAN SIDAK 5R5S", pageW/2, 24, {align:"center"});
+      doc.setFont("helvetica","normal"); doc.setFontSize(10);
+      doc.text(`Tanggal : ${rangeLabel}`, 14, 31);
+
+      const rows = data.map((r,i)=>[
+        i+1, r.area||"-", r.penanggung_jawab||"-", r.kode||"-", r.uraian||"-",
+        (r.klasifikasi||"").toUpperCase()==="MAYOR"?"MAYOR":"minor", r.poin!=null?r.poin:"-", ""
+      ]);
+      doc.autoTable({
+        startY: 36,
+        head: [["No.","Lokasi","PJ","Kode","Jenis Temuan","Level","Poin","Paraf (Closed)"]],
+        body: rows,
+        styles:{ fontSize:8.5, cellPadding:2, valign:"middle" },
+        headStyles:{ fillColor:[20,33,61], textColor:255, fontStyle:"bold" },
+        columnStyles:{
+          0:{cellWidth:9, halign:"center"},
+          1:{cellWidth:28},
+          2:{cellWidth:22},
+          3:{cellWidth:14, halign:"center"},
+          4:{cellWidth:'auto'},
+          5:{cellWidth:16, halign:"center"},
+          6:{cellWidth:12, halign:"center"},
+          7:{cellWidth:20, halign:"center"}
+        },
+        didParseCell: function(d){
+          if(d.section==="body" && d.column.index===5){
+            if(d.cell.raw==="MAYOR"){ d.cell.styles.fillColor=[209,68,92]; d.cell.styles.textColor=255; d.cell.styles.fontStyle="bold"; }
+          }
+        }
+      });
+
+      /* ---- Halaman Dokumentasi Foto ---- */
+      if(sertakanFoto){
+        doc.addPage();
+        doc.setFont("helvetica","bold"); doc.setFontSize(11);
+        doc.text("PT. KARYA INDAH MULTIGUNA", 14, 15);
+        doc.setFontSize(13);
+        doc.text(`Dokumentasi Hasil Pemeriksaan ${rangeLabel}`, pageW/2, 23, {align:"center"});
+
+        let y = 30;
+        const imgW = 55, imgH = 42, rowH = 48, leftX = 14, textX = 14+imgW+6;
+
+        for(let i=0;i<data.length;i++){
+          const r = data[i];
+          if(y + rowH > 285){ doc.addPage(); y = 15; }
+
+          doc.setDrawColor(200); doc.rect(leftX-2, y-4, pageW-2*(leftX-2), rowH);
+
+          const firstUrl = (r.foto_url||"").split(",")[0];
+          if(firstUrl){
+            const dataUrl = await imgUrlToDataUrl(firstUrl);
+            if(dataUrl){
+              try{ doc.addImage(dataUrl, "JPEG", leftX, y-2, imgW, imgH); }catch(e){}
+            }
+          }
+
+          doc.setFont("helvetica","bold"); doc.setFontSize(9);
+          doc.text(`${i+1}. ${r.area||"-"}  (${r.kode||"-"})`, textX, y+3);
+          doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
+          const uraianLines = doc.splitTextToSize(r.uraian||"-", pageW-textX-14);
+          doc.text(uraianLines, textX, y+9);
+          const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+          const afterUraianY = y + 9 + (uraianLines.length*4);
+          doc.setFont("helvetica","bold");
+          doc.setTextColor(isMayor?209:184, isMayor?68:114, isMayor?92:12);
+          doc.text(`${isMayor?"MAYOR":"minor"} · ${r.poin!=null?r.poin:""} poin`, textX, afterUraianY+2);
+          doc.setTextColor(0,0,0);
+          doc.setFont("helvetica","normal"); doc.setFontSize(8);
+          doc.text(`PJ: ${r.penanggung_jawab||"-"}   Zona: ${r.zona||"-"}   Tgl: ${r.tanggal||"-"}`, textX, afterUraianY+7);
+          if(r.catatan){
+            doc.text(doc.splitTextToSize("Catatan: "+r.catatan, pageW-textX-14), textX, afterUraianY+12);
+          }
+
+          y += rowH + 4;
+        }
+      }
+
+      doc.save(`Form-Temuan-5R5S_${dari}_${sampai}.pdf`);
+      $("cetakStatus").textContent = "PDF berhasil dibuat.";
+      $("cetakStatus").className = "status-msg ok";
+    }catch(e){
+      $("cetakStatus").textContent = "Gagal membuat PDF: " + (e.message||e);
+      $("cetakStatus").className = "status-msg err";
+    }finally{
+      $("btnGeneratePdf").disabled = false;
+    }
+  });
 
   /* ---------------- INIT ---------------- */
   $("fTanggal").value = new Date().toISOString().slice(0,10);
