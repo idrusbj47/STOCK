@@ -91,11 +91,14 @@
   .status-msg.ok{color:var(--green);}
 
   /* recent list */
-  .list-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .list-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
   .list-item:last-child{border-bottom:none;}
   .list-item img{width:54px;height:54px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#eee;}
-  .list-item .meta{font-size:12.5px;color:var(--muted);}
+  .list-item .meta{font-size:12.5px;color:var(--muted);flex:1;}
   .list-item .meta b{color:var(--text);font-size:13.5px;}
+  .list-item .delBtn{flex-shrink:0;background:#fdf1ef;color:var(--red);border:1px solid #f3c6c0;
+    border-radius:8px;width:30px;height:30px;font-size:13px;cursor:pointer;}
+  .list-item .delBtn:disabled{opacity:.5;}
 
   /* modal generic */
   .modal-overlay{position:fixed;inset:0;background:rgba(10,14,26,.55);display:none;
@@ -272,8 +275,12 @@
   /* ---------------- CONFIG ---------------- */
   const CFG_KEY = "temuan5r5s_config_v1";
   const defaultCfg = {
-    csvKode: "", csvZona: "",
-    sbUrl: "", sbKey: "", sbTable: "temuan_5r5s", sbBucket: "foto-temuan"
+    csvKode: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=557547335&single=true&output=csv",
+    csvZona: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=557547335&single=true&output=csv",
+    sbUrl: "https://bpqiejowxcxyeewhoncr.supabase.co",
+    sbKey: "sb_publishable_3tCR_a01HgzEpH-5uypqGg_s8WvXsa9",
+    sbTable: "temuan_5r5s",
+    sbBucket: "foto-temuan-5r5s"
   };
   function loadCfg(){
     try{ return Object.assign({}, defaultCfg, JSON.parse(localStorage.getItem(CFG_KEY)||"{}")); }
@@ -297,39 +304,60 @@
   const $ = id => document.getElementById(id);
 
   /* ---------------- CSV LOADING ---------------- */
-  function fetchCsv(url){
+  function fetchCsvRaw(url){
+    // header:false -> array of arrays, so we can read the sheet positionally
     return new Promise((resolve,reject)=>{
       if(!url){ resolve([]); return; }
       Papa.parse(url, {
-        download:true, header:true, skipEmptyLines:true,
+        download:true, header:false, skipEmptyLines:false,
         complete: r => resolve(r.data || []),
         error: err => reject(err)
       });
     });
   }
   function normKey(obj, keys){
-    // return first matching key value (case-insensitive header match)
     const lower = {};
     Object.keys(obj).forEach(k=> lower[k.trim().toLowerCase()] = obj[k]);
     for(const k of keys){ if(lower[k] !== undefined) return (lower[k]||"").toString().trim(); }
     return "";
   }
+  const KODE_RE = /^[0-9]+[A-Za-z]$/; // e.g. 1A, 3E, 12B
+
+  function parseCombinedSheet(rows){
+    const kode = [], zona = [];
+    rows.forEach(row=>{
+      if(!row || !row.length) return;
+      const c1 = (row[1]||"").toString().trim();      // KODE
+      const c2 = (row[2]||"").toString().trim();      // URAIAN
+      const c3 = (row[3]||"").toString().trim();      // KLASIFIKASI
+      const c4 = (row[4]||"").toString().trim();      // POIN
+      if(KODE_RE.test(c1) && c2){
+        kode.push({ kode:c1.toUpperCase(), uraian:c2, klasifikasi:c3.toUpperCase(), poin:c4 });
+      }
+      const c7 = (row[7]||"").toString().trim();      // KODE AREA / ZONA
+      const c8 = (row[8]||"").toString().trim();      // AREA / ZONE
+      const c9 = (row[9]||"").toString().trim();      // PENJAGA AREA
+      if(c7 && c7.toUpperCase() !== "KODE AREA"){
+        zona.push({ zona:c7, area:c8, pj:c9 });
+      }
+    });
+    return { kode, zona };
+  }
+
   async function loadAllDb(){
     setStatus("Memuat database…","");
     try{
-      const [k, z] = await Promise.all([fetchCsv(CFG.csvKode), fetchCsv(CFG.csvZona)]);
-      kodeDB = k.map(row=>({
-        kode: normKey(row,["kode","kode temuan","code"]).toUpperCase(),
-        uraian: normKey(row,["uraian","jenis temuan","remark","deskripsi"]),
-        klasifikasi: normKey(row,["klasifikasi","klasifikasi temuan","level"]).toUpperCase(),
-        poin: normKey(row,["poin","nilai pengurang","point","nilai"])
-      })).filter(r=>r.kode);
+      const rawKode = await fetchCsvRaw(CFG.csvKode);
+      let combined = parseCombinedSheet(rawKode);
+      kodeDB = combined.kode;
+      zonaDB = combined.zona;
 
-      zonaDB = z.map(row=>({
-        zona: normKey(row,["zona","zone"]),
-        area: normKey(row,["area","area gudang","area / zone"]),
-        pj: normKey(row,["penanggung_jawab","penanggung jawab","pj","penjaga area"])
-      })).filter(r=>r.zona);
+      // If a *different* zona CSV was configured, prefer it for zona data
+      if(CFG.csvZona && CFG.csvZona !== CFG.csvKode){
+        const rawZona = await fetchCsvRaw(CFG.csvZona);
+        const combined2 = parseCombinedSheet(rawZona);
+        if(combined2.zona.length) zonaDB = combined2.zona;
+      }
 
       populateZonaSelect();
       setStatus(kodeDB.length ? `Database dimuat: ${kodeDB.length} kode temuan, ${zonaDB.length} zona.` : "Database kode temuan kosong — cek link CSV di Pengaturan.", kodeDB.length?"ok":"err");
@@ -704,11 +732,38 @@
             ${escapeHtml(r.uraian||"")}<br>
             <span class="badge ${isMayor?'mayor':'minor'}" style="margin-top:4px;display:inline-block;">${isMayor?'MAYOR':'MINOR'}</span>
             ${r.penanggung_jawab? " · PJ: "+escapeHtml(r.penanggung_jawab):""} · ${escapeHtml(r.tanggal||"")}
-          </div>`;
+          </div>
+          <button class="delBtn" data-id="${r.id}" data-fotos="${escapeHtml(r.foto_url||"")}" title="Hapus temuan">✕</button>`;
         box.appendChild(div);
+      });
+      box.querySelectorAll(".delBtn").forEach(btn=>{
+        btn.addEventListener("click", ()=> deleteTemuan(btn.dataset.id, btn.dataset.fotos, btn));
       });
     }catch(e){
       box.innerHTML = '<div class="hint">Gagal memuat riwayat: '+escapeHtml(e.message||String(e))+'</div>';
+    }
+  }
+
+  async function deleteTemuan(id, fotoUrls, btn){
+    if(!confirm("Hapus temuan ini beserta fotonya? Tindakan ini tidak bisa dibatalkan.")) return;
+    const sb = getSupabase();
+    if(!sb) return;
+    btn.disabled = true;
+    try{
+      const paths = (fotoUrls||"").split(",").filter(Boolean).map(u=>{
+        const parts = u.split("/");
+        return parts[parts.length-1];
+      });
+      if(paths.length){
+        const { error: rmErr } = await sb.storage.from(CFG.sbBucket).remove(paths);
+        if(rmErr) console.warn("Gagal hapus file storage:", rmErr.message);
+      }
+      const { error: delErr } = await sb.from(CFG.sbTable).delete().eq("id", id);
+      if(delErr) throw delErr;
+      loadRecent();
+    }catch(e){
+      alert("Gagal menghapus: " + (e.message || e));
+      btn.disabled = false;
     }
   }
 
