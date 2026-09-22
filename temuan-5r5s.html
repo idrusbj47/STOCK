@@ -134,8 +134,8 @@
 
   /* ===== PRINT REPORT ===== */
   #printArea{display:none;}
-  .p-page{ background:#fff; color:#111; font-family:Arial,Helvetica,sans-serif; }
-  .p-header{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .p-page{ background:#fff; color:#111; font-family:Arial,Helvetica,sans-serif; width:100%; max-width:100%; overflow:hidden; }
+  .p-header{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; flex-wrap:wrap; gap:8px; width:100%; box-sizing:border-box; }
   .p-header h3{ margin:0; font-size:14px; }
   .p-header .p-title{ text-align:center; flex:1; }
   .p-header .p-title h1{ margin:4px 0 2px; font-size:20px; letter-spacing:.02em; }
@@ -144,22 +144,23 @@
   .p-signbox div{ border:1px solid #000; width:110px; }
   .p-signbox div span{ display:block; text-align:center; font-weight:bold; font-size:11px; padding:4px 0; border-bottom:1px solid #000; }
   .p-signbox div em{ display:block; height:40px; }
-  table.p-table{ width:100%; border-collapse:collapse; font-size:13px; margin-top:6px; }
-  table.p-table th, table.p-table td{ border:1px solid #333; padding:6px 7px; text-align:left; vertical-align:top; }
+  table.p-table{ width:100%; max-width:100%; border-collapse:collapse; font-size:13px; margin-top:6px; table-layout:fixed; }
+  table.p-table th, table.p-table td{ border:1px solid #333; padding:6px 7px; text-align:left; vertical-align:top; overflow-wrap:break-word; word-break:break-word; }
   table.p-table thead th{ background:#14213d; color:#fff; text-align:center; font-size:12px; }
   table.p-table td.center{ text-align:center; }
   table.p-table td.mayor{ background:#d1445c; color:#fff; font-weight:bold; text-align:center; }
   table.p-table td.minor{ text-align:center; color:#b8720c; font-weight:bold; }
   .p-docs-title{ font-size:18px; margin:0 0 12px; text-align:center; }
-  .p-doc-card{ display:flex; gap:14px; border:1px solid #ccc; border-radius:6px; padding:12px; margin-bottom:12px; page-break-inside:avoid; }
+  .p-doc-card{ display:flex; gap:14px; border:1px solid #ccc; border-radius:6px; padding:12px; margin-bottom:12px; page-break-inside:avoid; width:100%; box-sizing:border-box; }
   .p-doc-card img{ width:190px; height:150px; object-fit:cover; border-radius:4px; flex-shrink:0; }
+  .p-doc-card .p-doc-text{ flex:1 1 auto; min-width:0; overflow-wrap:break-word; word-break:break-word; }
   .p-doc-card .p-doc-text b{ font-size:15px; }
-  .p-doc-card .p-doc-text p{ margin:6px 0; font-size:14px; line-height:1.45; }
+  .p-doc-card .p-doc-text p{ margin:6px 0; font-size:14px; line-height:1.45; overflow-wrap:break-word; word-break:break-word; }
   .p-doc-card .p-doc-level{ font-weight:bold; font-size:14px; }
   .p-doc-card .p-doc-level.mayor{ color:#d1445c; }
   .p-doc-card .p-doc-level.minor{ color:#b8720c; }
-  .p-doc-meta{ display:flex; flex-wrap:wrap; gap:4px 0; }
-  .p-doc-meta span{ white-space:nowrap; }
+  .p-doc-meta{ display:flex; flex-wrap:wrap; gap:2px 0; max-width:100%; }
+  .p-doc-meta span{ white-space:normal; word-break:break-word; }
   .p-doc-meta span:not(:last-child)::after{ content:" | "; color:#999; font-weight:normal; }
   .p-section-break{ page-break-before:always; }
 
@@ -392,15 +393,27 @@
   function parseCombinedSheet(rows){
     const kode = [], zona = [], karu = [];
 
-    // Cari kolom header "KARU" di mana saja pada sheet (case-insensitive),
-    // supaya tidak bergantung pada asumsi posisi kolom yang bisa berubah.
-    let karuCol = -1;
+    // Cari kolom header "KARU" di mana saja pada sheet (case-insensitive).
+    // Kadang daftar namanya tidak persis di bawah header itu sendiri, tapi
+    // di kolom sebelah kanannya (mis. header di L, data di M) — jadi kita
+    // bandingkan jumlah data terisi di kolom header vs kolom+1 dan pilih
+    // yang paling banyak berisi data.
+    let headerCol = -1;
     for(const row of rows){
       if(!row) continue;
       const idx = row.findIndex(c => (c||"").toString().trim().toUpperCase() === "KARU");
-      if(idx !== -1){ karuCol = idx; break; }
+      if(idx !== -1){ headerCol = idx; break; }
     }
-    if(karuCol === -1) karuCol = 11; // fallback: kolom L
+    let karuCol = 11; // fallback: kolom L
+    if(headerCol !== -1){
+      const countFilled = col => rows.reduce((n,row)=>{
+        const v = row && (row[col]||"").toString().trim();
+        return (v && v.toUpperCase() !== "KARU") ? n+1 : n;
+      }, 0);
+      const cSame = countFilled(headerCol);
+      const cNext = countFilled(headerCol+1);
+      karuCol = cNext > cSame ? headerCol+1 : headerCol;
+    }
 
     rows.forEach(row=>{
       if(!row || !row.length) return;
@@ -417,7 +430,7 @@
       if(c7 && c7.toUpperCase() !== "KODE AREA"){
         zona.push({ zona:c7, area:c8, pj:c9 });
       }
-      const cKaru = (row[karuCol]||"").toString().trim();  // KOLOM KARU (terdeteksi otomatis, fallback L)
+      const cKaru = (row[karuCol]||"").toString().trim();  // KOLOM KARU (terdeteksi otomatis)
       if(cKaru && cKaru.toUpperCase() !== "KARU"){
         karu.push(cKaru);
       }
