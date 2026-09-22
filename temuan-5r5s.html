@@ -6,6 +6,8 @@
 <title>Temuan 5R5S - SBJApp</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --navy:#14213d;
@@ -140,8 +142,7 @@
   .kode-ref-item .kri-kode{font-weight:800;color:var(--navy);font-size:14px;}
   .kode-ref-item .kri-uraian{font-size:13px;color:var(--text);margin-top:3px;line-height:1.4;}
 
-  /* ===== PRINT REPORT ===== */
-  #printArea{display:none;}
+  /* ===== PRINT REPORT (dipakai untuk render PDF offscreen) ===== */
   .p-page{ background:#fff; color:#111; font-family:Arial,Helvetica,sans-serif; width:100%; max-width:100%; overflow:hidden; }
   .p-header{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; flex-wrap:wrap; gap:8px; width:100%; box-sizing:border-box; }
   .p-header h3{ margin:0; font-size:14px; }
@@ -171,13 +172,6 @@
   .p-doc-meta span{ white-space:normal; word-break:break-word; }
   .p-doc-meta span:not(:last-child)::after{ content:" | "; color:#999; font-weight:normal; }
   .p-section-break{ page-break-before:always; }
-
-  @media print{
-    body *{ visibility:hidden; }
-    #printArea, #printArea *{ visibility:visible; }
-    #printArea{ display:block; position:absolute; left:0; top:0; width:100%; }
-    @page{ size:A4; margin:12mm; }
-  }
 </style>
 </head>
 <body>
@@ -345,13 +339,16 @@
       <input type="checkbox" id="cetakSertakanFoto" checked style="width:auto;">
       <span style="font-weight:600;color:var(--text);font-size:13.5px;">Sertakan halaman dokumentasi foto</span>
     </label>
-    <button class="save-settings" id="btnGeneratePdf" style="margin-top:16px;">Siapkan & Buka Dialog Cetak</button>
-    <div class="hint" style="margin-top:8px;">Setelah dialog cetak browser terbuka, pilih printer fisik untuk cetak langsung, atau pilih "Save as PDF" / "Simpan sebagai PDF" untuk menyimpan sebagai file.</div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="save-settings" id="btnCetakPrint" style="margin-top:0;background:var(--navy);flex:1;">🖨 Cetak</button>
+      <button class="save-settings" id="btnGeneratePdf" style="margin-top:0;flex:1;">⬇️ Unduh PDF</button>
+    </div>
+    <div class="hint" style="margin-top:8px;">
+      <b>Cetak</b>: buka dialog cetak browser — cocok di komputer, tinggal pilih printer. <b>Unduh PDF</b>: file PDF (ukuran Legal 8.5 × 13 in) langsung tersimpan di HP, siap dibagikan lewat WhatsApp — lebih disarankan untuk iPhone.
+    </div>
     <div class="status-msg" id="cetakStatus"></div>
   </div>
 </div>
-
-<div id="printArea"></div>
 
 <script>
 (function(){
@@ -1013,107 +1010,108 @@
     return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
   }
 
-  $("btnGeneratePdf").addEventListener("click", async ()=>{
+  // Ambil data & bangun markup laporan (dipakai bersama oleh tombol Cetak & Unduh PDF)
+  async function buildLaporanHtml(){
     const dari = $("cetakDari").value, sampai = $("cetakSampai").value;
     const sertakanFoto = $("cetakSertakanFoto").checked;
-    if(!dari || !sampai){ $("cetakStatus").textContent = "Isi rentang tanggal."; $("cetakStatus").className="status-msg err"; return; }
+    if(!dari || !sampai) throw new Error("Isi rentang tanggal.");
     const sb = getSupabase();
-    if(!sb){ $("cetakStatus").textContent = "Supabase belum dikonfigurasi."; $("cetakStatus").className="status-msg err"; return; }
+    if(!sb) throw new Error("Supabase belum dikonfigurasi.");
 
-    // Buka tab/window kosong SEKARANG JUGA (masih dalam event klik langsung),
-    // supaya tidak diblokir oleh popup-blocker Safari / PWA iOS. Isinya akan
-    // ditulis belakangan setelah data selesai diambil.
+    const { data, error } = await sb.from(CFG.sbTable).select("*")
+      .gte("tanggal", dari).lte("tanggal", sampai)
+      .order("tanggal", {ascending:true}).order("created_at",{ascending:true});
+    if(error) throw error;
+    if(!data || !data.length) throw new Error("Tidak ada temuan pada rentang tanggal ini.");
+
+    const rangeLabel = dari === sampai ? fmtTanggalID(dari) : `${fmtTanggalID(dari)} — ${fmtTanggalID(sampai)}`;
+
+    // ---- Bangun HTML halaman tabel ----
+    let html = `<div class="p-page">
+      <div class="p-header">
+        <h3>PT. KARYA INDAH<br>MULTIGUNA</h3>
+        <div class="p-title">
+          <h1>FORM TEMUAN SIDAK 5R5S</h1>
+          <div class="p-sub">Tanggal : ${rangeLabel}</div>
+        </div>
+        <div class="p-signbox">
+          <div><span>Dibuat</span><em></em></div>
+          <div><span>Mengetahui</span><em></em></div>
+        </div>
+      </div>
+      <table class="p-table">
+        <colgroup>
+          <col style="width:4%"><col style="width:13%"><col style="width:13%"><col style="width:9%">
+          <col style="width:6%"><col style="width:33%"><col style="width:10%"><col style="width:12%">
+        </colgroup>
+        <thead><tr>
+          <th>No.</th><th>Lokasi</th><th>PJ</th><th>Karu</th><th>Kode</th>
+          <th>Jenis Temuan</th><th>Level</th><th>Paraf<br>(Closed)</th>
+        </tr></thead>
+        <tbody>`;
+    data.forEach((r,i)=>{
+      const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+      html += `<tr>
+        <td class="center">${i+1}</td>
+        <td>${escapeHtml(r.area||"-")}</td>
+        <td>${escapeHtml(r.penanggung_jawab||"-")}</td>
+        <td>${escapeHtml(r.kepala_regu||"-")}</td>
+        <td class="center">${escapeHtml(r.kode||"-")}</td>
+        <td>${escapeHtml(r.uraian||"-")}</td>
+        <td class="${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'}</td>
+        <td></td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    // ---- Bangun HTML halaman dokumentasi foto ----
+    if(sertakanFoto){
+      html += `<div class="p-page p-section-break">
+        <h3>PT. KARYA INDAH MULTIGUNA</h3>
+        <h2 class="p-docs-title">Dokumentasi Hasil Pemeriksaan ${rangeLabel}</h2>`;
+      for(let i=0;i<data.length;i++){
+        const r = data[i];
+        const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+        const firstUrl = (r.foto_url||"").split(",")[0];
+        html += `<div class="p-doc-card">
+          ${firstUrl?`<img src="${firstUrl}" crossorigin="anonymous">`:""}
+          <div class="p-doc-text">
+            <b>${i+1}. ${escapeHtml(r.area||"-")} (${escapeHtml(r.kode||"-")})</b>
+            <p>${escapeHtml(r.uraian||"-")}</p>
+            <p class="p-doc-level ${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'}</p>
+            <!-- Poin disembunyikan sementara. Untuk menampilkan lagi, tambahkan " · " + r.poin + " poin" pada baris di atas. -->
+            <p class="p-doc-meta">
+              <span>PJ: ${escapeHtml(r.penanggung_jawab||"-")}</span>
+              <span>Karu: ${escapeHtml(r.kepala_regu||"-")}</span>
+              <span>Zona: ${escapeHtml(r.zona||"-")}</span>
+              <span>Tgl Batas Perbaikan: ${fmtDeadlineID(r.tanggal)}</span>
+            </p>
+            ${r.catatan?`<p>Catatan: ${escapeHtml(r.catatan)}</p>`:""}
+          </div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    return { dari, sampai, rangeLabel, html };
+  }
+
+  /* ---- Tombol CETAK: buka dialog print browser di tab baru (enak di komputer, tinggal pilih printer) ---- */
+  $("btnCetakPrint").addEventListener("click", async ()=>{
+    // Buka tab kosong SEKARANG JUGA (masih dalam event klik langsung) supaya
+    // tidak diblokir popup-blocker. Isinya ditulis belakangan.
     const printWin = window.open("", "_blank");
     if(printWin){
       printWin.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Menyiapkan cetakan…</title></head><body style='font-family:sans-serif;padding:24px;color:#555;'>Menyiapkan halaman cetak…</body></html>");
       printWin.document.close();
     }
 
-    $("btnGeneratePdf").disabled = true;
+    $("btnCetakPrint").disabled = true;
     $("cetakStatus").textContent = "Mengambil data…";
     $("cetakStatus").className = "status-msg";
 
     try{
-      const { data, error } = await sb.from(CFG.sbTable).select("*")
-        .gte("tanggal", dari).lte("tanggal", sampai)
-        .order("tanggal", {ascending:true}).order("created_at",{ascending:true});
-      if(error) throw error;
-      if(!data || !data.length){
-        $("cetakStatus").textContent = "Tidak ada temuan pada rentang tanggal ini.";
-        $("cetakStatus").className="status-msg err";
-        $("btnGeneratePdf").disabled=false;
-        if(printWin && !printWin.closed) printWin.close();
-        return;
-      }
-
-      const rangeLabel = dari === sampai ? fmtTanggalID(dari) : `${fmtTanggalID(dari)} — ${fmtTanggalID(sampai)}`;
-
-      // ---- Bangun HTML halaman tabel ----
-      let html = `<div class="p-page">
-        <div class="p-header">
-          <h3>PT. KARYA INDAH<br>MULTIGUNA</h3>
-          <div class="p-title">
-            <h1>FORM TEMUAN SIDAK 5R5S</h1>
-            <div class="p-sub">Tanggal : ${rangeLabel}</div>
-          </div>
-          <div class="p-signbox">
-            <div><span>Dibuat</span><em></em></div>
-            <div><span>Mengetahui</span><em></em></div>
-          </div>
-        </div>
-        <table class="p-table">
-          <colgroup>
-            <col style="width:4%"><col style="width:13%"><col style="width:13%"><col style="width:9%">
-            <col style="width:6%"><col style="width:33%"><col style="width:10%"><col style="width:12%">
-          </colgroup>
-          <thead><tr>
-            <th>No.</th><th>Lokasi</th><th>PJ</th><th>Karu</th><th>Kode</th>
-            <th>Jenis Temuan</th><th>Level</th><th>Paraf<br>(Closed)</th>
-          </tr></thead>
-          <tbody>`;
-      data.forEach((r,i)=>{
-        const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
-        html += `<tr>
-          <td class="center">${i+1}</td>
-          <td>${escapeHtml(r.area||"-")}</td>
-          <td>${escapeHtml(r.penanggung_jawab||"-")}</td>
-          <td>${escapeHtml(r.kepala_regu||"-")}</td>
-          <td class="center">${escapeHtml(r.kode||"-")}</td>
-          <td>${escapeHtml(r.uraian||"-")}</td>
-          <td class="${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'}</td>
-          <td></td>
-        </tr>`;
-      });
-      html += `</tbody></table></div>`;
-
-      // ---- Bangun HTML halaman dokumentasi foto ----
-      if(sertakanFoto){
-        html += `<div class="p-page p-section-break">
-          <h3>PT. KARYA INDAH MULTIGUNA</h3>
-          <h2 class="p-docs-title">Dokumentasi Hasil Pemeriksaan ${rangeLabel}</h2>`;
-        for(let i=0;i<data.length;i++){
-          const r = data[i];
-          const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
-          const firstUrl = (r.foto_url||"").split(",")[0];
-          html += `<div class="p-doc-card">
-            ${firstUrl?`<img src="${firstUrl}" crossorigin="anonymous">`:""}
-            <div class="p-doc-text">
-              <b>${i+1}. ${escapeHtml(r.area||"-")} (${escapeHtml(r.kode||"-")})</b>
-              <p>${escapeHtml(r.uraian||"-")}</p>
-              <p class="p-doc-level ${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'}</p>
-              <!-- Poin disembunyikan sementara. Untuk menampilkan lagi, tambahkan " · " + r.poin + " poin" pada baris di atas. -->
-              <p class="p-doc-meta">
-                <span>PJ: ${escapeHtml(r.penanggung_jawab||"-")}</span>
-                <span>Karu: ${escapeHtml(r.kepala_regu||"-")}</span>
-                <span>Zona: ${escapeHtml(r.zona||"-")}</span>
-                <span>Tgl Batas Perbaikan: ${fmtDeadlineID(r.tanggal)}</span>
-              </p>
-              ${r.catatan?`<p>Catatan: ${escapeHtml(r.catatan)}</p>`:""}
-            </div>
-          </div>`;
-        }
-        html += `</div>`;
-      }
+      const { html } = await buildLaporanHtml();
 
       const PRINT_CSS = `
         *{box-sizing:border-box;}
@@ -1139,26 +1137,109 @@
         $("cetakStatus").textContent = "Halaman cetak dibuka di tab baru. Jika tidak muncul, izinkan pop-up untuk situs ini.";
         $("cetakStatus").className = "status-msg ok";
       }else{
-        // Fallback: pop-up diblokir / gagal dibuka (mis. PWA iOS tanpa izin).
-        // Simpan sebagai halaman HTML yang bisa dibuka manual dari Safari.
         const blob = new Blob([fullHtml], {type:"text/html"});
         const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = blobUrl; a.target = "_blank"; a.rel = "noopener";
         a.textContent = "Buka halaman cetak";
-        $("cetakStatus").innerHTML = "Tab cetak diblokir browser. Jika ini aplikasi yang dibuka dari Home Screen iPhone, coba buka lewat Safari biasa lalu ulangi, atau tekan link ini: ";
+        $("cetakStatus").innerHTML = "Tab cetak diblokir browser. Coba izinkan pop-up, atau tekan link ini: ";
         $("cetakStatus").appendChild(a);
         $("cetakStatus").className = "status-msg err";
       }
-
       cetakOverlay.classList.remove("show");
-      $("btnGeneratePdf").disabled = false;
-
     }catch(e){
+      if(printWin && !printWin.closed) printWin.close();
       $("cetakStatus").textContent = "Gagal menyiapkan cetakan: " + (e.message||e);
       $("cetakStatus").className = "status-msg err";
+    }finally{
+      $("btnCetakPrint").disabled = false;
+    }
+  });
+
+  /* ---- Tombol UNDUH PDF: render offscreen lalu simpan file PDF langsung (aman untuk PWA iPhone) ---- */
+  $("btnGeneratePdf").addEventListener("click", async ()=>{
+    $("btnGeneratePdf").disabled = true;
+    $("cetakStatus").textContent = "Mengambil data…";
+    $("cetakStatus").className = "status-msg";
+
+    let holder = null;
+    try{
+      const { dari, sampai, html } = await buildLaporanHtml();
+
+      $("cetakStatus").textContent = "Menyiapkan gambar & memuat foto…";
+
+      holder = document.createElement("div");
+      holder.style.cssText = "position:fixed;left:-99999px;top:0;width:900px;background:#fff;";
+      const styleTag = document.createElement("style");
+      styleTag.textContent = "*{box-sizing:border-box;} body{margin:0;}" + PRINT_STYLES;
+      holder.appendChild(styleTag);
+      const contentWrap = document.createElement("div");
+      contentWrap.innerHTML = html;
+      holder.appendChild(contentWrap);
+      document.body.appendChild(holder);
+
+      // Tunggu semua foto selesai dimuat (atau gagal) sebelum dirender ke canvas
+      const imgs = Array.from(holder.querySelectorAll("img"));
+      await Promise.all(imgs.map(img=>{
+        if(img.complete) return Promise.resolve();
+        return new Promise(res=>{ img.onload = res; img.onerror = res; });
+      }));
+
+      $("cetakStatus").textContent = "Membuat PDF…";
+
+      const { jsPDF } = window.jspdf;
+      const PAGE_W_IN = 8.5, PAGE_H_IN = 13;     // Legal
+      const MARGIN_IN = 0.4;
+      const usableWIn = PAGE_W_IN - MARGIN_IN*2;
+      const usableHIn = PAGE_H_IN - MARGIN_IN*2;
+      const pdf = new jsPDF({ unit:"in", format:[PAGE_W_IN, PAGE_H_IN], orientation:"portrait" });
+
+      const pageEls = Array.from(holder.querySelectorAll(".p-page"));
+      let addedAnyPage = false;
+
+      for(const pageEl of pageEls){
+        const canvas = await html2canvas(pageEl, { scale:2, useCORS:true, backgroundColor:"#ffffff" });
+        const pxPerIn = canvas.width / usableWIn;       // skala kanvas terhadap lebar halaman
+        const sliceHeightPx = Math.floor(usableHIn * pxPerIn);  // tinggi 1 halaman PDF dalam px kanvas
+        let offsetPx = 0;
+
+        while(offsetPx < canvas.height){
+          const thisSliceH = Math.min(sliceHeightPx, canvas.height - offsetPx);
+          const sliceCanvas = document.createElement("canvas");
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = thisSliceH;
+          const sctx = sliceCanvas.getContext("2d");
+          sctx.fillStyle = "#ffffff";
+          sctx.fillRect(0,0,sliceCanvas.width, sliceCanvas.height);
+          sctx.drawImage(canvas, 0, offsetPx, canvas.width, thisSliceH, 0, 0, canvas.width, thisSliceH);
+
+          if(addedAnyPage) pdf.addPage([PAGE_W_IN, PAGE_H_IN], "portrait");
+          addedAnyPage = true;
+
+          const imgData = sliceCanvas.toDataURL("image/jpeg", 0.92);
+          const imgHIn = thisSliceH / pxPerIn;
+          pdf.addImage(imgData, "JPEG", MARGIN_IN, MARGIN_IN, usableWIn, imgHIn);
+
+          offsetPx += thisSliceH;
+        }
+      }
+
+      document.body.removeChild(holder);
+      holder = null;
+
+      const fnameRange = dari === sampai ? dari : `${dari}_sd_${sampai}`;
+      pdf.save(`Temuan-5R5S_${fnameRange}.pdf`);
+
+      $("cetakStatus").textContent = "PDF berhasil diunduh ✔ — silakan bagikan lewat WhatsApp atau aplikasi lain.";
+      $("cetakStatus").className = "status-msg ok";
+      cetakOverlay.classList.remove("show");
+
+    }catch(e){
+      if(holder && holder.parentNode) holder.parentNode.removeChild(holder);
+      $("cetakStatus").textContent = "Gagal membuat PDF: " + (e.message||e);
+      $("cetakStatus").className = "status-msg err";
+    }finally{
       $("btnGeneratePdf").disabled = false;
-      if(printWin && !printWin.closed) printWin.close();
     }
   });
 
