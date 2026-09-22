@@ -144,20 +144,23 @@
   .p-signbox div{ border:1px solid #000; width:110px; }
   .p-signbox div span{ display:block; text-align:center; font-weight:bold; font-size:11px; padding:4px 0; border-bottom:1px solid #000; }
   .p-signbox div em{ display:block; height:40px; }
-  table.p-table{ width:100%; border-collapse:collapse; font-size:10.5px; margin-top:6px; }
-  table.p-table th, table.p-table td{ border:1px solid #333; padding:4px 5px; text-align:left; vertical-align:top; }
-  table.p-table thead th{ background:#14213d; color:#fff; text-align:center; font-size:10px; }
+  table.p-table{ width:100%; border-collapse:collapse; font-size:13px; margin-top:6px; }
+  table.p-table th, table.p-table td{ border:1px solid #333; padding:6px 7px; text-align:left; vertical-align:top; }
+  table.p-table thead th{ background:#14213d; color:#fff; text-align:center; font-size:12px; }
   table.p-table td.center{ text-align:center; }
   table.p-table td.mayor{ background:#d1445c; color:#fff; font-weight:bold; text-align:center; }
   table.p-table td.minor{ text-align:center; color:#b8720c; font-weight:bold; }
-  .p-docs-title{ font-size:16px; margin:0 0 10px; text-align:center; }
-  .p-doc-card{ display:flex; gap:12px; border:1px solid #ccc; border-radius:6px; padding:10px; margin-bottom:10px; page-break-inside:avoid; }
-  .p-doc-card img{ width:150px; height:115px; object-fit:cover; border-radius:4px; flex-shrink:0; }
-  .p-doc-card .p-doc-text b{ font-size:13px; }
-  .p-doc-card .p-doc-text p{ margin:5px 0; font-size:12px; }
-  .p-doc-card .p-doc-level{ font-weight:bold; }
+  .p-docs-title{ font-size:18px; margin:0 0 12px; text-align:center; }
+  .p-doc-card{ display:flex; gap:14px; border:1px solid #ccc; border-radius:6px; padding:12px; margin-bottom:12px; page-break-inside:avoid; }
+  .p-doc-card img{ width:190px; height:150px; object-fit:cover; border-radius:4px; flex-shrink:0; }
+  .p-doc-card .p-doc-text b{ font-size:15px; }
+  .p-doc-card .p-doc-text p{ margin:6px 0; font-size:14px; line-height:1.45; }
+  .p-doc-card .p-doc-level{ font-weight:bold; font-size:14px; }
   .p-doc-card .p-doc-level.mayor{ color:#d1445c; }
   .p-doc-card .p-doc-level.minor{ color:#b8720c; }
+  .p-doc-meta{ display:flex; flex-wrap:wrap; gap:4px 0; }
+  .p-doc-meta span{ white-space:nowrap; }
+  .p-doc-meta span:not(:last-child)::after{ content:" | "; color:#999; font-weight:normal; }
   .p-section-break{ page-break-before:always; }
 
   @media print{
@@ -210,7 +213,7 @@
     <input type="text" id="fPJ" placeholder="terisi otomatis, bisa diubah">
 
     <label>Kepala Regu / Karu</label>
-    <input type="text" id="fKaru" placeholder="nama kepala regu / karu">
+    <select id="fKaru"><option value="">Pilih karu…</option></select>
 
     <label>Catatan Tambahan (opsional)</label>
     <textarea id="fCatatan" placeholder="Detail lokasi rak, kondisi khusus, dll."></textarea>
@@ -253,7 +256,7 @@
     <div class="settings-field">
       <label>Link CSV Database Zona &amp; Penanggung Jawab</label>
       <input type="text" id="cfgCsvZona" placeholder="https://docs.google.com/.../export?format=csv">
-      <div class="hint">Kolom wajib: zona, area, penanggung_jawab</div>
+      <div class="hint">Kolom wajib: zona, area, penanggung_jawab. Daftar nama Karu diambil otomatis dari kolom L pada sheet ini.</div>
     </div>
 
     <div class="settings-field">
@@ -361,6 +364,7 @@
   /* ---------------- STATE ---------------- */
   let kodeDB = [];   // [{kode,uraian,klasifikasi,poin}]
   let zonaDB = [];   // [{zona,area,penanggung_jawab}]
+  let karuDB = [];   // [namaKaru, ...] -- diambil dari kolom L pada CSV
   let photos = [];   // [{blob, dataUrl}]  (single photo slot allowed, but support multiple)
 
   const $ = id => document.getElementById(id);
@@ -386,7 +390,7 @@
   const KODE_RE = /^[0-9]+[A-Za-z]$/; // e.g. 1A, 3E, 12B
 
   function parseCombinedSheet(rows){
-    const kode = [], zona = [];
+    const kode = [], zona = [], karu = [];
     rows.forEach(row=>{
       if(!row || !row.length) return;
       const c1 = (row[1]||"").toString().trim();      // KODE
@@ -402,8 +406,12 @@
       if(c7 && c7.toUpperCase() !== "KODE AREA"){
         zona.push({ zona:c7, area:c8, pj:c9 });
       }
+      const c11 = (row[11]||"").toString().trim();    // KOLOM L: KARU
+      if(c11 && c11.toUpperCase() !== "KARU"){
+        karu.push(c11);
+      }
     });
-    return { kode, zona };
+    return { kode, zona, karu };
   }
 
   async function loadAllDb(){
@@ -413,16 +421,19 @@
       let combined = parseCombinedSheet(rawKode);
       kodeDB = combined.kode;
       zonaDB = combined.zona;
+      karuDB = uniqueSorted(combined.karu);
 
-      // If a *different* zona CSV was configured, prefer it for zona data
+      // If a *different* zona CSV was configured, prefer it for zona/karu data
       if(CFG.csvZona && CFG.csvZona !== CFG.csvKode){
         const rawZona = await fetchCsvRaw(CFG.csvZona);
         const combined2 = parseCombinedSheet(rawZona);
         if(combined2.zona.length) zonaDB = combined2.zona;
+        if(combined2.karu.length) karuDB = uniqueSorted(combined2.karu);
       }
 
       populateZonaSelect();
-      setStatus(kodeDB.length ? `Database dimuat: ${kodeDB.length} kode temuan, ${zonaDB.length} zona.` : "Database kode temuan kosong — cek link CSV di Pengaturan.", kodeDB.length?"ok":"err");
+      populateKaruSelect();
+      setStatus(kodeDB.length ? `Database dimuat: ${kodeDB.length} kode temuan, ${zonaDB.length} zona, ${karuDB.length} karu.` : "Database kode temuan kosong — cek link CSV di Pengaturan.", kodeDB.length?"ok":"err");
     }catch(e){
       setStatus("Gagal memuat database. Cek link CSV di Pengaturan.","err");
     }
@@ -436,6 +447,20 @@
       opt.value = z.zona; opt.textContent = z.zona + (z.area? " — "+z.area : "");
       sel.appendChild(opt);
     });
+  }
+  function uniqueSorted(arr){
+    return Array.from(new Set(arr.filter(Boolean))).sort((a,b)=> a.localeCompare(b, "id"));
+  }
+  function populateKaruSelect(){
+    const sel = $("fKaru");
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">Pilih karu…</option>';
+    karuDB.forEach(nama=>{
+      const opt = document.createElement("option");
+      opt.value = nama; opt.textContent = nama;
+      sel.appendChild(opt);
+    });
+    if(prev && karuDB.includes(prev)) sel.value = prev;
   }
 
   /* ---------------- KODE LOOKUP ---------------- */
@@ -621,11 +646,11 @@
   function drawArrow(a,b){
     ctx.save();
     ctx.strokeStyle = "#ff3b30"; ctx.fillStyle = "#ff3b30";
-    ctx.lineWidth = Math.max(3, canvas.width*0.006);
+    ctx.lineWidth = Math.max(6, canvas.width*0.012);
     ctx.lineCap = "round";
     ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
     const angle = Math.atan2(b.y-a.y, b.x-a.x);
-    const headLen = Math.max(14, canvas.width*0.03);
+    const headLen = Math.max(22, canvas.width*0.045);
     ctx.beginPath();
     ctx.moveTo(b.x, b.y);
     ctx.lineTo(b.x - headLen*Math.cos(angle-Math.PI/6), b.y - headLen*Math.sin(angle-Math.PI/6));
@@ -638,7 +663,7 @@
     const cx = (a.x+b.x)/2, cy = (a.y+b.y)/2;
     ctx.save();
     ctx.strokeStyle = "#ff3b30";
-    ctx.lineWidth = Math.max(3, canvas.width*0.006);
+    ctx.lineWidth = Math.max(6, canvas.width*0.012);
     ctx.beginPath();
     ctx.ellipse(cx, cy, Math.max(rx,6), Math.max(ry,6), 0, 0, Math.PI*2);
     ctx.stroke();
@@ -859,6 +884,14 @@
     const bulan = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
     return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
   }
+  // Tanggal deadline / batas akhir perbaikan = tanggal temuan diinput + 7 hari
+  function fmtDeadlineID(iso){
+    if(!iso) return "-";
+    const d = new Date(iso+"T00:00:00");
+    d.setDate(d.getDate() + 7);
+    const bulan = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+    return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
+  }
 
   $("btnGeneratePdf").addEventListener("click", async ()=>{
     const dari = $("cetakDari").value, sampai = $("cetakSampai").value;
@@ -930,7 +963,12 @@
               <b>${i+1}. ${escapeHtml(r.area||"-")} (${escapeHtml(r.kode||"-")})</b>
               <p>${escapeHtml(r.uraian||"-")}</p>
               <p class="p-doc-level ${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'} · ${r.poin!=null?r.poin:''} poin</p>
-              <p>PJ: ${escapeHtml(r.penanggung_jawab||"-")} &nbsp; Karu: ${escapeHtml(r.kepala_regu||"-")} &nbsp; Zona: ${escapeHtml(r.zona||"-")} &nbsp; Tgl: ${fmtTanggalID(r.tanggal)}</p>
+              <p class="p-doc-meta">
+                <span>PJ: ${escapeHtml(r.penanggung_jawab||"-")}</span>
+                <span>Karu: ${escapeHtml(r.kepala_regu||"-")}</span>
+                <span>Zona: ${escapeHtml(r.zona||"-")}</span>
+                <span>Tgl Batas Perbaikan: ${fmtDeadlineID(r.tanggal)}</span>
+              </p>
               ${r.catatan?`<p>Catatan: ${escapeHtml(r.catatan)}</p>`:""}
             </div>
           </div>`;
