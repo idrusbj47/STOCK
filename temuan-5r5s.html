@@ -391,6 +391,17 @@
 
   function parseCombinedSheet(rows){
     const kode = [], zona = [], karu = [];
+
+    // Cari kolom header "KARU" di mana saja pada sheet (case-insensitive),
+    // supaya tidak bergantung pada asumsi posisi kolom yang bisa berubah.
+    let karuCol = -1;
+    for(const row of rows){
+      if(!row) continue;
+      const idx = row.findIndex(c => (c||"").toString().trim().toUpperCase() === "KARU");
+      if(idx !== -1){ karuCol = idx; break; }
+    }
+    if(karuCol === -1) karuCol = 11; // fallback: kolom L
+
     rows.forEach(row=>{
       if(!row || !row.length) return;
       const c1 = (row[1]||"").toString().trim();      // KODE
@@ -406,9 +417,9 @@
       if(c7 && c7.toUpperCase() !== "KODE AREA"){
         zona.push({ zona:c7, area:c8, pj:c9 });
       }
-      const c11 = (row[11]||"").toString().trim();    // KOLOM L: KARU
-      if(c11 && c11.toUpperCase() !== "KARU"){
-        karu.push(c11);
+      const cKaru = (row[karuCol]||"").toString().trim();  // KOLOM KARU (terdeteksi otomatis, fallback L)
+      if(cKaru && cKaru.toUpperCase() !== "KARU"){
+        karu.push(cKaru);
       }
     });
     return { kode, zona, karu };
@@ -433,7 +444,8 @@
 
       populateZonaSelect();
       populateKaruSelect();
-      setStatus(kodeDB.length ? `Database dimuat: ${kodeDB.length} kode temuan, ${zonaDB.length} zona, ${karuDB.length} karu.` : "Database kode temuan kosong — cek link CSV di Pengaturan.", kodeDB.length?"ok":"err");
+      const karuNote = karuDB.length ? "" : " (Peringatan: kolom KARU tidak ditemukan di sheet — pastikan ada sel berisi teks 'KARU' sebagai header kolomnya.)";
+      setStatus(kodeDB.length ? `Database dimuat: ${kodeDB.length} kode temuan, ${zonaDB.length} zona, ${karuDB.length} karu.${karuNote}` : "Database kode temuan kosong — cek link CSV di Pengaturan.", kodeDB.length?(karuDB.length?"ok":"err"):"err");
     }catch(e){
       setStatus("Gagal memuat database. Cek link CSV di Pengaturan.","err");
     }
