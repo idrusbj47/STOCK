@@ -130,6 +130,9 @@
   .list-item .delBtn{flex-shrink:0;background:#fdf1ef;color:var(--red);border:1px solid #f3c6c0;
     border-radius:8px;width:30px;height:30px;font-size:13px;cursor:pointer;}
   .list-item .delBtn:disabled{opacity:.5;}
+  .list-item .editBtn{flex-shrink:0;background:#eef1fb;color:var(--navy);border:1px solid #cdd6f5;
+    border-radius:8px;width:30px;height:30px;font-size:13px;cursor:pointer;}
+  .list-item .editBtn:disabled{opacity:.5;}
 
   /* modal generic */
   .modal-overlay{position:fixed;inset:0;background:rgba(10,14,26,.55);display:none;
@@ -424,6 +427,8 @@
   let zonaDB = [];   // [{zona,area,penanggung_jawab}]
   let karuDB = [];   // [namaKaru, ...] -- diambil dari kolom L pada CSV
   let photos = [];   // [{blob, dataUrl}]  (single photo slot allowed, but support multiple)
+  let photoTarget = "main"; // "main" (form input) atau "edit" (modal edit temuan)
+  let editNewPhotos = []; // foto baru yang ditambahkan lewat modal edit
 
   const $ = id => document.getElementById(id);
 
@@ -521,20 +526,22 @@
     }
   }
 
-  function populateZonaSelect(){
-    const sel = $("fZona");
+  function populateZonaSelect(targetId){
+    const sel = $(targetId || "fZona");
+    const prev = sel.value;
     sel.innerHTML = '<option value="">Pilih zona…</option>';
     zonaDB.forEach(z=>{
       const opt = document.createElement("option");
       opt.value = z.zona; opt.textContent = z.zona + (z.area? " — "+z.area : "");
       sel.appendChild(opt);
     });
+    if(prev && zonaDB.some(z=>z.zona===prev)) sel.value = prev;
   }
   function uniqueSorted(arr){
     return Array.from(new Set(arr.filter(Boolean))).sort((a,b)=> a.localeCompare(b, "id"));
   }
-  function populateKaruSelect(){
-    const sel = $("fKaru");
+  function populateKaruSelect(targetId){
+    const sel = $(targetId || "fKaru");
     const prev = sel.value;
     sel.innerHTML = '<option value="">Pilih karu…</option>';
     karuDB.forEach(nama=>{
@@ -660,10 +667,14 @@
   });
 
   /* ---------------- PHOTO CAPTURE ---------------- */
-  $("btnCamera").addEventListener("click", ()=> $("inputCamera").click());
-  $("btnGallery").addEventListener("click", ()=> $("inputGallery").click());
+  $("btnCamera").addEventListener("click", ()=>{ photoTarget = "main"; $("inputCamera").click(); });
+  $("btnGallery").addEventListener("click", ()=>{ photoTarget = "main"; $("inputGallery").click(); });
   $("inputCamera").addEventListener("change", e=> handleFile(e.target.files[0]));
   $("inputGallery").addEventListener("change", e=> handleFile(e.target.files[0]));
+  $("eBtnCamera").addEventListener("click", ()=>{ photoTarget = "edit"; $("eInputCamera").click(); });
+  $("eBtnGallery").addEventListener("click", ()=>{ photoTarget = "edit"; $("eInputGallery").click(); });
+  $("eInputCamera").addEventListener("change", e=> handleFile(e.target.files[0]));
+  $("eInputGallery").addEventListener("change", e=> handleFile(e.target.files[0]));
 
   function handleFile(file){
     if(!file) return;
@@ -890,8 +901,13 @@
     fctx.drawImage(canvas, 0, 0);
     finalCanvas.toBlob(blob=>{
       const dataUrl = finalCanvas.toDataURL("image/jpeg", 0.9);
-      photos.push({ blob, dataUrl });
-      renderPhotoPreview();
+      if(photoTarget === "edit"){
+        editNewPhotos.push({ blob, dataUrl });
+        renderEditNewPhotos();
+      } else {
+        photos.push({ blob, dataUrl });
+        renderPhotoPreview();
+      }
       editorOverlay.classList.remove("show");
     }, "image/jpeg", 0.9);
   });
@@ -997,7 +1013,7 @@
       setStatus("Temuan berhasil disimpan ✔","ok");
       photos = []; renderPhotoPreview();
       $("fKode").value = ""; $("lookupResult").innerHTML = "";
-      $("fCatatan").value = ""; $("fKaru").value = "";
+      $("fCatatan").value = "";
       loadRecent();
     }catch(e){
       setStatus("Gagal menyimpan: " + (e.message || e), "err");
@@ -1028,11 +1044,17 @@
             <span class="badge ${isMayor?'mayor':'minor'}" style="margin-top:4px;display:inline-block;">${isMayor?'MAYOR':'MINOR'}</span>
             ${r.penanggung_jawab? " · PJ: "+escapeHtml(r.penanggung_jawab):""}${r.kepala_regu? " · Karu: "+escapeHtml(r.kepala_regu):""} · ${escapeHtml(r.tanggal||"")}
           </div>
-          <button class="delBtn" data-id="${r.id}" data-fotos="${escapeHtml(r.foto_url||"")}" title="Hapus temuan">✕</button>`;
+          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+            <button class="editBtn" data-row="${encodeURIComponent(JSON.stringify(r))}" title="Edit temuan">✎</button>
+            <button class="delBtn" data-id="${r.id}" data-fotos="${escapeHtml(r.foto_url||"")}" title="Hapus temuan">✕</button>
+          </div>`;
         box.appendChild(div);
       });
       box.querySelectorAll(".delBtn").forEach(btn=>{
         btn.addEventListener("click", ()=> deleteTemuan(btn.dataset.id, btn.dataset.fotos, btn));
+      });
+      box.querySelectorAll(".editBtn").forEach(btn=>{
+        btn.addEventListener("click", ()=> openEditTemuan(JSON.parse(decodeURIComponent(btn.dataset.row))));
       });
     }catch(e){
       box.innerHTML = '<div class="hint">Gagal memuat riwayat: '+escapeHtml(e.message||String(e))+'</div>';
@@ -1061,6 +1083,195 @@
       btn.disabled = false;
     }
   }
+
+  /* ---------------- EDIT TEMUAN ---------------- */
+  const editOverlay = $("editOverlay");
+  let ePjNames = [];
+  let eKeptUrls = [];   // url foto lama yang masih dipertahankan
+  let eRemovedUrls = []; // url foto lama yang dihapus user (dihapus juga dari storage saat simpan)
+  let eEditingId = null;
+
+  function renderEPjChips(){
+    const box = $("ePjChips");
+    box.innerHTML = "";
+    ePjNames.forEach((name, idx)=>{
+      const chip = document.createElement("div");
+      chip.className = "pj-chip";
+      chip.innerHTML = `<span></span><button type="button" data-idx="${idx}" title="Hapus">&#10005;</button>`;
+      chip.querySelector("span").textContent = name;
+      box.appendChild(chip);
+    });
+    box.querySelectorAll("button").forEach(btn=>{
+      btn.addEventListener("click", ()=>{ ePjNames.splice(+btn.dataset.idx,1); renderEPjChips(); });
+    });
+  }
+  function addEPjNameFromInput(){
+    const el = $("ePJText");
+    const val = el.value.trim();
+    if(val){ ePjNames.push(val); renderEPjChips(); }
+    el.value = "";
+  }
+  $("ePJText").addEventListener("keydown",(e)=>{
+    if(e.key === "Enter" || e.key === ","){ e.preventDefault(); addEPjNameFromInput(); }
+    else if(e.key === "Backspace" && !$("ePJText").value && ePjNames.length){ ePjNames.pop(); renderEPjChips(); }
+  });
+  $("ePJText").addEventListener("blur", addEPjNameFromInput);
+  $("ePjChipbox").addEventListener("click",(e)=>{
+    if(e.target === $("ePjChipbox") || e.target === $("ePjChips")) $("ePJText").focus();
+  });
+
+  function renderEExistingPhotos(){
+    const wrap = $("eExistingPhotos");
+    wrap.innerHTML = "";
+    eKeptUrls.forEach((url, idx)=>{
+      const div = document.createElement("div");
+      div.className = "thumb";
+      div.innerHTML = `<img src="${url}"><button class="rm" data-idx="${idx}">✕</button>`;
+      wrap.appendChild(div);
+    });
+    wrap.querySelectorAll(".rm").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        eRemovedUrls.push(eKeptUrls[+btn.dataset.idx]);
+        eKeptUrls.splice(+btn.dataset.idx,1);
+        renderEExistingPhotos();
+      });
+    });
+  }
+  function renderEditNewPhotos(){
+    const wrap = $("eNewPhotos");
+    wrap.innerHTML = "";
+    $("eNewPhotosLabel").style.display = editNewPhotos.length ? "block" : "none";
+    editNewPhotos.forEach((p, idx)=>{
+      const div = document.createElement("div");
+      div.className = "thumb";
+      div.innerHTML = `<img src="${p.dataUrl}"><button class="rm" data-idx="${idx}">✕</button>`;
+      wrap.appendChild(div);
+    });
+    wrap.querySelectorAll(".rm").forEach(btn=>{
+      btn.addEventListener("click", ()=>{ editNewPhotos.splice(+btn.dataset.idx,1); renderEditNewPhotos(); });
+    });
+  }
+
+  function doLookupInto(kode, boxId){
+    const box = $(boxId);
+    if(!kode){ box.innerHTML = ""; return null; }
+    const found = kodeDB.find(r=>r.kode === kode.toUpperCase());
+    if(!found){
+      box.className = "lookup-result notfound";
+      box.innerHTML = "Kode tidak ditemukan di database. Periksa penulisan kode.";
+      return null;
+    }
+    const isMayor = found.klasifikasi.toUpperCase().includes("MAYOR");
+    box.className = "lookup-result ok";
+    box.innerHTML = `<span class="badge ${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'MINOR'}</span>
+      &nbsp; <span class="poin">${found.poin || (isMayor?'-5':'-3')}</span> poin<br>
+      <div style="margin-top:6px;">${escapeHtml(found.uraian)}</div>`;
+    return found;
+  }
+  $("eKode").addEventListener("input", ()=>{
+    $("eKode").value = $("eKode").value.toUpperCase();
+    doLookupInto($("eKode").value.trim(), "eLookupResult");
+  });
+
+  function openEditTemuan(row){
+    eEditingId = row.id;
+    $("eTanggal").value = row.tanggal || "";
+    $("eArea").value = row.area || "";
+    populateZonaSelect("eZona");
+    $("eZona").value = row.zona || "";
+    $("eKode").value = (row.kode||"").toUpperCase();
+    doLookupInto($("eKode").value, "eLookupResult");
+    ePjNames = (row.penanggung_jawab||"").split("/").map(s=>s.trim()).filter(Boolean);
+    renderEPjChips();
+    populateKaruSelect("eKaru");
+    $("eKaru").value = row.kepala_regu || "";
+    $("eCatatan").value = row.catatan || "";
+
+    eKeptUrls = (row.foto_url||"").split(",").filter(Boolean);
+    eRemovedUrls = [];
+    editNewPhotos = [];
+    renderEExistingPhotos();
+    renderEditNewPhotos();
+
+    $("editStatus").textContent = "";
+    $("editStatus").className = "status-msg";
+    editOverlay.classList.add("show");
+  }
+  $("closeEdit").addEventListener("click", ()=> editOverlay.classList.remove("show"));
+
+  $("eZona").addEventListener("change", ()=>{
+    const z = zonaDB.find(r=>r.zona === $("eZona").value);
+    if(z){
+      if(z.area) $("eArea").value = z.area;
+    }
+  });
+
+  $("btnEditSave").addEventListener("click", async ()=>{
+    const kode = $("eKode").value.trim().toUpperCase();
+    const found = kodeDB.find(r=>r.kode === kode);
+    const tanggal = $("eTanggal").value;
+    const area = $("eArea").value.trim();
+    const zona = $("eZona").value;
+    const pj = ePjNames.join(" / ");
+    const karu = $("eKaru").value.trim();
+    const catatan = $("eCatatan").value.trim();
+
+    if(!tanggal){ $("editStatus").textContent = "Tanggal wajib diisi."; $("editStatus").className = "status-msg err"; return; }
+    if(!kode || !found){ $("editStatus").textContent = "Kode temuan tidak valid / belum ditemukan di database."; $("editStatus").className = "status-msg err"; return; }
+    if(!zona){ $("editStatus").textContent = "Pilih zona terlebih dahulu."; $("editStatus").className = "status-msg err"; return; }
+    if(eKeptUrls.length + editNewPhotos.length === 0){ $("editStatus").textContent = "Foto temuan wajib ada minimal 1."; $("editStatus").className = "status-msg err"; return; }
+
+    const sb = getSupabase();
+    if(!sb){ $("editStatus").textContent = "Supabase belum dikonfigurasi."; $("editStatus").className = "status-msg err"; return; }
+
+    $("btnEditSave").disabled = true;
+    $("editStatus").textContent = "Menyimpan perubahan…";
+    $("editStatus").className = "status-msg";
+
+    try{
+      // upload foto baru
+      const uploadedUrls = [];
+      for(const p of editNewPhotos){
+        const fname = `${Date.now()}_${Math.random().toString(36).slice(2,8)}.jpg`;
+        const { error: upErr } = await sb.storage.from(CFG.sbBucket).upload(fname, p.blob, { contentType:"image/jpeg" });
+        if(upErr) throw upErr;
+        const { data: pub } = sb.storage.from(CFG.sbBucket).getPublicUrl(fname);
+        uploadedUrls.push(pub.publicUrl);
+      }
+
+      const isMayor = found.klasifikasi.toUpperCase().includes("MAYOR");
+      const foto_url = [...eKeptUrls, ...uploadedUrls].join(",");
+
+      const row = {
+        tanggal, area, zona, kode,
+        uraian: found.uraian,
+        klasifikasi: isMayor ? "MAYOR" : "MINOR",
+        poin: parseInt(found.poin) || (isMayor ? -5 : -3),
+        penanggung_jawab: pj,
+        kepala_regu: karu,
+        catatan,
+        foto_url
+      };
+      const { error: updErr } = await sb.from(CFG.sbTable).update(row).eq("id", eEditingId);
+      if(updErr) throw updErr;
+
+      // hapus file foto lama yang dibuang dari storage (best-effort)
+      if(eRemovedUrls.length){
+        const paths = eRemovedUrls.map(u=>{ const parts = u.split("/"); return parts[parts.length-1]; });
+        sb.storage.from(CFG.sbBucket).remove(paths).catch(()=>{});
+      }
+
+      $("editStatus").textContent = "Perubahan tersimpan ✔";
+      $("editStatus").className = "status-msg ok";
+      loadRecent();
+      setTimeout(()=> editOverlay.classList.remove("show"), 500);
+    }catch(e){
+      $("editStatus").textContent = "Gagal menyimpan: " + (e.message||e);
+      $("editStatus").className = "status-msg err";
+    }finally{
+      $("btnEditSave").disabled = false;
+    }
+  });
 
   /* ---------------- CETAK PDF ---------------- */
   const cetakOverlay = $("cetakOverlay");
@@ -1366,5 +1577,57 @@
 
 })();
 </script>
+<!-- EDIT TEMUAN MODAL -->
+<div class="modal-overlay" id="editOverlay">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeEdit">✕</button>
+    <h3>Edit Temuan</h3>
+
+    <label>Tanggal</label>
+    <input type="date" id="eTanggal">
+
+    <div class="row2">
+      <div>
+        <label>Area Gudang</label>
+        <input type="text" id="eArea">
+      </div>
+      <div>
+        <label>Zona</label>
+        <select id="eZona"><option value="">Pilih zona…</option></select>
+      </div>
+    </div>
+
+    <label>Kode Temuan</label>
+    <input type="text" id="eKode" maxlength="4">
+    <div id="eLookupResult"></div>
+
+    <label>Penanggung Jawab (Penjaga Area)</label>
+    <div class="pj-chipbox" id="ePjChipbox">
+      <div class="pj-chips" id="ePjChips"></div>
+      <input type="text" id="ePJText" placeholder="ketik nama lalu Enter">
+    </div>
+
+    <label>Kepala Regu / Karu</label>
+    <select id="eKaru"><option value="">Pilih karu…</option></select>
+
+    <label>Catatan Tambahan (opsional)</label>
+    <textarea id="eCatatan"></textarea>
+
+    <label>Foto Temuan</label>
+    <div class="photo-preview" id="eExistingPhotos"></div>
+    <div class="photo-actions" style="margin-top:8px;">
+      <button type="button" id="eBtnCamera">📷 Ambil Foto</button>
+      <button type="button" id="eBtnGallery">🖼️ Dari Galeri</button>
+    </div>
+    <input type="file" id="eInputCamera" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="eInputGallery" accept="image/*" style="display:none">
+    <div class="hint" id="eNewPhotosLabel" style="display:none;margin-top:6px;">Foto baru (akan ditambahkan):</div>
+    <div class="photo-preview" id="eNewPhotos"></div>
+
+    <button class="save-settings" id="btnEditSave" style="margin-top:16px;">💾 Simpan Perubahan</button>
+    <div class="status-msg" id="editStatus"></div>
+  </div>
+</div>
+
 </body>
 </html>
