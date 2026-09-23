@@ -370,6 +370,58 @@
   </div>
 </div>
 
+<!-- EDIT TEMUAN MODAL -->
+<div class="modal-overlay" id="editOverlay">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeEdit">✕</button>
+    <h3>Edit Temuan</h3>
+
+    <label>Tanggal</label>
+    <input type="date" id="eTanggal">
+
+    <div class="row2">
+      <div>
+        <label>Area Gudang</label>
+        <input type="text" id="eArea">
+      </div>
+      <div>
+        <label>Zona</label>
+        <select id="eZona"><option value="">Pilih zona…</option></select>
+      </div>
+    </div>
+
+    <label>Kode Temuan</label>
+    <input type="text" id="eKode" maxlength="4">
+    <div id="eLookupResult"></div>
+
+    <label>Penanggung Jawab (Penjaga Area)</label>
+    <div class="pj-chipbox" id="ePjChipbox">
+      <div class="pj-chips" id="ePjChips"></div>
+      <input type="text" id="ePJText" placeholder="ketik nama lalu Enter">
+    </div>
+
+    <label>Kepala Regu / Karu</label>
+    <select id="eKaru"><option value="">Pilih karu…</option></select>
+
+    <label>Catatan Tambahan (opsional)</label>
+    <textarea id="eCatatan"></textarea>
+
+    <label>Foto Temuan</label>
+    <div class="photo-preview" id="eExistingPhotos"></div>
+    <div class="photo-actions" style="margin-top:8px;">
+      <button type="button" id="eBtnCamera">📷 Ambil Foto</button>
+      <button type="button" id="eBtnGallery">🖼️ Dari Galeri</button>
+    </div>
+    <input type="file" id="eInputCamera" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="eInputGallery" accept="image/*" style="display:none">
+    <div class="hint" id="eNewPhotosLabel" style="display:none;margin-top:6px;">Foto baru (akan ditambahkan):</div>
+    <div class="photo-preview" id="eNewPhotos"></div>
+
+    <button class="save-settings" id="btnEditSave" style="margin-top:16px;">💾 Simpan Perubahan</button>
+    <div class="status-msg" id="editStatus"></div>
+  </div>
+</div>
+
 <!-- CETAK PDF MODAL -->
 <div class="modal-overlay" id="cetakOverlay">
   <div class="modal-sheet">
@@ -1577,57 +1629,5 @@
 
 })();
 </script>
-<!-- EDIT TEMUAN MODAL -->
-<div class="modal-overlay" id="editOverlay">
-  <div class="modal-sheet">
-    <button class="modal-close" id="closeEdit">✕</button>
-    <h3>Edit Temuan</h3>
-
-    <label>Tanggal</label>
-    <input type="date" id="eTanggal">
-
-    <div class="row2">
-      <div>
-        <label>Area Gudang</label>
-        <input type="text" id="eArea">
-      </div>
-      <div>
-        <label>Zona</label>
-        <select id="eZona"><option value="">Pilih zona…</option></select>
-      </div>
-    </div>
-
-    <label>Kode Temuan</label>
-    <input type="text" id="eKode" maxlength="4">
-    <div id="eLookupResult"></div>
-
-    <label>Penanggung Jawab (Penjaga Area)</label>
-    <div class="pj-chipbox" id="ePjChipbox">
-      <div class="pj-chips" id="ePjChips"></div>
-      <input type="text" id="ePJText" placeholder="ketik nama lalu Enter">
-    </div>
-
-    <label>Kepala Regu / Karu</label>
-    <select id="eKaru"><option value="">Pilih karu…</option></select>
-
-    <label>Catatan Tambahan (opsional)</label>
-    <textarea id="eCatatan"></textarea>
-
-    <label>Foto Temuan</label>
-    <div class="photo-preview" id="eExistingPhotos"></div>
-    <div class="photo-actions" style="margin-top:8px;">
-      <button type="button" id="eBtnCamera">📷 Ambil Foto</button>
-      <button type="button" id="eBtnGallery">🖼️ Dari Galeri</button>
-    </div>
-    <input type="file" id="eInputCamera" accept="image/*" capture="environment" style="display:none">
-    <input type="file" id="eInputGallery" accept="image/*" style="display:none">
-    <div class="hint" id="eNewPhotosLabel" style="display:none;margin-top:6px;">Foto baru (akan ditambahkan):</div>
-    <div class="photo-preview" id="eNewPhotos"></div>
-
-    <button class="save-settings" id="btnEditSave" style="margin-top:16px;">💾 Simpan Perubahan</button>
-    <div class="status-msg" id="editStatus"></div>
-  </div>
-</div>
-
 </body>
 </html>
