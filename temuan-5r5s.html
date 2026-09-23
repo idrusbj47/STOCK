@@ -494,6 +494,17 @@
     return supa;
   }
 
+  /* ---------------- STATE ---------------- */
+  let kodeDB = [];   // [{kode,uraian,klasifikasi,poin}]
+  let zonaDB = [];   // [{zona,area,penanggung_jawab}]
+  let karuDB = [];   // [namaKaru, ...] -- diambil dari kolom L pada CSV
+  let photos = [];   // [{blob, dataUrl}]  (single photo slot allowed, but support multiple)
+  let photoTarget = "main"; // "main" (form input) atau "edit" (modal edit temuan)
+  let editNewPhotos = []; // foto baru yang ditambahkan lewat modal edit
+  let hiddenEditOverlayForPhotoEditor = false; // true jika modal Edit disembunyikan sementara saat editor foto dibuka
+
+  const $ = id => document.getElementById(id);
+
   /* ---------------- AUTH (ADMIN LOGIN) ---------------- */
   let currentSession = null;
   const loginOverlay = document.getElementById("loginOverlay");
@@ -509,7 +520,7 @@
     $("loggedInBox").style.display = isAdmin ? "block" : "none";
     if(isAdmin){ $("loggedInAs").textContent = "Masuk sebagai: " + (currentSession.user?.email||"-"); }
     // render ulang daftar riwayat supaya tombol edit/hapus muncul/hilang sesuai status login
-    loadRecent();
+    if(typeof loadRecent === "function") loadRecent();
   }
 
   async function initAuth(){
@@ -524,9 +535,7 @@
     });
   }
 
-  $("btnLogin").addEventListener("click", ()=>{
-    if(currentSession){ openLogin(); } else { openLogin(); }
-  });
+  $("btnLogin").addEventListener("click", ()=> openLogin());
   $("closeLogin").addEventListener("click", closeLoginModal);
   loginOverlay.addEventListener("click", (e)=>{ if(e.target===loginOverlay) closeLoginModal(); });
 
@@ -563,17 +572,6 @@
     updateAuthUI();
     closeLoginModal();
   });
-
-  /* ---------------- STATE ---------------- */
-  let kodeDB = [];   // [{kode,uraian,klasifikasi,poin}]
-  let zonaDB = [];   // [{zona,area,penanggung_jawab}]
-  let karuDB = [];   // [namaKaru, ...] -- diambil dari kolom L pada CSV
-  let photos = [];   // [{blob, dataUrl}]  (single photo slot allowed, but support multiple)
-  let photoTarget = "main"; // "main" (form input) atau "edit" (modal edit temuan)
-  let editNewPhotos = []; // foto baru yang ditambahkan lewat modal edit
-  let hiddenEditOverlayForPhotoEditor = false; // true jika modal Edit disembunyikan sementara saat editor foto dibuka
-
-  const $ = id => document.getElementById(id);
 
   /* ---------------- CSV LOADING ---------------- */
   function fetchCsvRaw(url){
