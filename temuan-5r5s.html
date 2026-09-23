@@ -8,6 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
   :root{
     --navy:#14213d;
@@ -459,8 +460,9 @@
       <button class="save-settings" id="btnCetakPrint" style="margin-top:0;background:var(--navy);flex:1;">🖨 Cetak</button>
       <button class="save-settings" id="btnGeneratePdf" style="margin-top:0;flex:1;">⬇️ Unduh PDF</button>
     </div>
+    <button class="save-settings" id="btnGenerateExcel" style="margin-top:10px;background:var(--green);">📊 Unduh Excel</button>
     <div class="hint" style="margin-top:8px;">
-      <b>Cetak</b>: buka dialog cetak browser — cocok di komputer, tinggal pilih printer. <b>Unduh PDF</b>: file PDF (ukuran Legal 8.5 × 13 in) langsung tersimpan di HP, siap dibagikan lewat WhatsApp — lebih disarankan untuk iPhone.
+      <b>Cetak</b>: buka dialog cetak browser — cocok di komputer, tinggal pilih printer. <b>Unduh PDF</b>: file PDF (ukuran Legal 8.5 × 13 in) langsung tersimpan di HP, siap dibagikan lewat WhatsApp — lebih disarankan untuk iPhone. <b>Unduh Excel</b>: file .xlsx berisi tabel data lengkap dengan foto temuan ditanam di dalam sheet.
     </div>
     <div class="status-msg" id="cetakStatus"></div>
   </div>
@@ -1724,6 +1726,110 @@
       $("cetakStatus").className = "status-msg err";
     }finally{
       $("btnGeneratePdf").disabled = false;
+    }
+  });
+
+  /* ---- Tombol UNDUH EXCEL: file .xlsx dengan tabel data + foto ditanam di dalam sheet ---- */
+  $("btnGenerateExcel").addEventListener("click", async ()=>{
+    $("btnGenerateExcel").disabled = true;
+    $("cetakStatus").textContent = "Mengambil data…";
+    $("cetakStatus").className = "status-msg";
+
+    try{
+      const dari = $("cetakDari").value, sampai = $("cetakSampai").value;
+      const sertakanFoto = $("cetakSertakanFoto").checked;
+      if(!dari || !sampai) throw new Error("Isi rentang tanggal.");
+      const sb = getSupabase();
+      if(!sb) throw new Error("Supabase belum dikonfigurasi.");
+
+      const { data, error } = await sb.from(CFG.sbTable).select("*")
+        .gte("tanggal", dari).lte("tanggal", sampai)
+        .order("tanggal", {ascending:true}).order("created_at",{ascending:true});
+      if(error) throw error;
+      if(!data || !data.length) throw new Error("Tidak ada temuan pada rentang tanggal ini.");
+
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet("Temuan 5R5S");
+
+      const cols = [
+        {header:"No.", key:"no", width:5},
+        {header:"Tanggal", key:"tanggal", width:12},
+        {header:"Lokasi/Area", key:"area", width:16},
+        {header:"Zona", key:"zona", width:10},
+        {header:"PJ", key:"pj", width:16},
+        {header:"Karu", key:"karu", width:16},
+        {header:"Kode", key:"kode", width:10},
+        {header:"Uraian Temuan", key:"uraian", width:38},
+        {header:"Level", key:"level", width:9},
+        {header:"Tgl Batas Perbaikan", key:"deadline", width:16},
+        {header:"Catatan", key:"catatan", width:28}
+      ];
+      if(sertakanFoto) cols.push({header:"Foto", key:"foto", width:20});
+      ws.columns = cols;
+
+      ws.getRow(1).font = { bold:true, color:{argb:"FFFFFFFF"} };
+      ws.getRow(1).fill = { type:"pattern", pattern:"solid", fgColor:{argb:"FF14213D"} };
+      ws.getRow(1).alignment = { vertical:"middle", horizontal:"center" };
+
+      for(let i=0;i<data.length;i++){
+        const r = data[i];
+        const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+        const rowIdx = i+2;
+
+        ws.addRow({
+          no:i+1, tanggal:r.tanggal||"-", area:r.area||"-", zona:r.zona||"-",
+          pj:r.penanggung_jawab||"-", karu:r.kepala_regu||"-", kode:r.kode||"-",
+          uraian:r.uraian||"-", level:isMayor?"MAYOR":"MINOR",
+          deadline:fmtDeadlineID(r.tanggal), catatan:r.catatan||""
+        });
+
+        const levelCell = ws.getCell(`I${rowIdx}`);
+        if(isMayor){
+          levelCell.font = { bold:true, color:{argb:"FFFFFFFF"} };
+          levelCell.fill = { type:"pattern", pattern:"solid", fgColor:{argb:"FFD1445C"} };
+        }else{
+          levelCell.font = { bold:true, color:{argb:"FFB8720C"} };
+        }
+        levelCell.alignment = { vertical:"middle", horizontal:"center" };
+        ws.getRow(rowIdx).alignment = { vertical:"middle", wrapText:true };
+
+        if(sertakanFoto){
+          ws.getRow(rowIdx).height = 90;
+          const firstUrl = (r.foto_url||"").split(",")[0].trim();
+          if(firstUrl){
+            $("cetakStatus").textContent = `Mengambil foto ${i+1}/${data.length}…`;
+            try{
+              const resp = await fetch(firstUrl);
+              const buf = await resp.arrayBuffer();
+              const imgId = wb.addImage({ buffer: buf, extension: "jpeg" });
+              ws.addImage(imgId, {
+                tl: { col: cols.length - 1, row: rowIdx - 1 },
+                ext: { width:110, height:110 }
+              });
+            }catch(e){ /* lewati kalau satu foto gagal diambil, lanjut ke baris berikutnya */ }
+          }
+        }
+      }
+
+      $("cetakStatus").textContent = "Menyusun file Excel…";
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const fnameRange = dari === sampai ? dari : `${dari}_sd_${sampai}`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `Temuan-5R5S_${fnameRange}.xlsx`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=> URL.revokeObjectURL(url), 3000);
+
+      $("cetakStatus").textContent = "Excel berhasil diunduh ✔";
+      $("cetakStatus").className = "status-msg ok";
+      cetakOverlay.classList.remove("show");
+
+    }catch(e){
+      $("cetakStatus").textContent = "Gagal membuat Excel: " + (e.message||e);
+      $("cetakStatus").className = "status-msg err";
+    }finally{
+      $("btnGenerateExcel").disabled = false;
     }
   });
 
