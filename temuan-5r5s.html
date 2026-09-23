@@ -44,6 +44,22 @@
     width:38px;height:38px;border-radius:10px;font-size:16px;cursor:pointer;
   }
   header.topbar button.icon:active{background:rgba(255,255,255,.25);}
+  header.topbar button.icon.spinning svg{animation:spin360 .7s linear infinite;}
+  @keyframes spin360{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+  /* splash loading (titik 3) saat refresh */
+  .refresh-splash{position:fixed;inset:0;background:rgba(10,14,26,.35);
+    display:none;align-items:center;justify-content:center;z-index:999;}
+  .refresh-splash.show{display:flex;}
+  .refresh-splash .box{background:#fff;border-radius:16px;padding:22px 28px;
+    display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 6px 20px rgba(0,0,0,.2);}
+  .refresh-splash .dots{display:flex;gap:7px;}
+  .refresh-splash .dots span{width:10px;height:10px;border-radius:50%;background:var(--navy);
+    animation:dotBounce 1s ease-in-out infinite;}
+  .refresh-splash .dots span:nth-child(2){animation-delay:.15s;}
+  .refresh-splash .dots span:nth-child(3){animation-delay:.3s;}
+  @keyframes dotBounce{ 0%,80%,100%{transform:translateY(0);opacity:.5;} 40%{transform:translateY(-8px);opacity:1;} }
+  .refresh-splash .lbl{font-size:12.5px;color:var(--muted);font-weight:600;}
 
   main{max-width:640px;margin:-8px auto 0;padding:0 16px;}
 
@@ -182,10 +198,18 @@
     <h1>Temuan <span>5R5S</span></h1>
   </div>
   <div class="actions">
-    <button class="icon" id="btnRefresh" title="Muat ulang database">&#8635;</button>
+    <button class="icon" id="btnHome" title="Kembali ke Home">&#8962;</button>
+    <button class="icon" id="btnRefresh" title="Muat ulang database"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg></button>
     <button class="icon" id="btnSettings" title="Pengaturan">&#9881;</button>
   </div>
 </header>
+
+<div class="refresh-splash" id="refreshSplash">
+  <div class="box">
+    <div class="dots"><span></span><span></span><span></span></div>
+    <div class="lbl">Memuat ulang data…</div>
+  </div>
+</div>
 
 <main>
 
@@ -815,7 +839,22 @@
     loadRecent();
   });
 
-  $("btnRefresh").addEventListener("click", ()=>{ loadAllDb(); loadRecent(); });
+  $("btnRefresh").addEventListener("click", async ()=>{
+    const btn = $("btnRefresh");
+    const splash = $("refreshSplash");
+    btn.disabled = true;
+    btn.classList.add("spinning");
+    splash.classList.add("show");
+    try{
+      await Promise.all([ loadAllDb(), loadRecent() ]);
+    } finally {
+      btn.classList.remove("spinning");
+      splash.classList.remove("show");
+      btn.disabled = false;
+    }
+  });
+
+  $("btnHome").addEventListener("click", ()=>{ window.location.href = "index.html"; });
 
   /* ---------------- SUBMIT ---------------- */
   function setStatus(msg, cls){
@@ -1096,20 +1135,13 @@
     return { dari, sampai, rangeLabel, html };
   }
 
-  /* ---- Tombol CETAK: buka dialog print browser di tab baru (enak di komputer, tinggal pilih printer) ---- */
+  /* ---- Tombol CETAK: langsung panggil dialog print browser di halaman ini juga (tanpa tab/link baru) ---- */
   $("btnCetakPrint").addEventListener("click", async ()=>{
-    // Buka tab kosong SEKARANG JUGA (masih dalam event klik langsung) supaya
-    // tidak diblokir popup-blocker. Isinya ditulis belakangan.
-    const printWin = window.open("", "_blank");
-    if(printWin){
-      printWin.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Menyiapkan cetakan…</title></head><body style='font-family:sans-serif;padding:24px;color:#555;'>Menyiapkan halaman cetak…</body></html>");
-      printWin.document.close();
-    }
-
     $("btnCetakPrint").disabled = true;
     $("cetakStatus").textContent = "Mengambil data…";
     $("cetakStatus").className = "status-msg";
 
+    let frame = null;
     try{
       const { html } = await buildLaporanHtml();
 
@@ -1122,33 +1154,30 @@
       const fullHtml = `<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Cetak Form Temuan 5R5S</title>
-        <style>${PRINT_CSS}</style></head><body>${html}
-        <script>
-          window.onload = function(){
-            setTimeout(function(){ try{ window.print(); }catch(e){} }, 400);
-          };
-        <\/script>
-        </body></html>`;
+        <style>${PRINT_CSS}</style></head><body>${html}</body></html>`;
 
-      if(printWin && !printWin.closed){
-        printWin.document.open();
-        printWin.document.write(fullHtml);
-        printWin.document.close();
-        $("cetakStatus").textContent = "Halaman cetak dibuka di tab baru. Jika tidak muncul, izinkan pop-up untuk situs ini.";
-        $("cetakStatus").className = "status-msg ok";
-      }else{
-        const blob = new Blob([fullHtml], {type:"text/html"});
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = blobUrl; a.target = "_blank"; a.rel = "noopener";
-        a.textContent = "Buka halaman cetak";
-        $("cetakStatus").innerHTML = "Tab cetak diblokir browser. Coba izinkan pop-up, atau tekan link ini: ";
-        $("cetakStatus").appendChild(a);
-        $("cetakStatus").className = "status-msg err";
-      }
+      // Pakai iframe tersembunyi di halaman ini sendiri, jadi print langsung
+      // muncul lewat dialog cetak biasa (tidak buka tab/link baru sama sekali).
+      frame = document.createElement("iframe");
+      frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
+      document.body.appendChild(frame);
+
+      await new Promise((resolve)=>{
+        frame.onload = resolve;
+        frame.srcdoc = fullHtml;
+      });
+
+      $("cetakStatus").textContent = "Membuka dialog cetak…";
+      $("cetakStatus").className = "status-msg ok";
+
+      const fw = frame.contentWindow;
+      fw.focus();
+      fw.print();
+
       cetakOverlay.classList.remove("show");
+      setTimeout(()=>{ if(frame && frame.parentNode) frame.parentNode.removeChild(frame); }, 1000);
     }catch(e){
-      if(printWin && !printWin.closed) printWin.close();
+      if(frame && frame.parentNode) frame.parentNode.removeChild(frame);
       $("cetakStatus").textContent = "Gagal menyiapkan cetakan: " + (e.message||e);
       $("cetakStatus").className = "status-msg err";
     }finally{
