@@ -481,6 +481,7 @@
   let photos = [];   // [{blob, dataUrl}]  (single photo slot allowed, but support multiple)
   let photoTarget = "main"; // "main" (form input) atau "edit" (modal edit temuan)
   let editNewPhotos = []; // foto baru yang ditambahkan lewat modal edit
+  let hiddenEditOverlayForPhotoEditor = false; // true jika modal Edit disembunyikan sementara saat editor foto dibuka
 
   const $ = id => document.getElementById(id);
 
@@ -802,6 +803,10 @@
       canvas.style.filter = "none";
       document.querySelectorAll(".tool-btn").forEach(b=>b.classList.remove("active"));
       $("applyCrop").style.display = "none";
+      // Kalau editor foto dibuka dari dalam modal Edit Temuan, sembunyikan
+      // dulu modal Edit-nya supaya tidak bertumpuk/menutupi editor foto.
+      hiddenEditOverlayForPhotoEditor = $("editOverlay").classList.contains("show");
+      if(hiddenEditOverlayForPhotoEditor) $("editOverlay").classList.remove("show");
       editorOverlay.classList.add("show");
     };
     img.src = dataUrl;
@@ -942,8 +947,15 @@
     $("applyCrop").style.display = "none";
   });
 
-  $("editorCancel").addEventListener("click", ()=> editorOverlay.classList.remove("show"));
-  $("closeEditor").addEventListener("click", ()=> editorOverlay.classList.remove("show"));
+  function closePhotoEditor(){
+    editorOverlay.classList.remove("show");
+    if(hiddenEditOverlayForPhotoEditor){
+      $("editOverlay").classList.add("show");
+      hiddenEditOverlayForPhotoEditor = false;
+    }
+  }
+  $("editorCancel").addEventListener("click", closePhotoEditor);
+  $("closeEditor").addEventListener("click", closePhotoEditor);
 
   $("editorSave").addEventListener("click", ()=>{
     const finalCanvas = document.createElement("canvas");
@@ -961,6 +973,10 @@
         renderPhotoPreview();
       }
       editorOverlay.classList.remove("show");
+      if(hiddenEditOverlayForPhotoEditor){
+        $("editOverlay").classList.add("show");
+        hiddenEditOverlayForPhotoEditor = false;
+      }
     }, "image/jpeg", 0.9);
   });
 
