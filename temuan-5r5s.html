@@ -77,6 +77,19 @@
   textarea{resize:vertical;min-height:60px;}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
+  .pj-chipbox{width:100%;min-height:44px;border-radius:10px;border:1px solid var(--border);
+    background:#fbfbfd;padding:7px 8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
+  .pj-chipbox:focus-within{outline:2px solid #cdd6f5;border-color:#9fb0e8;}
+  .pj-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .pj-chip{display:flex;align-items:center;gap:5px;background:#e8ecfa;color:var(--navy);
+    border-radius:20px;padding:5px 6px 5px 12px;font-size:13px;font-weight:600;white-space:nowrap;}
+  .pj-chip button{border:none;background:rgba(20,33,61,.12);color:var(--navy);
+    width:18px;height:18px;border-radius:50%;font-size:11px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .pj-chip button:active{background:rgba(20,33,61,.25);}
+  #fPJText{flex:1;min-width:120px;border:none;background:transparent;padding:6px 4px;font-size:15px;color:var(--text);}
+  #fPJText:focus{outline:none;}
+
   .kode-box{position:relative;}
   .kode-box input{text-transform:uppercase;font-weight:700;letter-spacing:.03em;}
   .lookup-result{margin-top:8px;padding:10px 12px;border-radius:10px;font-size:13.5px;line-height:1.4;}
@@ -238,7 +251,11 @@
     <div id="lookupResult"></div>
 
     <label>Penanggung Jawab (Penjaga Area)</label>
-    <input type="text" id="fPJ" placeholder="terisi otomatis, bisa diubah">
+    <div class="pj-chipbox" id="pjChipbox">
+      <div class="pj-chips" id="pjChips"></div>
+      <input type="text" id="fPJText" placeholder="terisi otomatis, atau ketik nama lalu Enter">
+    </div>
+    <input type="hidden" id="fPJ">
 
     <label>Kepala Regu / Karu</label>
     <select id="fKaru"><option value="">Pilih karu…</option></select>
@@ -593,9 +610,53 @@
   $("fZona").addEventListener("change", ()=>{
     const z = zonaDB.find(r=>r.zona === $("fZona").value);
     if(z){
-      if(z.pj) $("fPJ").value = z.pj;
-      if(z.area && !$("fArea").value) $("fArea").value = z.area;
+      if(z.area) $("fArea").value = z.area;
+      setPJNames(z.pj ? z.pj.split("/").map(s=>s.trim()).filter(Boolean) : []);
     }
+  });
+
+  /* ---------------- PENANGGUNG JAWAB (chip input) ---------------- */
+  let pjNames = [];
+  function renderPJChips(){
+    const box = $("pjChips");
+    box.innerHTML = "";
+    pjNames.forEach((name, idx)=>{
+      const chip = document.createElement("div");
+      chip.className = "pj-chip";
+      chip.innerHTML = `<span></span><button type="button" data-idx="${idx}" title="Hapus">&#10005;</button>`;
+      chip.querySelector("span").textContent = name;
+      box.appendChild(chip);
+    });
+    box.querySelectorAll("button").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        pjNames.splice(+btn.dataset.idx, 1);
+        renderPJChips();
+      });
+    });
+    $("fPJ").value = pjNames.join(" / ");
+  }
+  function setPJNames(arr){
+    pjNames = (arr||[]).filter(Boolean);
+    renderPJChips();
+  }
+  function addPJNameFromInput(){
+    const el = $("fPJText");
+    const val = el.value.trim();
+    if(val){ pjNames.push(val); renderPJChips(); }
+    el.value = "";
+  }
+  $("fPJText").addEventListener("keydown", (e)=>{
+    if(e.key === "Enter" || e.key === ","){
+      e.preventDefault();
+      addPJNameFromInput();
+    } else if(e.key === "Backspace" && !$("fPJText").value && pjNames.length){
+      pjNames.pop();
+      renderPJChips();
+    }
+  });
+  $("fPJText").addEventListener("blur", addPJNameFromInput);
+  $("pjChipbox").addEventListener("click", (e)=>{
+    if(e.target === $("pjChipbox") || e.target === $("pjChips")) $("fPJText").focus();
   });
 
   /* ---------------- PHOTO CAPTURE ---------------- */
@@ -636,15 +697,40 @@
   let startPt = null;
   let preSnapshot = null;
 
+  /* Downscale bertahap (halving berulang) supaya foto resolusi besar dari HP
+     (terutama iPhone) tidak jadi burik/bergelombang (moiré). Kalau foto
+     langsung di-downscale drastis dalam satu drawImage(), interpolasi bawaan
+     browser (khususnya Safari/iOS) jadi jelek dan muncul noise seperti itu. */
+  function drawImageScaledDown(img, targetCtx, targetW, targetH){
+    let src = img;
+    let curW = img.naturalWidth || img.width;
+    let curH = img.naturalHeight || img.height;
+    while (curW * 0.5 > targetW) {
+      const stepW = Math.round(curW * 0.5);
+      const stepH = Math.round(curH * 0.5);
+      const stepCanvas = document.createElement("canvas");
+      stepCanvas.width = stepW; stepCanvas.height = stepH;
+      const sctx = stepCanvas.getContext("2d");
+      sctx.imageSmoothingEnabled = true;
+      sctx.imageSmoothingQuality = "high";
+      sctx.drawImage(src, 0, 0, stepW, stepH);
+      src = stepCanvas;
+      curW = stepW; curH = stepH;
+    }
+    targetCtx.imageSmoothingEnabled = true;
+    targetCtx.imageSmoothingQuality = "high";
+    targetCtx.drawImage(src, 0, 0, targetW, targetH);
+  }
+
   function openEditor(dataUrl){
     const img = new Image();
     img.onload = ()=>{
-      const maxW = Math.min(700, window.innerWidth - 60);
+      const maxW = Math.min(900, window.innerWidth - 60);
       let w = img.width, h = img.height;
       if(w > maxW){ h = h * (maxW/w); w = maxW; }
       canvas.width = w; canvas.height = h;
       ctx.filter = "none";
-      ctx.drawImage(img, 0, 0, w, h);
+      drawImageScaledDown(img, ctx, w, h);
       undoStack = [];
       currentTool = null;
       cropRect = null;
@@ -803,11 +889,11 @@
     fctx.filter = "brightness(" + $("brightnessRange").value + "%)";
     fctx.drawImage(canvas, 0, 0);
     finalCanvas.toBlob(blob=>{
-      const dataUrl = finalCanvas.toDataURL("image/jpeg", 0.85);
+      const dataUrl = finalCanvas.toDataURL("image/jpeg", 0.9);
       photos.push({ blob, dataUrl });
       renderPhotoPreview();
       editorOverlay.classList.remove("show");
-    }, "image/jpeg", 0.85);
+    }, "image/jpeg", 0.9);
   });
 
   /* ---------------- SETTINGS MODAL ---------------- */
