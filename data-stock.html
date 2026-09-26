@@ -22,6 +22,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <style>
 /* =========================================================
@@ -236,6 +237,13 @@ body.overlay-open{ overflow:hidden; }
   border-color: var(--amber); color: var(--amber); background: rgba(255,176,32,0.1);
 }
 .mode-toggle:active{ transform: scale(0.98); }
+.mode-toggle[data-mode="admin"]{ max-width: 78vw; overflow:hidden; }
+.mode-toggle .mode-toggle-text{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.login-status-row{ display:flex; align-items:center; gap:8px; margin: 2px 0 14px; font-size:12.5px; color: var(--muted); }
+.login-status-row b{ color: var(--text); }
+.login-status-dot{ width:8px; height:8px; border-radius:50%; background: var(--gray-badge); flex:none; }
+.login-status-dot.on{ background: var(--green); }
+.field-error{ color: var(--red); font-size:12.5px; margin-top:6px; min-height:16px; }
 .icon-btn{
   background: var(--surface); border:1px solid var(--border); color: var(--text);
   width:42px; height:42px; border-radius:10px;
@@ -288,6 +296,12 @@ body.overlay-open{ overflow:hidden; }
   font-size:13.5px; padding:11px 16px; border-radius:10px; cursor:pointer;
 }
 .btn-secondary:active{ background: var(--surface-2); }
+.link-btn{
+  background:none; border:none; padding:0; margin:0;
+  color: var(--amber); font-family: var(--font-body); font-size:13px; font-weight:600;
+  cursor:pointer; text-decoration:underline; text-underline-offset:2px;
+}
+.forgot-password-row{ display:flex; justify-content:flex-end; margin-top:-10px; }
 .btn-install{ border-color: var(--green); color: var(--green); margin-top:8px; }
 .btn-install:active{ background: rgba(52,211,153,0.08); }
 
@@ -500,7 +514,7 @@ body.overlay-open{ overflow:hidden; }
   <button id="btn-mode-toggle" class="mode-toggle" data-mode="search" aria-pressed="false">
     <svg class="mode-icon-lock" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 1a5 5 0 00-5 5v3H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2h-1V6a5 5 0 00-5-5zm-3 8V6a3 3 0 116 0v3H9z"/></svg>
     <svg class="mode-icon-unlock hidden" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M17 8h-1V6a4 4 0 00-7.76-1.38 1 1 0 101.87.71A2 2 0 0114 6v2H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2z"/></svg>
-    <span class="mode-toggle-text">Mode: Cari Saja</span>
+    <span class="mode-toggle-text">Masuk sebagai Admin</span>
   </button>
 </div>
 
@@ -581,7 +595,7 @@ body.overlay-open{ overflow:hidden; }
     <div class="sheet-handle"></div>
     <div class="sheet-header">
       <div>
-        <span class="sheet-eyebrow" id="sheet-eyebrow">KOREKSI STOCK OPNAME</span>
+        <span class="sheet-eyebrow" id="sheet-eyebrow">INPUT STOCK OPNAME</span>
         <h2 id="sheet-title" class="mono"></h2>
       </div>
       <button id="btn-close-sheet" class="icon-btn" aria-label="Tutup">✕</button>
@@ -621,6 +635,11 @@ body.overlay-open{ overflow:hidden; }
         <div id="edit-bal-sistem" class="mono readonly-value">—</div>
       </div>
 
+      <div class="card-grid extra-grid" style="margin:0 0 14px;">
+        <div><span class="k">INTERNAL</span><span class="v mono" id="edit-internal">—</span></div>
+        <div><span class="k">SALES</span><span class="v mono" id="edit-sales">—</span></div>
+      </div>
+
       <label class="field field-lg">
         <span class="field-label">QTY BARU <em>hasil hitung fisik saat opname</em></span>
         <div class="field-input-wrap">
@@ -642,6 +661,7 @@ body.overlay-open{ overflow:hidden; }
       <div class="info-note" id="edit-fallback-note">Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#/SO#).</div>
 
       <button type="submit" id="btn-save" class="btn-primary btn-full">Simpan Koreksi</button>
+      <button type="button" id="btn-delete-koreksi" class="btn-secondary btn-full hidden" style="border-color:var(--red);color:var(--red);margin-top:8px;">Hapus Koreksi Ini</button>
       <div id="save-status" class="save-status" role="status"></div>
     </form>
   </div>
@@ -668,13 +688,6 @@ body.overlay-open{ overflow:hidden; }
         </div>
       </label>
       <label class="field">
-        <span class="field-label">Link CSV KOREKSI <em>untuk tombol Unduh Excel, sudah diisi default</em></span>
-        <div class="field-input-wrap">
-          <input type="url" id="set-koreksi-csv" placeholder="https://docs.google.com/…/pub?gid=…&output=csv" required />
-          <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
-        </div>
-      </label>
-      <label class="field">
         <span class="field-label">Link CSV Master MC <em>untuk tombol Cari di Master MC, sudah diisi default</em></span>
         <div class="field-input-wrap">
           <input type="url" id="set-master-csv" placeholder="https://docs.google.com/…/pub?gid=…&output=csv" required />
@@ -682,30 +695,98 @@ body.overlay-open{ overflow:hidden; }
         </div>
       </label>
       <label class="field">
-        <span class="field-label">URL Web App (Apps Script, untuk simpan)</span>
+        <span class="field-label">Supabase Project URL <em>untuk simpan koreksi</em></span>
         <div class="field-input-wrap">
-          <input type="url" id="set-url" placeholder="https://script.google.com/macros/s/…/exec" required />
+          <input type="url" id="set-supabase-url" placeholder="https://xxxxxxxx.supabase.co" required />
           <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
         </div>
       </label>
       <label class="field">
-        <span class="field-label">Token Akses</span>
+        <span class="field-label">Supabase Anon Public Key</span>
         <div class="field-input-wrap">
-          <input type="text" id="set-token" placeholder="Token dari CONFIG.ACCESS_TOKEN" required />
-          <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
-        </div>
-      </label>
-      <label class="field">
-        <span class="field-label">Nama Admin <em>(tercatat di sheet KOREKSI)</em></span>
-        <div class="field-input-wrap">
-          <input type="text" id="set-editor" placeholder="Nama Anda" required />
+          <input type="text" id="set-supabase-key" placeholder="eyJhbGciOi..." required />
           <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
         </div>
       </label>
       <button type="submit" class="btn-primary btn-full">Simpan Pengaturan</button>
       <div id="settings-status" class="save-status" role="status"></div>
     </form>
-    <p class="muted small">Pengaturan disimpan hanya di perangkat ini. Lihat PANDUAN.md untuk cara mendapatkan URL &amp; token.</p>
+  </div>
+</div>
+
+<!-- Login Admin modal -->
+<div id="login-overlay" class="sheet-overlay hidden">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <span class="sheet-eyebrow">AKSES TERBATAS</span>
+        <h2 id="login-title">Login Admin</h2>
+      </div>
+      <button id="btn-close-login" class="icon-btn" aria-label="Tutup">✕</button>
+    </div>
+
+    <div class="info-note">Hanya admin yang login yang bisa input/edit data. Data koreksi akan tercatat otomatis atas nama akun ini.</div>
+
+    <form id="login-form" class="edit-form">
+      <label class="field">
+        <span class="field-label">Email</span>
+        <div class="field-input-wrap">
+          <input type="email" id="login-email" autocomplete="username" required />
+        </div>
+      </label>
+      <label class="field">
+        <span class="field-label">Password</span>
+        <div class="field-input-wrap">
+          <input type="password" id="login-password" autocomplete="current-password" required />
+        </div>
+      </label>
+      <div class="forgot-password-row">
+        <button type="button" id="btn-forgot-password" class="link-btn">Lupa Password?</button>
+      </div>
+      <div id="login-error" class="field-error"></div>
+      <button type="submit" id="btn-login-submit" class="btn-primary btn-full">Masuk</button>
+      <div id="login-status" class="save-status" role="status"></div>
+    </form>
+
+    <div id="logged-in-box" class="hidden" style="margin-top:6px;">
+      <div class="login-status-row"><span class="login-status-dot on"></span>Masuk sebagai <b id="logged-in-email"></b></div>
+      <button type="button" id="btn-open-change-password" class="btn-secondary btn-full">Ganti Password</button>
+      <button type="button" id="btn-logout" class="btn-secondary btn-full">Keluar dari Mode Admin</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Ganti Password modal (hanya muncul kalau sudah login) -->
+<div id="change-password-overlay" class="sheet-overlay hidden">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="change-password-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <span class="sheet-eyebrow">AKUN ADMIN</span>
+        <h2 id="change-password-title">Ganti Password</h2>
+      </div>
+      <button id="btn-close-change-password" class="icon-btn" aria-label="Tutup">✕</button>
+    </div>
+
+    <form id="change-password-form" class="edit-form">
+      <label class="field">
+        <span class="field-label">Password baru</span>
+        <div class="field-input-wrap">
+          <input type="password" id="new-password" autocomplete="new-password" minlength="6" required />
+        </div>
+      </label>
+      <label class="field">
+        <span class="field-label">Ulangi password baru</span>
+        <div class="field-input-wrap">
+          <input type="password" id="new-password-confirm" autocomplete="new-password" minlength="6" required />
+        </div>
+      </label>
+      <div id="change-password-error" class="field-error"></div>
+      <button type="submit" id="btn-change-password-submit" class="btn-primary btn-full">Simpan Password Baru</button>
+      <div id="change-password-status" class="save-status" role="status"></div>
+    </form>
   </div>
 </div>
 
@@ -754,7 +835,7 @@ body.overlay-open{ overflow:hidden; }
 
     <div class="search-row master-search-row">
       <div class="search-input-wrap">
-        <input id="koreksi-search-input" type="text" inputmode="search" placeholder="Cari MCS#, NO, atau nama admin…" autocomplete="off" />
+        <input id="koreksi-search-input" type="text" inputmode="search" placeholder="Cari MCS#, NO, SO#, REF#, LOC#, model, customer, internal, sales, admin…" autocomplete="off" />
         <button type="button" id="btn-clear-koreksi-search" class="input-clear-btn" aria-label="Hapus pencarian">✕</button>
       </div>
       <button id="btn-koreksi-search" class="btn-primary">Cari</button>
@@ -778,6 +859,10 @@ body.overlay-open{ overflow:hidden; }
         <div><span class="k">C#</span><span class="v mono kx-c"></span></div>
         <div><span class="k">SO#</span><span class="v mono kx-so"></span></div>
         <div><span class="k">REF#</span><span class="v mono kx-ref"></span></div>
+      </div>
+      <div class="card-grid extra-grid">
+        <div><span class="k">INTERNAL</span><span class="v mono kx-internal"></span></div>
+        <div><span class="k">SALES</span><span class="v mono kx-sales"></span></div>
       </div>
       <div class="card-bottom">
         <div class="bal-block">
@@ -830,22 +915,23 @@ body.overlay-open{ overflow:hidden; }
 // Bisa diganti lewat menu Pengaturan tanpa perlu edit kode ini.
 const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=0&single=true&output=csv';
 
-// Link CSV publik dari sheet KOREKSI (hasil inputan admin), dipakai tombol "Unduh Excel"
-const DEFAULT_KOREKSI_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=1025369816&single=true&output=csv';
-
 // Link CSV publik Master MC (data acuan barang, dipakai tombol "Cari di Master MC")
 const DEFAULT_MASTER_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=2047780733&single=true&output=csv';
 
-// Link Web App (Apps Script) default untuk simpan koreksi. Bisa diganti/dihapus
-// (pakai tombol ✕ di kolomnya) lewat menu Pengaturan tanpa perlu edit kode ini.
-const DEFAULT_APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz20zIACFt-_flrGq5hYYAON0-HM4qcYL6G-ynmoFV5cfGwuyhCsHlDDZeAGkQqT5An/exec';
+// --- Konfigurasi Supabase default -------------------------------------------------
+// GANTI dua nilai di bawah ini dengan milik project Supabase kamu sendiri
+// (Project Settings → API di dashboard Supabase), ATAU biarkan kosong dan isi
+// lewat menu Pengaturan (⚙️) di app tanpa perlu edit kode ini.
+// Anon/public key AMAN ditaruh di frontend — akses sesungguhnya dibatasi oleh
+// Row Level Security (RLS) di sisi database. Lihat PANDUAN-SUPABASE.md.
+const DEFAULT_SUPABASE_URL = 'https://bpqiejowxcxyeewhoncr.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_3tCR_a01HgzEpH-5uypqGg_s8WvXsa9';
+const KOREKSI_TABLE = 'koreksi_stock_opname';
 
-const STORAGE_KEY = 'stockopname.settings.v2';
+const STORAGE_KEY = 'stockopname.settings.v3';
 const CSV_CACHE_KEY = 'stockopname.csvcache.v1';
-const MODE_KEY = 'stockopname.mode.v1';
 
 const state = {
-  mode: localStorage.getItem(MODE_KEY) === 'admin' ? 'admin' : 'search', // 'search' = cari saja (read-only), 'admin' = boleh input/koreksi
   field: 'ALL',
   allRows: [],       // seluruh data dari CSV (sumber informasi)
   results: [],        // hasil pencarian saat ini
@@ -858,6 +944,7 @@ const state = {
   masterRows: [],      // data Master MC, dimuat lazy saat tombol "Cari di Master MC" pertama kali dipakai
   masterLoaded: false,
   koreksiRows: [],      // hasil KOREKSI yang sudah tersimpan, dimuat ulang tiap kali overlay dibuka
+  user: null,           // sesi Supabase Auth yang sedang login (null = belum login = mode cari saja)
 };
 
 // ---------- settings ----------
@@ -868,14 +955,12 @@ function loadSettings() {
     const s = raw ? JSON.parse(raw) : {};
     return {
       csvUrl: s.csvUrl || DEFAULT_CSV_URL,
-      koreksiCsvUrl: s.koreksiCsvUrl || DEFAULT_KOREKSI_CSV_URL,
       masterCsvUrl: s.masterCsvUrl || DEFAULT_MASTER_CSV_URL,
-      url: s.url || DEFAULT_APPSCRIPT_URL,
-      token: s.token || '',
-      editor: s.editor || '',
+      supabaseUrl: s.supabaseUrl || DEFAULT_SUPABASE_URL,
+      supabaseAnonKey: s.supabaseAnonKey || DEFAULT_SUPABASE_ANON_KEY,
     };
   } catch (e) {
-    return { csvUrl: DEFAULT_CSV_URL, koreksiCsvUrl: DEFAULT_KOREKSI_CSV_URL, masterCsvUrl: DEFAULT_MASTER_CSV_URL, url: DEFAULT_APPSCRIPT_URL, token: '', editor: '' };
+    return { csvUrl: DEFAULT_CSV_URL, masterCsvUrl: DEFAULT_MASTER_CSV_URL, supabaseUrl: DEFAULT_SUPABASE_URL, supabaseAnonKey: DEFAULT_SUPABASE_ANON_KEY };
   }
 }
 function saveSettings(s) {
@@ -883,7 +968,53 @@ function saveSettings(s) {
   state.settings = s;
 }
 function saveReady() {
-  return !!(state.settings.url && state.settings.token && state.settings.editor);
+  return !!(supabaseClient && state.user);
+}
+
+// ---------- Supabase client & auth ----------
+
+let supabaseClient = null;
+
+function initSupabaseClient() {
+  const url = state.settings.supabaseUrl;
+  const key = state.settings.supabaseAnonKey;
+  if (!url || !key || url.includes('xxxxxxxx') || key.includes('PASTE_ANON')) {
+    supabaseClient = null;
+    return;
+  }
+  try {
+    supabaseClient = window.supabase.createClient(url, key);
+  } catch (e) {
+    console.error('Gagal membuat Supabase client:', e);
+    supabaseClient = null;
+  }
+}
+
+async function refreshAuthSession() {
+  if (!supabaseClient) { state.user = null; updateModeUI(); return; }
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    state.user = (data && data.session) ? data.session.user : null;
+  } catch (e) {
+    state.user = null;
+  }
+  updateModeUI();
+}
+
+function watchAuthChanges() {
+  if (!supabaseClient) return;
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    state.user = session ? session.user : null;
+    updateModeUI();
+    renderResults(false, state.results.length);
+
+    // User baru saja klik link "reset password" dari email → Supabase kasih
+    // sesi sementara dan event ini. Langsung buka dialog Ganti Password.
+    if (event === 'PASSWORD_RECOVERY') {
+      showToast('Silakan atur password baru');
+      openChangePassword();
+    }
+  });
 }
 
 // ---------- CSV parser (menangani koma/kutip/baris baru di dalam kutip) ----------
@@ -1140,6 +1271,7 @@ const el = {
   sheetTitle: document.getElementById('sheet-title'),
   sheetEyebrow: document.getElementById('sheet-eyebrow'),
   sheetRefinfo: document.getElementById('sheet-refinfo'),
+  btnDeleteKoreksi: document.getElementById('btn-delete-koreksi'),
   editTopNote: document.getElementById('edit-top-note'),
   btnCloseSheet: document.getElementById('btn-close-sheet'),
   editForm: document.getElementById('edit-form'),
@@ -1149,6 +1281,8 @@ const el = {
   editRef: document.getElementById('edit-ref'),
   editSo: document.getElementById('edit-so'),
   editBalSistem: document.getElementById('edit-bal-sistem'),
+  editInternal: document.getElementById('edit-internal'),
+  editSales: document.getElementById('edit-sales'),
   editBal: document.getElementById('edit-bal'),
   editSelisihPreview: document.getElementById('edit-selisih-preview'),
   editFallbackNote: document.getElementById('edit-fallback-note'),
@@ -1183,11 +1317,32 @@ const el = {
   btnCloseSettings: document.getElementById('btn-close-settings'),
   settingsForm: document.getElementById('settings-form'),
   setCsv: document.getElementById('set-csv'),
-  setKoreksiCsv: document.getElementById('set-koreksi-csv'),
-  setUrl: document.getElementById('set-url'),
-  setToken: document.getElementById('set-token'),
-  setEditor: document.getElementById('set-editor'),
+  setSupabaseUrl: document.getElementById('set-supabase-url'),
+  setSupabaseKey: document.getElementById('set-supabase-key'),
+
+  loginOverlay: document.getElementById('login-overlay'),
+  btnCloseLogin: document.getElementById('btn-close-login'),
+  loginForm: document.getElementById('login-form'),
+  loginEmail: document.getElementById('login-email'),
+  loginPassword: document.getElementById('login-password'),
+  btnForgotPassword: document.getElementById('btn-forgot-password'),
+  loginError: document.getElementById('login-error'),
+  loginStatus: document.getElementById('login-status'),
+  btnLoginSubmit: document.getElementById('btn-login-submit'),
+  loggedInBox: document.getElementById('logged-in-box'),
+  loggedInEmail: document.getElementById('logged-in-email'),
+  btnLogout: document.getElementById('btn-logout'),
   settingsStatus: document.getElementById('settings-status'),
+
+  btnOpenChangePassword: document.getElementById('btn-open-change-password'),
+  changePasswordOverlay: document.getElementById('change-password-overlay'),
+  btnCloseChangePassword: document.getElementById('btn-close-change-password'),
+  changePasswordForm: document.getElementById('change-password-form'),
+  newPassword: document.getElementById('new-password'),
+  newPasswordConfirm: document.getElementById('new-password-confirm'),
+  changePasswordError: document.getElementById('change-password-error'),
+  changePasswordStatus: document.getElementById('change-password-status'),
+  btnChangePasswordSubmit: document.getElementById('btn-change-password-submit'),
 
   offlineBanner: document.getElementById('offline-banner'),
   dataBanner: document.getElementById('data-banner'),
@@ -1235,34 +1390,170 @@ el.btnThemeToggle.addEventListener('click', () => {
 // disembunyikan karena keduanya jalur untuk menambah/mengubah data.
 // Mode "Admin": semua fitur input/koreksi aktif seperti biasa.
 
-function isAdminMode() { return state.mode === 'admin'; }
+// Admin mode sekarang murni ditentukan oleh SESI LOGIN Supabase (state.user),
+// bukan toggle manual lagi — supaya benar-benar hanya admin yang login yang
+// bisa input/edit data.
+function isAdminMode() { return !!(supabaseClient && state.user); }
 
-function applyMode(mode) {
-  state.mode = mode === 'admin' ? 'admin' : 'search';
+function updateModeUI() {
   const admin = isAdminMode();
 
-  el.btnModeToggle.dataset.mode = state.mode;
+  el.btnModeToggle.dataset.mode = admin ? 'admin' : 'search';
   el.btnModeToggle.setAttribute('aria-pressed', String(admin));
-  el.btnModeToggle.querySelector('.mode-toggle-text').textContent = admin ? 'Mode: Admin (bisa input)' : 'Mode: Cari Saja';
+  el.btnModeToggle.querySelector('.mode-toggle-text').textContent = admin
+    ? ('Admin: ' + (state.user.email || state.user.id))
+    : 'Masuk sebagai Admin';
   el.btnModeToggle.querySelector('.mode-icon-lock').classList.toggle('hidden', admin);
   el.btnModeToggle.querySelector('.mode-icon-unlock').classList.toggle('hidden', !admin);
 
-  // Tombol "Cari di Master MC" tetap tersedia di mode Cari Saja (boleh dipakai
-  // untuk cari info barang di Master MC), tapi hasilnya tidak bisa diklik untuk
-  // input/tambah barang baru selama masih mode Cari Saja (lihat useMasterRecord).
   if (el.btnOpenKoreksi) el.btnOpenKoreksi.classList.toggle('hidden', !admin);
 
   document.body.classList.toggle('admin-mode', admin);
   document.body.classList.toggle('search-only-mode', !admin);
+
+  // Sinkronkan tampilan modal login (kalau sedang terbuka)
+  if (el.loginForm) el.loginForm.classList.toggle('hidden', admin);
+  if (el.loggedInBox) el.loggedInBox.classList.toggle('hidden', !admin);
+  if (admin && el.loggedInEmail) el.loggedInEmail.textContent = state.user.email || state.user.id;
 }
 
-applyMode(state.mode);
-
 el.btnModeToggle.addEventListener('click', () => {
-  const next = isAdminMode() ? 'search' : 'admin';
-  applyMode(next);
-  try { localStorage.setItem(MODE_KEY, next); } catch (e) {}
-  showToast(next === 'admin' ? 'Mode Admin aktif — bisa input/koreksi' : 'Mode Cari Saja aktif — cuma bisa mencari info');
+  if (isAdminMode()) { openLogin(); return; } // tampilkan info + tombol keluar
+  if (!supabaseClient) {
+    showToast('Atur Supabase URL & Anon Key dulu di Pengaturan (⚙️)');
+    openSettings();
+    return;
+  }
+  openLogin();
+});
+
+function openLogin() {
+  el.loginError.textContent = '';
+  el.loginStatus.textContent = '';
+  updateModeUI();
+  showOverlay(el.loginOverlay);
+}
+function closeLogin() { hideOverlay(el.loginOverlay); }
+el.btnCloseLogin.addEventListener('click', closeLogin);
+// Sengaja TIDAK menutup saat klik di luar area dialog (backdrop) — untuk
+// keluar pakai tombol ✕ (btnCloseLogin) di atas.
+
+el.loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!supabaseClient) { showToast('Atur Supabase URL & Anon Key dulu di Pengaturan'); return; }
+  const email = el.loginEmail.value.trim();
+  const password = el.loginPassword.value;
+  if (!email || !password) return;
+
+  el.loginError.textContent = '';
+  el.loginStatus.textContent = 'Memeriksa…';
+  el.btnLoginSubmit.disabled = true;
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    state.user = data.user;
+    el.loginPassword.value = '';
+    el.loginStatus.textContent = 'Berhasil masuk ✓';
+    updateModeUI();
+    showToast('Mode Admin aktif — bisa input/koreksi');
+    setTimeout(closeLogin, 500);
+  } catch (err) {
+    console.error(err);
+    el.loginStatus.textContent = '';
+    el.loginError.textContent = 'Login gagal: ' + (err.message || 'periksa email/password');
+  } finally {
+    el.btnLoginSubmit.disabled = false;
+  }
+});
+
+el.btnForgotPassword.addEventListener('click', async () => {
+  if (!supabaseClient) { showToast('Atur Supabase URL & Anon Key dulu di Pengaturan'); return; }
+  const email = el.loginEmail.value.trim();
+  if (!email) {
+    el.loginError.textContent = 'Isi email dulu, lalu tekan "Lupa Password?" lagi.';
+    el.loginEmail.focus();
+    return;
+  }
+  el.loginError.textContent = '';
+  el.loginStatus.textContent = 'Mengirim email reset password…';
+  el.btnForgotPassword.disabled = true;
+  try {
+    // redirectTo = halaman ini sendiri. Link reset dari email akan membuka
+    // halaman ini lagi dengan token pemulihan di URL, lalu terdeteksi lewat
+    // event 'PASSWORD_RECOVERY' di watchAuthChanges() dan membuka dialog
+    // Ganti Password secara otomatis. URL ini HARUS didaftarkan sebagai
+    // Redirect URL di Supabase Dashboard → Authentication → URL Configuration,
+    // kalau belum, Supabase akan menolak/redirect ke tempat lain.
+    const redirectTo = window.location.href.split('#')[0];
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+    el.loginStatus.textContent = 'Email reset password terkirim ke ' + email + ', cek inbox/spam.';
+  } catch (err) {
+    console.error(err);
+    el.loginStatus.textContent = '';
+    el.loginError.textContent = 'Gagal kirim email reset: ' + (err.message || 'coba lagi');
+  } finally {
+    el.btnForgotPassword.disabled = false;
+  }
+});
+
+el.btnLogout.addEventListener('click', async () => {
+  if (!supabaseClient) return;
+  try { await supabaseClient.auth.signOut(); } catch (e) {}
+  state.user = null;
+  updateModeUI();
+  closeLogin();
+  showToast('Sudah keluar dari Mode Admin');
+});
+
+// ---------- ganti password (hanya saat sudah login) ----------
+
+function openChangePassword() {
+  el.changePasswordForm.reset();
+  el.changePasswordError.textContent = '';
+  el.changePasswordStatus.textContent = '';
+  showOverlay(el.changePasswordOverlay);
+}
+function closeChangePassword() { hideOverlay(el.changePasswordOverlay); }
+
+el.btnOpenChangePassword.addEventListener('click', openChangePassword);
+el.btnCloseChangePassword.addEventListener('click', closeChangePassword);
+// Sengaja TIDAK menutup saat klik di luar area dialog (backdrop) — untuk
+// keluar pakai tombol ✕ (btnCloseChangePassword) di atas.
+
+el.changePasswordForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!supabaseClient || !state.user) { showToast('Login dulu sebagai Admin'); return; }
+
+  const pass1 = el.newPassword.value;
+  const pass2 = el.newPasswordConfirm.value;
+  el.changePasswordError.textContent = '';
+  el.changePasswordStatus.textContent = '';
+
+  if (pass1.length < 6) {
+    el.changePasswordError.textContent = 'Password baru minimal 6 karakter.';
+    return;
+  }
+  if (pass1 !== pass2) {
+    el.changePasswordError.textContent = 'Konfirmasi password tidak sama.';
+    return;
+  }
+
+  el.changePasswordStatus.textContent = 'Menyimpan…';
+  el.btnChangePasswordSubmit.disabled = true;
+  try {
+    const { error } = await supabaseClient.auth.updateUser({ password: pass1 });
+    if (error) throw error;
+    el.changePasswordStatus.textContent = 'Password berhasil diganti ✓';
+    showToast('Password berhasil diganti');
+    setTimeout(closeChangePassword, 700);
+  } catch (err) {
+    console.error(err);
+    el.changePasswordStatus.textContent = '';
+    el.changePasswordError.textContent = 'Gagal ganti password: ' + (err.message || 'coba lagi');
+  } finally {
+    el.btnChangePasswordSubmit.disabled = false;
+  }
 });
 
 // ---------- header sticky + efek kaca (glassmorphism) saat scroll ----------
@@ -1463,10 +1754,15 @@ async function loadData(forceRefresh) {
   el.summary.textContent = 'Memuat data…';
   el.dataBanner.classList.add('hidden');
 
-  const url = state.settings.csvUrl + (forceRefresh ? (state.settings.csvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now() : '');
+  // PENTING: selalu tempel timestamp + no-store, bukan cuma saat forceRefresh.
+  // Sebelumnya load pertama pakai cache:'default', jadi walau CSV sumber sudah
+  // diupdate, browser bisa saja masih menyajikan respons CSV lama dari cache-nya
+  // sendiri. Dengan selalu no-store + query _ts unik, browser dipaksa ambil
+  // ulang dari jaringan setiap kali halaman dibuka/direfresh.
+  const url = state.settings.csvUrl + (state.settings.csvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now();
 
   try {
-    const res = await fetch(url, { cache: forceRefresh ? 'no-store' : 'default' });
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
 
@@ -1620,12 +1916,12 @@ function renderResults(truncated, totalCount) {
     if (editHint) editHint.textContent = isAdminMode() ? 'Ketuk untuk koreksi ›' : 'Mode cari saja — info aja';
 
     card.addEventListener('click', () => {
-      if (!isAdminMode()) { showToast('Mode Cari Saja — aktifkan Mode Admin untuk input/koreksi'); return; }
+      if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk input/koreksi'); return; }
       openEditSheet(item);
     });
     card.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter') return;
-      if (!isAdminMode()) { showToast('Mode Cari Saja — aktifkan Mode Admin untuk input/koreksi'); return; }
+      if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk input/koreksi'); return; }
       openEditSheet(item);
     });
 
@@ -1658,15 +1954,25 @@ async function downloadExcel() {
     return;
   }
 
+  if (!supabaseClient) { showToast('Atur Supabase URL & Anon Key dulu di Pengaturan'); return; }
+  if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk unduh data koreksi'); return; }
+
   showToast('Menyiapkan file Excel…');
 
   try {
-    const url = state.settings.koreksiCsvUrl + (state.settings.koreksiCsvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now();
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
+    const { data, error } = await supabaseClient
+      .from(KOREKSI_TABLE)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5000);
+    if (error) throw error;
 
-    const rows = parseCSV(text).filter((r) => r.some((cell) => String(cell || '').trim() !== ''));
+    const header = ['ID', 'Timestamp', 'Diinput oleh', 'NO', 'REF# baru', 'SO#', 'Internal', 'Sales', 'Customer', 'MCS#', 'C# baru', 'Model', 'QTY BARU', 'BAL sistem', 'Selisih Qty', 'LOC# baru', 'Diedit oleh', 'Diedit pada'];
+    const rows = [header].concat((data || []).map((r) => [
+      r.id, r.created_at, r.created_by_email, r.no, r.ref, r.so, r.internal, r.sales, r.customer,
+      r.mcs, r.c, r.model, r.qty, r.bal_sistem, r.selisih, r.loc, r.updated_by_email || '', r.updated_at || '',
+    ]));
+
     const ws = XLSX.utils.aoa_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'KOREKSI');
@@ -1676,7 +1982,7 @@ async function downloadExcel() {
     showToast('File Excel diunduh');
   } catch (err) {
     console.error(err);
-    showToast('Gagal mengunduh. Cek link CSV KOREKSI di Pengaturan.');
+    showToast('Gagal mengunduh: ' + (err.message || 'coba lagi'));
   }
 }
 
@@ -1712,7 +2018,7 @@ function openEditSheet(item, mode) {
     ? 'BARANG BARU'
     : state.isUpdateMode
       ? 'EDIT KOREKSI TERSIMPAN'
-      : 'KOREKSI STOCK OPNAME';
+      : 'INPUT STOCK OPNAME';
 
   el.sheetTitle.textContent = 'MCS# ' + item.mcs;
   el.sheetRefinfo.textContent = state.isNewItem
@@ -1725,20 +2031,26 @@ function openEditSheet(item, mode) {
   el.editSo.value = item.so || '';
   el.editC.value = item.c || '';
   el.editBalSistem.textContent = state.isNewItem ? '0 (barang baru)' : item.bal;
+  el.editInternal.textContent = item.internal || '—';
+  el.editSales.textContent = item.sales || '—';
   el.editBal.value = state.isUpdateMode ? (item.qty !== undefined ? item.qty : '') : '';
   el.editLoc.value = item.loc || '';
 
+  el.btnDeleteKoreksi.classList.toggle('hidden', !state.isUpdateMode);
+
   el.editTopNote.innerHTML = state.isNewItem
-    ? 'Barang baru akan disimpan sebagai <b>baris baru</b> di sheet KOREKSI.'
+    ? ''
     : state.isUpdateMode
       ? 'Perubahan akan <b>menimpa</b> data koreksi ini (bukan menambah baris baru).'
       : 'Koreksi disimpan sebagai <b>data baru</b> di sheet terpisah (tidak mengubah data sumber).';
+  el.editTopNote.classList.toggle('hidden', state.isNewItem);
 
   el.editFallbackNote.textContent = state.isNewItem
-    ? 'Barang baru akan dicatat sebagai baris baru di sheet KOREKSI (NO baris laporan dikosongkan).'
+    ? ''
     : state.isUpdateMode
       ? 'Field yang dikosongkan otomatis memakai nilai yang sudah tersimpan sebelumnya.'
       : 'Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#/SO#).';
+  el.editFallbackNote.classList.toggle('hidden', state.isNewItem);
 
   // reset tiap field balik ke mode ABC (primary) & sembunyikan tombol mengambang
   el.editForm.querySelectorAll('.kb-shadow').forEach((shadow) => {
@@ -1782,17 +2094,25 @@ function closeEditSheet() {
   state.updateId = null;
 }
 el.btnCloseSheet.addEventListener('click', closeEditSheet);
-el.sheetOverlay.addEventListener('click', (e) => { if (e.target === el.sheetOverlay) closeEditSheet(); });
+// Sengaja TIDAK menutup saat klik di luar area sheet (backdrop) — form ini
+// menyimpan input yang gampang tertekan tidak sengaja. Untuk keluar, pakai
+// tombol ✕ (btnCloseSheet) di atas.
 
 el.editForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!state.activeItem) return;
   const item = state.activeItem;
 
-  if (!saveReady()) {
+  if (!supabaseClient) {
     closeEditSheet();
     openSettings();
-    showToast('Atur koneksi simpan (Apps Script) dulu ya');
+    showToast('Atur Supabase URL & Anon Key dulu ya');
+    return;
+  }
+  if (!isAdminMode()) {
+    closeEditSheet();
+    openLogin();
+    showToast('Login sebagai Admin dulu untuk menyimpan koreksi');
     return;
   }
 
@@ -1823,35 +2143,55 @@ el.editForm.addEventListener('submit', async (e) => {
   el.saveStatus.textContent = 'Menyimpan…';
   el.saveStatus.className = 'save-status';
 
-  const payload = state.isUpdateMode
-    ? {
-        action: 'update',
-        token: state.settings.token,
-        editor: state.settings.editor,
-        id: state.updateId,
-        edits: edits,
-      }
-    : {
-        action: 'save',
-        token: state.settings.token,
-        editor: state.settings.editor,
-        item: { no: item.no, mcs: item.mcs, so: item.so, ref: item.ref, model: item.model, loc: item.loc, c: item.c, bal: item.bal, customer: item.customer },
-        edits: edits,
-      };
+  const newQty = edits.bal !== undefined ? edits.bal : null;
+  const selisih = (newQty !== null && item.bal !== undefined && item.bal !== '') ? (newQty - Number(item.bal)) : null;
 
   try {
-    const res = await fetch(state.settings.url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari CORS preflight ke Apps Script
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
+    let error;
+    if (state.isUpdateMode) {
+      // Mode update: perbarui baris koreksi yang sudah ada. `updated_by` &
+      // `updated_by_email` diambil dari sesi login saat ini (BUKAN input manual),
+      // jadi selalu jelas siapa yang terakhir mengedit.
+      const updatePayload = {
+        updated_by: state.user.id,
+        updated_by_email: state.user.email,
+        updated_at: new Date().toISOString(),
+      };
+      if (edits.loc !== undefined) updatePayload.loc = edits.loc;
+      if (edits.c !== undefined) updatePayload.c = edits.c;
+      if (edits.ref !== undefined) updatePayload.ref = edits.ref;
+      if (edits.so !== undefined) updatePayload.so = edits.so;
+      if (newQty !== null) { updatePayload.qty = newQty; updatePayload.selisih = selisih; }
+      if (item.internal !== undefined) updatePayload.internal = item.internal || null;
+      if (item.sales !== undefined) updatePayload.sales = item.sales || null;
 
-    if (!data.ok) {
-      el.saveStatus.textContent = 'Gagal: ' + (data.error || 'error tidak diketahui');
-      el.saveStatus.className = 'save-status err';
-      return;
+      ({ error } = await supabaseClient.from(KOREKSI_TABLE).update(updatePayload).eq('id', state.updateId));
+    } else {
+      // Mode simpan baru: `created_by`/`created_by_email` otomatis terisi dari
+      // akun admin yang sedang login lewat Supabase Auth (auth.uid()/email()),
+      // sehingga di tabel Supabase selalu ketahuan siapa yang input.
+      const insertPayload = {
+        no: String(item.no || ''),
+        mcs: String(item.mcs || ''),
+        model: item.model || '',
+        customer: item.customer || '',
+        internal: item.internal || null,
+        sales: item.sales || null,
+        bal_sistem: item.bal !== undefined && item.bal !== '' ? Number(item.bal) : null,
+        loc: edits.loc !== undefined ? edits.loc : (item.loc || ''),
+        c: edits.c !== undefined ? edits.c : (item.c || ''),
+        ref: edits.ref !== undefined ? edits.ref : (item.ref || ''),
+        so: edits.so !== undefined ? edits.so : (item.so || ''),
+        qty: newQty,
+        selisih: selisih,
+        is_new_item: !!state.isNewItem,
+        created_by: state.user.id,
+        created_by_email: state.user.email,
+      };
+      ({ error } = await supabaseClient.from(KOREKSI_TABLE).insert([insertPayload]));
     }
+
+    if (error) throw error;
 
     if (!state.isNewItem && !state.isUpdateMode) {
       state.savedThisSession.add(String(item.no));
@@ -1859,12 +2199,40 @@ el.editForm.addEventListener('submit', async (e) => {
     }
     el.saveStatus.textContent = state.isUpdateMode ? 'Koreksi diperbarui ✓' : 'Tersimpan sebagai data baru ✓';
     el.saveStatus.className = 'save-status ok';
-    showToast(state.isNewItem ? 'Barang baru tersimpan ke KOREKSI' : state.isUpdateMode ? 'Koreksi berhasil diperbarui' : 'Koreksi tersimpan');
+    showToast(state.isNewItem ? 'Barang baru tersimpan ke Supabase' : state.isUpdateMode ? 'Koreksi berhasil diperbarui' : 'Koreksi tersimpan ke Supabase');
     setTimeout(closeEditSheet, 700);
   } catch (err) {
-    el.saveStatus.textContent = 'Gagal menyimpan. Coba lagi.';
-    el.saveStatus.className = 'save-status err';
     console.error(err);
+    el.saveStatus.textContent = 'Gagal menyimpan: ' + (err.message || 'coba lagi');
+    el.saveStatus.className = 'save-status err';
+  }
+});
+
+el.btnDeleteKoreksi.addEventListener('click', async () => {
+  if (!state.isUpdateMode || !state.updateId) return;
+  if (!supabaseClient || !isAdminMode()) { showToast('Login sebagai Admin dulu'); return; }
+
+  const sure = window.confirm('Hapus data koreksi MCS# ' + (state.activeItem ? state.activeItem.mcs : '') + ' ini? Tindakan ini tidak bisa dibatalkan.');
+  if (!sure) return;
+
+  el.saveStatus.textContent = 'Menghapus…';
+  el.saveStatus.className = 'save-status';
+  el.btnDeleteKoreksi.disabled = true;
+
+  try {
+    const { error } = await supabaseClient.from(KOREKSI_TABLE).delete().eq('id', state.updateId);
+    if (error) throw error;
+
+    el.saveStatus.textContent = 'Terhapus ✓';
+    el.saveStatus.className = 'save-status ok';
+    showToast('Koreksi berhasil dihapus');
+    setTimeout(closeEditSheet, 500);
+  } catch (err) {
+    console.error(err);
+    el.saveStatus.textContent = 'Gagal menghapus: ' + (err.message || 'coba lagi');
+    el.saveStatus.className = 'save-status err';
+  } finally {
+    el.btnDeleteKoreksi.disabled = false;
   }
 });
 
@@ -1896,8 +2264,8 @@ async function openMaster() {
   if (!state.masterLoaded) {
     el.masterSummary.textContent = 'Memuat data Master MC…';
     try {
-      const url = state.settings.masterCsvUrl;
-      const res = await fetch(url, { cache: 'default' });
+      const url = state.settings.masterCsvUrl + (state.settings.masterCsvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now();
+      const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const text = await res.text();
       state.masterRows = extractMasterRecords(parseCSV(text));
@@ -1978,11 +2346,12 @@ function runMasterSearch() {
 }
 
 function useMasterRecord(rec) {
-  if (!isAdminMode()) { showToast('Mode Cari Saja — aktifkan Mode Admin untuk input barang baru'); return; }
+  if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk input barang baru'); return; }
   closeMaster();
   const newItem = {
     no: '', mcs: rec.mc, so: rec.so, ref: '', model: rec.model,
     loc: '', c: '', bal: 0, customer: rec.customer,
+    internal: rec.internal, sales: rec.sales,
   };
   openEditSheet(newItem, true);
 }
@@ -1991,7 +2360,8 @@ function useMasterRecord(rec) {
 
 el.btnOpenKoreksi.addEventListener('click', openKoreksi);
 el.btnCloseKoreksi.addEventListener('click', closeKoreksi);
-el.koreksiOverlay.addEventListener('click', (e) => { if (e.target === el.koreksiOverlay) closeKoreksi(); });
+// Sengaja TIDAK menutup saat klik di luar area dialog (backdrop) — untuk
+// keluar pakai tombol ✕ (btnCloseKoreksi) di atas.
 el.btnKoreksiSearch.addEventListener('click', runKoreksiSearch);
 el.koreksiSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runKoreksiSearch(); });
 el.koreksiSearchInput.addEventListener('input', () => updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch));
@@ -2005,8 +2375,31 @@ el.btnClearKoreksiSearch.addEventListener('click', () => {
   el.koreksiSearchInput.focus();
 });
 
+function mapKoreksiRowFromSupabase(r) {
+  return {
+    id: r.id,
+    timestamp: r.created_at,
+    editor: r.created_by_email || '',
+    no: r.no || '',
+    ref: r.ref || '',
+    so: r.so || '',
+    c: r.c || '',
+    qty: r.qty !== null && r.qty !== undefined ? r.qty : '',
+    loc: r.loc || '',
+    mcs: r.mcs || '',
+    customer: r.customer || '',
+    model: r.model || '',
+    internal: r.internal || '',
+    sales: r.sales || '',
+    balSistem: r.bal_sistem !== null && r.bal_sistem !== undefined ? r.bal_sistem : '',
+    selisih: r.selisih !== null && r.selisih !== undefined ? r.selisih : '',
+    editedBy: r.updated_by_email || '',
+    editedAt: r.updated_at || '',
+  };
+}
+
 async function openKoreksi() {
-  if (!isAdminMode()) { showToast('Mode Cari Saja — aktifkan Mode Admin untuk edit koreksi'); return; }
+  if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk edit koreksi'); return; }
   showOverlay(el.koreksiOverlay);
   el.koreksiSearchInput.value = el.searchInput.value.trim();
   updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch);
@@ -2014,12 +2407,14 @@ async function openKoreksi() {
   el.koreksiResults.innerHTML = '';
 
   try {
-    const url = state.settings.koreksiCsvUrl + (state.settings.koreksiCsvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now();
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
+    const { data, error } = await supabaseClient
+      .from(KOREKSI_TABLE)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(2000);
+    if (error) throw error;
 
-    state.koreksiRows = extractKoreksiRecords(parseCSV(text));
+    state.koreksiRows = (data || []).map(mapKoreksiRowFromSupabase);
     el.koreksiSummary.textContent = state.koreksiRows.length + ' data koreksi siap dicari.';
     if (el.koreksiSearchInput.value.trim().length >= 2) runKoreksiSearch();
   } catch (err) {
@@ -2051,6 +2446,15 @@ function runKoreksiSearch() {
     || String(r.editor).toLowerCase().includes(q)
     || String(r.model).toLowerCase().includes(q)
     || String(r.customer).toLowerCase().includes(q)
+    || String(r.so).toLowerCase().includes(q)
+    || String(r.ref).toLowerCase().includes(q)
+    || String(r.loc).toLowerCase().includes(q)
+    || String(r.c).toLowerCase().includes(q)
+    || String(r.qty).toLowerCase().includes(q)
+    || String(r.selisih).toLowerCase().includes(q)
+    || String(r.internal).toLowerCase().includes(q)
+    || String(r.sales).toLowerCase().includes(q)
+    || String(r.editedBy).toLowerCase().includes(q)
   );
 
   const truncated = matches.length > MAX_RESULTS;
@@ -2071,6 +2475,8 @@ function runKoreksiSearch() {
     node.querySelector('.kx-c').textContent = rec.c || '—';
     node.querySelector('.kx-so').textContent = rec.so || '—';
     node.querySelector('.kx-ref').textContent = rec.ref || '—';
+    node.querySelector('.kx-internal').textContent = rec.internal || '—';
+    node.querySelector('.kx-sales').textContent = rec.sales || '—';
     node.querySelector('.kx-qty').textContent = rec.qty !== '' ? rec.qty : '—';
     node.querySelector('.kx-selisih').textContent = rec.selisih !== '' ? 'Selisih ' + (Number(rec.selisih) > 0 ? '+' : '') + rec.selisih : '';
     node.querySelector('.kx-meta').textContent = rec.editedBy
@@ -2090,6 +2496,7 @@ function useKoreksiRecord(rec) {
   const item = {
     id: rec.id, no: rec.no, mcs: rec.mcs, so: rec.so, ref: rec.ref, model: rec.model,
     loc: rec.loc, c: rec.c, bal: rec.balSistem, qty: rec.qty, customer: rec.customer,
+    internal: rec.internal, sales: rec.sales,
   };
   openEditSheet(item, 'update');
 }
@@ -2098,11 +2505,9 @@ function useKoreksiRecord(rec) {
 
 function openSettings() {
   el.setCsv.value = state.settings.csvUrl || DEFAULT_CSV_URL;
-  el.setKoreksiCsv.value = state.settings.koreksiCsvUrl || DEFAULT_KOREKSI_CSV_URL;
   el.setMasterCsv.value = state.settings.masterCsvUrl || DEFAULT_MASTER_CSV_URL;
-  el.setUrl.value = state.settings.url || '';
-  el.setToken.value = state.settings.token || '';
-  el.setEditor.value = state.settings.editor || '';
+  el.setSupabaseUrl.value = (state.settings.supabaseUrl && !state.settings.supabaseUrl.includes('xxxxxxxx')) ? state.settings.supabaseUrl : '';
+  el.setSupabaseKey.value = (state.settings.supabaseAnonKey && !state.settings.supabaseAnonKey.includes('PASTE_ANON')) ? state.settings.supabaseAnonKey : '';
   el.settingsStatus.textContent = '';
   refreshClearButtons(el.settingsForm);
   showOverlay(el.settingsOverlay);
@@ -2110,32 +2515,40 @@ function openSettings() {
 function closeSettings() { hideOverlay(el.settingsOverlay); }
 el.btnSettings.addEventListener('click', openSettings);
 el.btnCloseSettings.addEventListener('click', closeSettings);
-el.settingsOverlay.addEventListener('click', (e) => { if (e.target === el.settingsOverlay) closeSettings(); });
+// Sengaja TIDAK menutup saat klik di luar area dialog (backdrop) — untuk
+// keluar pakai tombol ✕ (btnCloseSettings) di atas.
 
-el.settingsForm.addEventListener('submit', (e) => {
+el.settingsForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const csvChanged = el.setCsv.value.trim() !== state.settings.csvUrl;
   const masterCsvChanged = el.setMasterCsv.value.trim() !== state.settings.masterCsvUrl;
+  const supabaseChanged = el.setSupabaseUrl.value.trim() !== state.settings.supabaseUrl
+    || el.setSupabaseKey.value.trim() !== state.settings.supabaseAnonKey;
+
   saveSettings({
     csvUrl: el.setCsv.value.trim(),
-    koreksiCsvUrl: el.setKoreksiCsv.value.trim(),
     masterCsvUrl: el.setMasterCsv.value.trim(),
-    url: el.setUrl.value.trim(),
-    token: el.setToken.value.trim(),
-    editor: el.setEditor.value.trim(),
+    supabaseUrl: el.setSupabaseUrl.value.trim() || DEFAULT_SUPABASE_URL,
+    supabaseAnonKey: el.setSupabaseKey.value.trim() || DEFAULT_SUPABASE_ANON_KEY,
   });
   el.settingsStatus.textContent = 'Tersimpan ✓';
   el.settingsStatus.className = 'save-status ok';
   setTimeout(closeSettings, 500);
   if (csvChanged) loadData(true);
   if (masterCsvChanged) state.masterLoaded = false; // paksa muat ulang Master MC di kunjungan berikutnya
+  if (supabaseChanged) {
+    if (supabaseClient) { try { await supabaseClient.auth.signOut(); } catch (err) {} }
+    state.user = null;
+    initSupabaseClient();
+    watchAuthChanges();
+    await refreshAuthSession();
+  }
 });
 
 // ---------- inisialisasi ----------
-// Catatan: dulu Pengaturan otomatis terbuka kalau token/nama admin belum diisi
-// (saveReady() == false), tapi ini mengganggu saat pertama kali buka app —
-// terutama karena mode default sekarang "Cari Saja" yang tidak butuh token.
-// Sekarang Pengaturan HANYA terbuka kalau tombol ⚙️ diklik.
+initSupabaseClient();
+watchAuthChanges();
+refreshAuthSession();
 loadData(false);
 
 // ---------- unduh sbg PWA (install prompt) ----------
