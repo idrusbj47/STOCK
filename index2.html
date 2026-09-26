@@ -1,0 +1,2383 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>KIM Data Stock</title>
+<meta name="description" content="Cek stok gudang & simpan koreksi saat stock opname" />
+<meta name="theme-color" content="#12161B" id="meta-theme-color" />
+<script>
+  (function(){
+    try{
+      var saved = localStorage.getItem('stockopname.theme');
+      var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    }catch(e){}
+  })();
+</script>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon.png" />
+<link rel="apple-touch-icon" href="icons/icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<style>
+/* =========================================================
+   SEMUA CSS ADA DI SINI — biar gampang direvisi di satu file
+   ========================================================= */
+:root{
+  --bg: #12161B;
+  --surface: #1B2129;
+  --surface-2: #212831;
+  --border: #2A323C;
+  --text: #EDEFF2;
+  --muted: #8B95A1;
+  --amber: #FFB020;
+  --green: #34D399;
+  --red: #F45B69;
+  --violet: #A78BFA;
+  --gray-badge: #4B5563;
+  --radius: 14px;
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  color-scheme: dark;
+  --on-accent: #1A1300;
+}
+html[data-theme="light"]{
+  --bg: #F3F4F6;
+  --surface: #FFFFFF;
+  --surface-2: #EEF0F3;
+  --border: #DCE0E6;
+  --text: #171B21;
+  --muted: #667085;
+  --amber: #B8770F;
+  --green: #12996B;
+  --red: #DC3E4E;
+  --violet: #7C5CE0;
+  --gray-badge: #6B7280;
+  color-scheme: light;
+  --on-accent: #FFFFFF;
+}
+html, body{ transition: background-color .25s ease, color .25s ease; }
+*{ box-sizing: border-box; }
+html,body{ min-height:100%; }
+body{
+  margin:0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+body.overlay-open{ overflow:hidden; }
+/* ===== SPLASH SCREEN (tampilan awal saat halaman/app dimuat) ===== */
+#app-splash{
+  position:fixed; inset:0; z-index:5000; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; background: var(--bg);
+  transition: opacity .45s ease, visibility .45s ease;
+}
+#app-splash.hide{ opacity:0; visibility:hidden; pointer-events:none; }
+#app-splash .splash-logo{
+  width:76px; height:76px; border-radius:20px; background: var(--surface);
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+  border:1.5px solid var(--border); box-shadow:0 0 0 6px rgba(255,176,32,0.1), 0 14px 34px -10px rgba(0,0,0,0.4);
+  margin-bottom:18px; animation: splashPop .55s cubic-bezier(.34,1.56,.64,1);
+}
+#app-splash .splash-logo img{ width:100%; height:100%; object-fit:contain; padding:10px; }
+@keyframes splashPop{ 0%{ transform:scale(.75); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
+#app-splash .splash-title{
+  font-family: var(--font-display); font-weight:700; font-size:22px; letter-spacing:.02em;
+  text-transform:uppercase; color: var(--text); text-align:center; padding:0 24px;
+}
+#app-splash .splash-title .accent{ color: var(--amber); }
+#app-splash .splash-sub{
+  font-family: var(--font-mono); font-size:11px; letter-spacing:.08em; color: var(--muted);
+  margin-top:4px; text-align:center; padding:0 24px; text-transform:uppercase;
+}
+#app-splash .splash-dots{ display:flex; gap:6px; margin-top:26px; }
+#app-splash .splash-dots span{
+  width:7px; height:7px; border-radius:50%; background: var(--amber);
+  animation: splashDot 1.1s ease-in-out infinite;
+}
+#app-splash .splash-dots span:nth-child(2){ animation-delay:.15s; }
+#app-splash .splash-dots span:nth-child(3){ animation-delay:.3s; }
+@keyframes splashDot{ 0%,60%,100%{ opacity:.3; transform:translateY(0); } 30%{ opacity:1; transform:translateY(-4px); } }
+@media (prefers-reduced-motion: reduce){
+  #app-splash .splash-logo{ animation:none; }
+  #app-splash .splash-dots span{ animation:none; opacity:.7; }
+}
+
+/* ===== REFRESH SPLASH (overlay ringan saat tombol refresh ditekan) ===== */
+#refresh-splash{
+  position:fixed; inset:0; z-index:4000; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:14px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition: opacity .22s ease, visibility .22s ease;
+}
+#refresh-splash.show{ opacity:1; visibility:visible; pointer-events:auto; }
+#refresh-splash .splash-dots{ display:flex; gap:7px; }
+#refresh-splash .splash-dots span{
+  width:9px; height:9px; border-radius:50%; background: var(--amber);
+  animation: splashDot 1.1s ease-in-out infinite;
+}
+#refresh-splash .splash-dots span:nth-child(2){ animation-delay:.15s; }
+#refresh-splash .splash-dots span:nth-child(3){ animation-delay:.3s; }
+.refresh-splash-label{
+  font-family: var(--font-mono); font-size:12px; letter-spacing:.06em;
+  color: var(--muted); text-transform:uppercase;
+}
+@media (prefers-reduced-motion: reduce){
+  #refresh-splash .splash-dots span{ animation:none; opacity:.7; }
+}
+
+.hidden{ display:none !important; }
+.muted{ color: var(--muted); }
+.small{ font-size: 12px; }
+.mono{ font-family: var(--font-mono); }
+
+.offline-banner{
+  background: var(--red); color:#fff; text-align:center;
+  font-size:13px; font-weight:600; padding:8px 12px;
+  position: sticky; top:0; z-index:65;
+}
+.data-banner{
+  background: var(--surface-2); color: var(--muted); text-align:center;
+  font-size:12.5px; padding:7px 12px; border-bottom:1px solid var(--border);
+}
+.data-banner button{
+  background:none; border:1px solid var(--border); color:var(--amber);
+  border-radius:6px; padding:2px 8px; margin-left:8px; cursor:pointer; font-size:12px;
+}
+
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:calc(12px + env(safe-area-inset-top)) 18px 12px;
+  position: sticky; top:0; background: var(--bg); z-index:60;
+  transition: padding .25s ease, background-color .3s ease;
+  /* PENTING: JANGAN taruh `transform` atau `isolation` di elemen yang
+     position:sticky ini sendiri. Sebelumnya di sini ada
+     `transform: translateZ(0); isolation: isolate;` dengan niat memaksa
+     GPU layer — tapi itu justru bug penyebab header "lepas" dari sticky
+     setelah discroll melewati beberapa layar (muncul di Chrome/WebKit
+     mobile): begitu elemen sticky punya transform sendiri, browser salah
+     menghitung ulang posisi stickinya saat area scroll makin panjang,
+     jadi header ikut kescroll padahal seharusnya tetap menempel. Kalau
+     butuh compositing layer untuk animasi blur, taruh di pseudo-element
+     ::before di bawah (elemen anak, bukan elemen sticky-nya sendiri). */
+}
+/* Header STICKY: tetap menempel di atas layar walau daftar hasil discroll
+   sangat panjang. Lapisan kaca (blur/saturasi) ada di ::before yang
+   blur-nya SELALU aktif tapi opacity-nya 0 → 1 saat scroll, jadi terasa
+   elegan tanpa memicu bug sticky di atas. */
+.topbar::before{
+  content:""; position:absolute; inset:0; z-index:-1;
+  background: color-mix(in srgb, var(--surface) 68%, transparent);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border-bottom:1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  box-shadow: 0 10px 30px -8px rgba(0,0,0,0.35), inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+  opacity:0;
+  transition: opacity .3s ease;
+  pointer-events:none;
+  will-change: opacity;
+}
+.topbar.scrolled::before{ opacity:1; }
+.topbar.scrolled{
+  background: transparent;
+  padding-top:calc(9px + env(safe-area-inset-top)); padding-bottom:9px;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
+  .topbar.scrolled::before{ background: color-mix(in srgb, var(--surface) 96%, transparent); }
+}
+
+.scroll-top-btn{
+  position:fixed; right:16px; bottom:24px; width:44px; height:44px; border-radius:50%;
+  background: var(--surface); border:1px solid var(--border); color: var(--text);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:90;
+  box-shadow:0 6px 18px rgba(0,0,0,0.28);
+  opacity:0; pointer-events:none; transform: translateY(10px);
+  transition: opacity .2s ease, transform .2s ease;
+}
+.scroll-top-btn.show{ opacity:1; pointer-events:auto; transform: translateY(0); }
+.scroll-top-btn:active{ background: var(--surface-2); }
+.brand-eyebrow{
+  display:block; font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color: var(--muted); margin-bottom:2px;
+}
+.brand-title{
+  font-family: var(--font-display); font-weight:700; font-size:26px;
+  letter-spacing:.02em; text-transform:uppercase; margin:0; line-height:1;
+}
+.brand-title .accent{ color: var(--amber); }
+.cutoff-badge{
+  display:inline-flex; align-items:center; gap:5px; margin-top:4px;
+  font-family: var(--font-mono); font-size:11px; letter-spacing:.02em;
+  color: var(--amber); background: rgba(255,176,32,0.1);
+  border:1px solid rgba(255,176,32,0.3); border-radius:999px; padding:2px 9px;
+}
+.cutoff-badge b{ font-weight:700; }
+.topbar-actions{ display:flex; gap:8px; }
+
+.mode-bar{ display:flex; justify-content:center; padding:8px 16px 0; }
+.mode-toggle{
+  display:flex; align-items:center; gap:7px;
+  padding:7px 14px; border-radius:999px; border:1px solid var(--border, rgba(255,255,255,0.14));
+  background: var(--surface-2, rgba(255,255,255,0.06)); color: var(--muted);
+  font-size:12.5px; font-weight:600; letter-spacing:.2px; cursor:pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.mode-toggle svg{ flex:none; }
+.mode-toggle[data-mode="admin"]{
+  border-color: var(--amber); color: var(--amber); background: rgba(255,176,32,0.1);
+}
+.mode-toggle:active{ transform: scale(0.98); }
+.mode-toggle[data-mode="admin"]{ max-width: 78vw; overflow:hidden; }
+.mode-toggle .mode-toggle-text{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.login-status-row{ display:flex; align-items:center; gap:8px; margin: 2px 0 14px; font-size:12.5px; color: var(--muted); }
+.login-status-row b{ color: var(--text); }
+.login-status-dot{ width:8px; height:8px; border-radius:50%; background: var(--gray-badge); flex:none; }
+.login-status-dot.on{ background: var(--green); }
+.field-error{ color: var(--red); font-size:12.5px; margin-top:6px; min-height:16px; }
+.icon-btn{
+  background: var(--surface); border:1px solid var(--border); color: var(--text);
+  width:42px; height:42px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.icon-btn:active{ background: var(--surface-2); }
+
+.main{ padding:16px 16px 80px; max-width:720px; margin:0 auto; }
+.search-panel{ margin-bottom:10px; }
+.search-row{ display:flex; gap:8px; }
+.search-input-wrap{ position:relative; flex:1; display:flex; min-width:0; }
+#search-input{
+  flex:1; background: var(--surface); border:1px solid var(--border); color: var(--text);
+  font-family: var(--font-mono); font-size:16px; padding:13px 38px 13px 14px; border-radius:10px; outline:none;
+  width:100%; min-width:0;
+}
+#search-input:focus{ border-color: var(--amber); }
+
+.input-clear-btn{
+  position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  width:26px; height:26px; border-radius:50%; border:none; background: var(--surface-2);
+  color: var(--muted); font-size:15px; line-height:1; cursor:pointer; display:none;
+  align-items:center; justify-content:center; padding:0;
+}
+.input-clear-btn.show{ display:flex; }
+.input-clear-btn:active{ background: var(--border); color: var(--text); }
+
+.master-search-row{ margin-top:14px; gap:10px; }
+#master-search-input,
+#koreksi-search-input{
+  flex:1; background: var(--surface); border:1px solid var(--border); color: var(--text);
+  font-family: var(--font-mono); font-size:16px; padding:16px 38px 16px 16px; border-radius:12px; outline:none;
+  min-width:0; width:100%;
+}
+#master-search-input:focus,
+#koreksi-search-input:focus{ border-color: var(--amber); }
+.master-search-row .btn-primary{ padding:0 22px; }
+
+.btn-primary{
+  background: var(--amber); color: var(--on-accent); border:none; font-weight:700;
+  font-family: var(--font-display); letter-spacing:.03em; text-transform:uppercase;
+  font-size:15px; padding:0 20px; border-radius:10px; cursor:pointer;
+}
+.btn-primary:active{ transform: translateY(1px); }
+.btn-primary:disabled{ opacity:.5; cursor:not-allowed; }
+.btn-full{ width:100%; padding:14px; margin-top:6px; }
+.btn-secondary{
+  background: transparent; color: var(--amber); border:1px dashed var(--border);
+  font-weight:600; font-family: var(--font-display); letter-spacing:.03em; text-transform:uppercase;
+  font-size:13.5px; padding:11px 16px; border-radius:10px; cursor:pointer;
+}
+.btn-secondary:active{ background: var(--surface-2); }
+.btn-install{ border-color: var(--green); color: var(--green); margin-top:8px; }
+.btn-install:active{ background: rgba(52,211,153,0.08); }
+
+.field-chips{ display:flex; gap:8px; margin-top:10px; overflow-x:auto; padding-bottom:2px; }
+.chip{
+  flex:none; background:transparent; border:1px solid var(--border); color: var(--muted);
+  font-family: var(--font-mono); font-size:12.5px; padding:7px 12px; border-radius:999px; cursor:pointer;
+}
+.chip.active{ border-color: var(--amber); color: var(--amber); background: rgba(255,176,32,0.08); }
+
+.status-row{ margin:10px 2px 12px; font-size:13px; }
+.results{ display:flex; flex-direction:column; gap:10px; }
+
+.item-card{
+  display:flex; background: var(--surface); border:1px solid var(--border);
+  border-radius: var(--radius); overflow:hidden; cursor:pointer; position:relative;
+}
+.item-card:active{ background: var(--surface-2); }
+.card-strip{ width:6px; flex:none; background: var(--gray-badge); }
+.item-card.act .card-strip{ background: var(--green); }
+.item-card.obs .card-strip{ background: var(--red); }
+.card-body{ flex:1; padding:12px 14px; min-width:0; }
+.card-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.card-top .mcs{ font-size:15px; font-weight:600; color: var(--amber); }
+.badge{
+  font-size:10.5px; font-weight:700; letter-spacing:.04em; padding:3px 8px;
+  border-radius:999px; background: var(--gray-badge); color:#fff; text-transform:uppercase; flex:none;
+}
+.item-card.act .badge{ background: rgba(52,211,153,0.15); color: var(--green); }
+.item-card.obs .badge{ background: rgba(244,91,105,0.15); color: var(--red); }
+.saved-tag{
+  font-size:10.5px; font-weight:700; color: var(--green);
+  background: rgba(52,211,153,0.12); padding:3px 8px; border-radius:999px; flex:none;
+}
+.model{ font-size:13px; color: var(--text); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.card-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:10px; }
+.card-grid > div{ display:flex; justify-content:space-between; font-size:12.5px; }
+.card-grid.extra-grid{ margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); }
+.card-grid.extra-grid > div{ font-size:11.5px; }
+.card-grid.extra-grid .k{ opacity:.8; }
+.k{ color: var(--muted); }
+.v{ color: var(--text); }
+.card-bottom{
+  display:flex; align-items:flex-end; justify-content:space-between; gap:10px;
+  margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);
+}
+.bal-block .k{ display:block; font-size:10.5px; letter-spacing:.06em; }
+.bal-num{ font-size:22px; font-weight:700; color: var(--text); }
+.inout{ display:flex; flex-direction:column; gap:2px; align-items:flex-end; font-size:11.5px; }
+.inout b{ color: var(--text); font-weight:600; }
+.card-meta{ font-size:11px; margin-top:8px; }
+.card-edit-hint{ position:absolute; right:12px; bottom:10px; font-size:10.5px; color: var(--muted); display:none; }
+
+.sheet-overlay{
+  position:fixed; inset:0; background: rgba(0,0,0,0.55); z-index:100; display:flex; align-items:flex-end;
+}
+.sheet{
+  background: var(--surface); border-top:1px solid var(--border); border-radius:18px 18px 0 0;
+  width:100%; max-width:720px; margin:0 auto; padding:10px 20px calc(20px + env(safe-area-inset-bottom));
+  /* min() dengan "100% - 24px" (relatif ke .sheet-overlay yang tingginya sudah
+     pasti = viewport nyata) mencegah sheet lebih tinggi dari layar yang benar-
+     benar terlihat. Ini yang bikin bagian atas sheet (judul) sempat kepotong/
+     tidak kebaca di Chrome HP saat address bar masih penuh saat halaman baru
+     dibuka — 88vh saat itu bisa dihitung lebih tinggi dari area yang terlihat. */
+  max-height:88vh; max-height:min(88vh, calc(100% - 24px));
+  overflow-y:auto; scroll-behavior:auto;
+}
+.sheet-handle{ width:40px; height:4px; background: var(--border); border-radius:999px; margin:6px auto 14px; }
+.sheet-header{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+.sheet-eyebrow{ font-size:10.5px; letter-spacing:.1em; color: var(--amber); text-transform:uppercase; font-weight:700; }
+.sheet-header h2{ margin:2px 0 0; font-size:18px; }
+.sheet-refinfo{ font-size:12.5px; margin-bottom:14px; }
+.edit-form{ display:flex; flex-direction:column; gap:12px; }
+.field{ display:flex; flex-direction:column; gap:6px; }
+.field-label{ font-size:12.5px; color: var(--muted); }
+.field-label em{ font-style:normal; color:#5C6673; }
+.field-label-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.field input{
+  background: var(--surface-2); border:1px solid var(--border); color: var(--text);
+  font-size:16px; padding:12px 12px; border-radius:10px; outline:none; width:100%;
+}
+.field input:focus{ border-color: var(--amber); }
+.readonly-field .readonly-value{
+  background: var(--surface); border:1px dashed var(--border); color: var(--muted);
+  font-size:16px; padding:12px 12px; border-radius:10px;
+}
+
+/* Form utama (koreksi/barang baru/edit) dibesarkan biar lebih nyaman diketik */
+.field-lg input{ font-size:16.5px; padding:15px 14px; border-radius:12px; }
+.field-lg.readonly-field .readonly-value{ font-size:16.5px; padding:15px 14px; border-radius:12px; }
+
+.field-input-wrap{ position:relative; display:flex; }
+.field-input-wrap input{ padding-right:40px; }
+.field-input-wrap .input-clear-btn{ right:8px; }
+
+/* Tombol tunggal mengambang di atas keyboard hp, mirip tombol 123 di GSheet.
+   Muncul otomatis saat salah satu field REF#/SO#/C#/LOC# difokus. */
+.kb-float-toggle{
+  position:fixed; right:16px; bottom:20px; z-index:200;
+  min-width:52px; height:38px; padding:0 14px; border-radius:999px;
+  background: var(--surface); border:1px solid var(--border); color: var(--text);
+  font-family: var(--font-mono); font-weight:700; font-size:13px; letter-spacing:.03em;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  box-shadow:0 6px 18px rgba(0,0,0,0.28);
+  opacity:0; pointer-events:none; transform: translateY(6px);
+  transition: opacity .12s ease, transform .12s ease, bottom .08s ease;
+}
+.kb-float-toggle.show{ opacity:1; pointer-events:auto; transform: translateY(0); }
+.kb-float-toggle:active{ background: var(--surface-2); }
+
+/* Warna berbeda per jenis form supaya gampang dibedakan sekilas */
+#edit-sheet{ --accent: var(--amber); border-top:3px solid var(--accent); }
+#edit-sheet.mode-new{ --accent: var(--green); }
+#edit-sheet.mode-update{ --accent: var(--violet); }
+#edit-sheet .sheet-eyebrow{ color: var(--accent); }
+#edit-sheet .field-input-wrap input:focus,
+#edit-sheet .field input:focus{ border-color: var(--accent); }
+#edit-sheet .btn-primary{ background: var(--accent); }
+.selisih-preview{ font-size:12.5px; font-family: var(--font-mono); min-height:16px; }
+.selisih-preview.pos{ color: var(--green); }
+.selisih-preview.neg{ color: var(--red); }
+.selisih-preview.zero{ color: var(--muted); }
+.save-status{ font-size:13px; text-align:center; min-height:18px; }
+.save-status.ok{ color: var(--green); }
+.save-status.err{ color: var(--red); }
+.info-note{ font-size:12px; color: var(--muted); background: var(--surface-2); border-radius:8px; padding:8px 10px; }
+
+.toast{
+  position:fixed; bottom:24px; left:50%; transform: translateX(-50%);
+  background: var(--surface-2); border:1px solid var(--border); color: var(--text);
+  padding:12px 18px; border-radius:10px; font-size:13.5px; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,0.4);
+}
+@media (min-width:720px){ .card-edit-hint{ display:block; } }
+</style>
+</head>
+<body>
+
+<!-- ===== SPLASH SCREEN ===== -->
+<div id="app-splash">
+  <div class="splash-logo">
+    <img src="icons/icon.png" alt="Logo" onerror="this.style.display='none'"/>
+  </div>
+  <div class="splash-title">STOCK<span class="accent">OPNAME</span></div>
+  <div class="splash-sub">PT Karya Indah Multiguna</div>
+  <div class="splash-dots"><span></span><span></span><span></span></div>
+</div>
+<script>
+(function(){
+  var MIN_SHOW = 1200;  // durasi minimal tampil (ms) supaya splash sempat terlihat jelas
+  var MAX_SHOW = 4000;  // batas maksimal jaga-jaga kalau koneksi/halaman lambat
+  var start = Date.now();
+  var hidden = false;
+  function hideSplash(){
+    if (hidden) return;
+    hidden = true;
+    var el = document.getElementById('app-splash');
+    if (!el) return;
+    el.classList.add('hide');
+    setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 500);
+  }
+  function trigger(){
+    var elapsed = Date.now() - start;
+    var wait = Math.max(0, MIN_SHOW - elapsed);
+    setTimeout(hideSplash, wait);
+  }
+  window.addEventListener('load', trigger);
+  setTimeout(hideSplash, MAX_SHOW);
+})();
+</script>
+
+<!-- ===== REFRESH SPLASH (animasi titik 3 saat tombol refresh ditekan) ===== -->
+<div id="refresh-splash">
+  <div class="splash-dots"><span></span><span></span><span></span></div>
+  <div class="refresh-splash-label">Memuat ulang data…</div>
+</div>
+
+<div id="offline-banner" class="offline-banner hidden">Tidak ada koneksi internet — cari &amp; simpan butuh koneksi</div>
+<div id="data-banner" class="data-banner hidden"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-eyebrow">PT Karya Indah Multiguna</span>
+    <h1 class="brand-title">STOCK<span class="accent">OPNAME</span></h1>
+    <span id="cutoff-badge" class="cutoff-badge hidden">CD: <b id="cutoff-value">—</b></span>
+  </div>
+  <div class="topbar-actions">
+    <a href="index.html" class="icon-btn" aria-label="Kembali ke menu utama" title="Kembali ke menu utama" style="text-decoration:none;">
+      <svg viewBox="0 0 24 24" width="19" height="19"><path fill="currentColor" d="M10 19l-7-7 7-7v4h8v6h-8v4z"/></svg>
+    </a>
+    <button id="btn-open-koreksi" class="icon-btn" aria-label="Edit Koreksi Tersimpan" title="Edit koreksi yang sudah tersimpan">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+    </button>
+    <button id="btn-download" class="icon-btn" aria-label="Unduh Excel" title="Unduh hasil koreksi (Excel)">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M5 20h14v-2H5v2zm7-18v12.17l3.59-3.58L17 12l-5 5-5-5 1.41-1.41L12 14.17V2h0z"/></svg>
+    </button>
+    <button id="btn-refresh" class="icon-btn" aria-label="Refresh data" title="Muat ulang data">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0012 4a8 8 0 108 8h-2a6 6 0 11-1.76-4.24L13 11h7V4l-2.35 2.35z"/></svg>
+    </button>
+    <button id="btn-theme-toggle" class="icon-btn" aria-label="Ganti tema terang/gelap" title="Ganti tema terang/gelap">
+      <svg id="theme-icon-moon" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12.74 2.02c-4.8.4-8.6 4.46-8.6 9.36 0 5.16 4.24 9.4 9.4 9.4 4.9 0 8.96-3.8 9.36-8.6-1.3 1.02-2.94 1.62-4.72 1.62-4.24 0-7.68-3.44-7.68-7.68 0-1.78.6-3.42 1.62-4.72z"/></svg>
+      <svg id="theme-icon-sun" viewBox="0 0 24 24" width="20" height="20" class="hidden"><path fill="currentColor" d="M12 7a5 5 0 100 10 5 5 0 000-10zm0-5a1 1 0 011 1v2a1 1 0 11-2 0V3a1 1 0 011-1zm0 17a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1zM3.51 4.93a1 1 0 011.41 0l1.41 1.41A1 1 0 114.93 7.76L3.51 6.34a1 1 0 010-1.41zm14.16 14.16a1 1 0 011.41 0l1.41 1.41a1 1 0 11-1.41 1.41l-1.41-1.41a1 1 0 010-1.41zM2 12a1 1 0 011-1h2a1 1 0 110 2H3a1 1 0 01-1-1zm17 0a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zM4.93 19.07a1 1 0 010-1.41l1.41-1.41a1 1 0 111.41 1.41l-1.41 1.41a1 1 0 01-1.41 0zM18.09 6.34l1.41-1.41a1 1 0 111.41 1.41l-1.41 1.42a1 1 0 11-1.41-1.42z"/></svg>
+    </button>
+    <button id="btn-settings" class="icon-btn" aria-label="Pengaturan" title="Pengaturan">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19.14 12.94a7.14 7.14 0 000-1.88l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.3 7.3 0 00-1.63-.94l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.59.24-1.14.56-1.63.94l-2.39-.96a.5.5 0 00-.6.22L2.71 8.84a.5.5 0 00.12.64l2.03 1.58a7.14 7.14 0 000 1.88l-2.03 1.58a.5.5 0 00-.12.64l1.92 3.32c.13.22.4.31.6.22l2.39-.96c.49.38 1.04.7 1.63.94l.36 2.54c.05.24.26.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.54c.59-.24 1.14-.56 1.63-.94l2.39.96c.2.09.47 0 .6-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div id="mode-bar" class="mode-bar">
+  <button id="btn-mode-toggle" class="mode-toggle" data-mode="search" aria-pressed="false">
+    <svg class="mode-icon-lock" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 1a5 5 0 00-5 5v3H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2h-1V6a5 5 0 00-5-5zm-3 8V6a3 3 0 116 0v3H9z"/></svg>
+    <svg class="mode-icon-unlock hidden" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M17 8h-1V6a4 4 0 00-7.76-1.38 1 1 0 101.87.71A2 2 0 0114 6v2H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2z"/></svg>
+    <span class="mode-toggle-text">Masuk sebagai Admin</span>
+  </button>
+</div>
+
+<main class="main">
+
+  <section class="search-panel">
+    <div class="search-row">
+      <div class="search-input-wrap">
+        <input id="search-input" type="text" inputmode="search" placeholder="Cari MCS#, SO#, REF#, atau LOC#…" autocomplete="off" />
+        <button type="button" id="btn-clear-search" class="input-clear-btn" aria-label="Hapus pencarian">✕</button>
+      </div>
+      <button id="btn-search" class="btn-primary">Cari</button>
+    </div>
+    <div class="field-chips" id="field-chips">
+      <button class="chip active" data-field="ALL">Semua</button>
+      <button class="chip" data-field="MCS">MCS#</button>
+      <button class="chip" data-field="SO">SO#</button>
+      <button class="chip" data-field="REF">REF#</button>
+      <button class="chip" data-field="LOC">LOC#</button>
+    </div>
+    <button id="btn-open-master" class="btn-secondary btn-full">+ Cari di Master MC (barang baru)</button>
+    <button type="button" id="btn-install-pwa" class="btn-secondary btn-full btn-install hidden">
+      <svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-3px;margin-right:6px;"><path fill="currentColor" d="M5 20h14v-2H5v2zm7-18v12.17l3.59-3.58L17 12l-5 5-5-5 1.41-1.41L12 14.17V2h0z"/></svg>Unduh Aplikasi (PWA)
+    </button>
+  </section>
+
+  <section class="status-row">
+    <span id="result-summary" class="muted">Memuat data…</span>
+  </section>
+
+  <section id="results" class="results" aria-live="polite"></section>
+
+  <template id="card-template">
+    <article class="item-card" tabindex="0">
+      <div class="card-strip"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="mono mcs"></span>
+          <span class="saved-tag hidden">✓ Tersimpan sesi ini</span>
+          <span class="badge sts"></span>
+        </div>
+        <div class="model"></div>
+        <div class="card-grid">
+          <div><span class="k">LOC#</span><span class="v mono loc"></span></div>
+          <div><span class="k">C#</span><span class="v mono c"></span></div>
+          <div><span class="k">SO#</span><span class="v mono so"></span></div>
+          <div><span class="k">REF#</span><span class="v mono ref"></span></div>
+        </div>
+        <div class="card-grid extra-grid">
+          <div><span class="k">UKURAN</span><span class="v mono ukuran"></span></div>
+          <div><span class="k">TOTAL SALDO</span><span class="v mono total-saldo"></span></div>
+          <div><span class="k">INTERNAL</span><span class="v mono internal"></span></div>
+          <div><span class="k">SALES</span><span class="v mono sales"></span></div>
+        </div>
+        <div class="card-bottom">
+          <div class="bal-block">
+            <span class="k">BAL</span>
+            <span class="bal-num mono bal"></span>
+          </div>
+          <div class="inout">
+            <span class="mono inv">IN <b class="in"></b></span>
+            <span class="mono outv">OUT <b class="out"></b></span>
+          </div>
+        </div>
+        <div class="card-meta muted">
+          <span class="date"></span> · <span class="customer"></span>
+        </div>
+      </div>
+      <div class="card-edit-hint">Ketuk untuk koreksi ›</div>
+    </article>
+  </template>
+
+</main>
+
+<!-- Bottom sheet: edit item -->
+<div id="sheet-overlay" class="sheet-overlay hidden">
+  <div id="edit-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <span class="sheet-eyebrow" id="sheet-eyebrow">KOREKSI STOCK OPNAME</span>
+        <h2 id="sheet-title" class="mono"></h2>
+      </div>
+      <button id="btn-close-sheet" class="icon-btn" aria-label="Tutup">✕</button>
+    </div>
+
+    <div class="sheet-refinfo muted" id="sheet-refinfo"></div>
+    <div class="info-note" id="edit-top-note">Koreksi disimpan sebagai <b>data baru</b> di sheet terpisah (tidak mengubah data sumber).</div>
+
+    <form id="edit-form" class="edit-form">
+      <label class="field field-lg">
+        <span class="field-label">REF# <em>nomor referensi</em></span>
+        <div class="field-input-wrap">
+          <input type="text" id="edit-ref" class="mono kb-primary" autocomplete="off" />
+          <input type="text" id="edit-ref-shadow" class="mono kb-shadow hidden" inputmode="numeric" autocomplete="off" tabindex="-1" />
+          <button type="button" class="input-clear-btn" aria-label="Hapus REF#">✕</button>
+        </div>
+      </label>
+      <label class="field field-lg">
+        <span class="field-label">SO# <em>nomor SO</em></span>
+        <div class="field-input-wrap">
+          <input type="text" id="edit-so" class="mono kb-primary" autocomplete="off" />
+          <input type="text" id="edit-so-shadow" class="mono kb-shadow hidden" inputmode="numeric" autocomplete="off" tabindex="-1" />
+          <button type="button" class="input-clear-btn" aria-label="Hapus SO#">✕</button>
+        </div>
+      </label>
+      <label class="field field-lg">
+        <span class="field-label">C# <em>carton/nomor</em></span>
+        <div class="field-input-wrap">
+          <input type="text" id="edit-c" class="mono kb-primary" autocomplete="off" />
+          <input type="text" id="edit-c-shadow" class="mono kb-shadow hidden" inputmode="numeric" autocomplete="off" tabindex="-1" />
+          <button type="button" class="input-clear-btn" aria-label="Hapus C#">✕</button>
+        </div>
+      </label>
+
+      <div class="field field-lg readonly-field">
+        <span class="field-label">BAL SISTEM <em>angka dari data sumber, tidak bisa diubah</em></span>
+        <div id="edit-bal-sistem" class="mono readonly-value">—</div>
+      </div>
+
+      <label class="field field-lg">
+        <span class="field-label">QTY BARU <em>hasil hitung fisik saat opname</em></span>
+        <div class="field-input-wrap">
+          <input type="number" id="edit-bal" class="mono" inputmode="numeric" autocomplete="off" />
+          <button type="button" class="input-clear-btn" aria-label="Hapus QTY BARU">✕</button>
+        </div>
+      </label>
+      <div id="edit-selisih-preview" class="selisih-preview"></div>
+
+      <label class="field field-lg">
+        <span class="field-label">LOC# <em>lokasi rak</em></span>
+        <div class="field-input-wrap">
+          <input type="text" id="edit-loc" class="mono kb-primary" autocomplete="off" />
+          <input type="text" id="edit-loc-shadow" class="mono kb-shadow hidden" inputmode="numeric" autocomplete="off" tabindex="-1" />
+          <button type="button" class="input-clear-btn" aria-label="Hapus LOC#">✕</button>
+        </div>
+      </label>
+
+      <div class="info-note" id="edit-fallback-note">Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#/SO#).</div>
+
+      <button type="submit" id="btn-save" class="btn-primary btn-full">Simpan Koreksi</button>
+      <div id="save-status" class="save-status" role="status"></div>
+    </form>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div id="settings-overlay" class="sheet-overlay hidden">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <span class="sheet-eyebrow">PENGATURAN</span>
+        <h2 id="settings-title">Sumber Data &amp; Koneksi Simpan</h2>
+      </div>
+      <button id="btn-close-settings" class="icon-btn" aria-label="Tutup">✕</button>
+    </div>
+
+    <form id="settings-form" class="edit-form">
+      <label class="field">
+        <span class="field-label">Link CSV (data untuk dicari) <em>sudah diisi default</em></span>
+        <div class="field-input-wrap">
+          <input type="url" id="set-csv" placeholder="https://docs.google.com/…/pub?output=csv" required />
+          <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
+        </div>
+      </label>
+      <label class="field">
+        <span class="field-label">Link CSV Master MC <em>untuk tombol Cari di Master MC, sudah diisi default</em></span>
+        <div class="field-input-wrap">
+          <input type="url" id="set-master-csv" placeholder="https://docs.google.com/…/pub?gid=…&output=csv" required />
+          <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
+        </div>
+      </label>
+      <label class="field">
+        <span class="field-label">Supabase Project URL <em>untuk simpan koreksi</em></span>
+        <div class="field-input-wrap">
+          <input type="url" id="set-supabase-url" placeholder="https://xxxxxxxx.supabase.co" required />
+          <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
+        </div>
+      </label>
+      <label class="field">
+        <span class="field-label">Supabase Anon Public Key</span>
+        <div class="field-input-wrap">
+          <input type="text" id="set-supabase-key" placeholder="eyJhbGciOi..." required />
+          <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
+        </div>
+      </label>
+      <div class="info-note">Nama editor <b>tidak</b> diisi manual lagi — otomatis diambil dari akun admin yang login (lihat tombol "Masuk sebagai Admin" di atas).</div>
+      <button type="submit" class="btn-primary btn-full">Simpan Pengaturan</button>
+      <div id="settings-status" class="save-status" role="status"></div>
+    </form>
+    <p class="muted small">Pengaturan disimpan hanya di perangkat ini. Lihat PANDUAN-SUPABASE.md untuk cara mendapatkan URL &amp; anon key, dan cara bikin akun admin.</p>
+  </div>
+</div>
+
+<!-- Login Admin modal -->
+<div id="login-overlay" class="sheet-overlay hidden">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <span class="sheet-eyebrow">AKSES TERBATAS</span>
+        <h2 id="login-title">Login Admin</h2>
+      </div>
+      <button id="btn-close-login" class="icon-btn" aria-label="Tutup">✕</button>
+    </div>
+
+    <div class="info-note">Hanya admin yang login yang bisa input/edit data. Data koreksi akan tercatat otomatis atas nama akun ini.</div>
+
+    <form id="login-form" class="edit-form">
+      <label class="field">
+        <span class="field-label">Email</span>
+        <div class="field-input-wrap">
+          <input type="email" id="login-email" autocomplete="username" required />
+        </div>
+      </label>
+      <label class="field">
+        <span class="field-label">Password</span>
+        <div class="field-input-wrap">
+          <input type="password" id="login-password" autocomplete="current-password" required />
+        </div>
+      </label>
+      <div id="login-error" class="field-error"></div>
+      <button type="submit" id="btn-login-submit" class="btn-primary btn-full">Masuk</button>
+      <div id="login-status" class="save-status" role="status"></div>
+    </form>
+
+    <div id="logged-in-box" class="hidden" style="margin-top:6px;">
+      <div class="login-status-row"><span class="login-status-dot on"></span>Masuk sebagai <b id="logged-in-email"></b></div>
+      <button type="button" id="btn-logout" class="btn-secondary btn-full">Keluar dari Mode Admin</button>
+    </div>
+
+    <p class="muted small">Akun admin dibuat lewat Supabase Dashboard (Authentication → Users), bukan dari halaman ini. Lihat PANDUAN-SUPABASE.md.</p>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+<button type="button" id="kb-float-toggle" class="kb-float-toggle" aria-label="Ganti jenis keyboard">123</button>
+<button id="btn-scroll-top" class="scroll-top-btn" aria-label="Kembali ke atas" title="Kembali ke atas">
+  <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 8l6 6-1.41 1.41L12 10.83l-4.59 4.58L6 14z"/></svg>
+</button>
+
+<!-- Master MC search overlay (untuk barang baru) -->
+<div id="master-overlay" class="sheet-overlay hidden">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="master-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <span class="sheet-eyebrow">BARANG BARU</span>
+        <h2 id="master-title">Cari di Master MC</h2>
+      </div>
+      <button id="btn-close-master" class="icon-btn" aria-label="Tutup">✕</button>
+    </div>
+
+    <div class="search-row master-search-row">
+      <div class="search-input-wrap">
+        <input id="master-search-input" type="text" inputmode="search" placeholder="Cari MC#, nama barang, atau customer…" autocomplete="off" />
+        <button type="button" id="btn-clear-master-search" class="input-clear-btn" aria-label="Hapus pencarian">✕</button>
+      </div>
+      <button id="btn-master-search" class="btn-primary">Cari</button>
+    </div>
+
+    <div class="status-row"><span id="master-summary" class="muted">Ketik kata kunci lalu tekan Cari</span></div>
+    <div id="master-results" class="results"></div>
+  </div>
+</div>
+
+<!-- Edit Koreksi Tersimpan overlay -->
+<div id="koreksi-overlay" class="sheet-overlay hidden">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="koreksi-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <span class="sheet-eyebrow">EDIT KOREKSI TERSIMPAN</span>
+        <h2 id="koreksi-title">Cari Koreksi</h2>
+      </div>
+      <button id="btn-close-koreksi" class="icon-btn" aria-label="Tutup">✕</button>
+    </div>
+
+    <div class="search-row master-search-row">
+      <div class="search-input-wrap">
+        <input id="koreksi-search-input" type="text" inputmode="search" placeholder="Cari MCS#, NO, atau nama admin…" autocomplete="off" />
+        <button type="button" id="btn-clear-koreksi-search" class="input-clear-btn" aria-label="Hapus pencarian">✕</button>
+      </div>
+      <button id="btn-koreksi-search" class="btn-primary">Cari</button>
+    </div>
+
+    <div class="status-row"><span id="koreksi-summary" class="muted">Ketik kata kunci lalu tekan Cari</span></div>
+    <div id="koreksi-results" class="results"></div>
+  </div>
+</div>
+
+<template id="koreksi-card-template">
+  <article class="item-card master-item-card" tabindex="0">
+    <div class="card-strip"></div>
+    <div class="card-body">
+      <div class="card-top">
+        <span class="mono kx-mcs"></span>
+      </div>
+      <div class="model kx-model"></div>
+      <div class="card-grid">
+        <div><span class="k">LOC#</span><span class="v mono kx-loc"></span></div>
+        <div><span class="k">C#</span><span class="v mono kx-c"></span></div>
+        <div><span class="k">SO#</span><span class="v mono kx-so"></span></div>
+        <div><span class="k">REF#</span><span class="v mono kx-ref"></span></div>
+      </div>
+      <div class="card-bottom">
+        <div class="bal-block">
+          <span class="k">QTY BARU</span>
+          <span class="bal-num mono kx-qty"></span>
+        </div>
+        <div class="inout">
+          <span class="mono kx-selisih"></span>
+        </div>
+      </div>
+      <div class="card-meta muted kx-meta"></div>
+    </div>
+    <div class="card-edit-hint">Ketuk untuk edit ›</div>
+  </article>
+</template>
+
+<template id="master-card-template">
+  <article class="item-card master-item-card" tabindex="0">
+    <div class="card-strip"></div>
+    <div class="card-body">
+      <div class="card-top">
+        <span class="mono mc-mc"></span>
+      </div>
+      <div class="model mc-model"></div>
+      <div class="card-grid">
+        <div><span class="k">SO#</span><span class="v mono mc-so"></span></div>
+        <div><span class="k">UKURAN</span><span class="v mono mc-ukuran"></span></div>
+      </div>
+      <div class="card-grid extra-grid">
+        <div><span class="k">BERAT/PCS</span><span class="v mono mc-berat"></span></div>
+        <div><span class="k">FLUTE</span><span class="v mono mc-flute"></span></div>
+        <div><span class="k">SALES</span><span class="v mono mc-sales"></span></div>
+        <div><span class="k">INTERNAL</span><span class="v mono mc-internal"></span></div>
+        <div><span class="k">C.CODE</span><span class="v mono mc-ccode"></span></div>
+        <div><span class="k">PIC</span><span class="v mono mc-pic"></span></div>
+      </div>
+      <div class="card-meta muted mc-customer"></div>
+    </div>
+    <div class="card-edit-hint">Ketuk untuk pakai ›</div>
+  </article>
+</template>
+
+<script>
+/* =========================================================
+   SEMUA JAVASCRIPT ADA DI SINI — biar gampang direvisi di satu file
+   ========================================================= */
+
+// ---------- konfigurasi default ----------
+// Link CSV publik yang jadi SUMBER INFORMASI untuk pencarian (read-only).
+// Bisa diganti lewat menu Pengaturan tanpa perlu edit kode ini.
+const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=0&single=true&output=csv';
+
+// Link CSV publik Master MC (data acuan barang, dipakai tombol "Cari di Master MC")
+const DEFAULT_MASTER_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=2047780733&single=true&output=csv';
+
+// --- Konfigurasi Supabase default -------------------------------------------------
+// GANTI dua nilai di bawah ini dengan milik project Supabase kamu sendiri
+// (Project Settings → API di dashboard Supabase), ATAU biarkan kosong dan isi
+// lewat menu Pengaturan (⚙️) di app tanpa perlu edit kode ini.
+// Anon/public key AMAN ditaruh di frontend — akses sesungguhnya dibatasi oleh
+// Row Level Security (RLS) di sisi database. Lihat PANDUAN-SUPABASE.md.
+const DEFAULT_SUPABASE_URL = 'https://xxxxxxxxxxxxxxxx.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'PASTE_ANON_PUBLIC_KEY_DI_SINI';
+const KOREKSI_TABLE = 'koreksi_stock_opname';
+
+const STORAGE_KEY = 'stockopname.settings.v3';
+const CSV_CACHE_KEY = 'stockopname.csvcache.v1';
+
+const state = {
+  field: 'ALL',
+  allRows: [],       // seluruh data dari CSV (sumber informasi)
+  results: [],        // hasil pencarian saat ini
+  activeItem: null,
+  isNewItem: false,   // true kalau item sedang diedit berasal dari Master MC (barang baru)
+  isUpdateMode: false, // true kalau item sedang diedit berasal dari "Edit Koreksi Tersimpan"
+  updateId: null,      // ID baris KOREKSI yang sedang diedit (mode update)
+  savedThisSession: new Set(), // nomor baris (NO) yang sudah disimpan koreksinya sesi ini
+  settings: loadSettings(),
+  masterRows: [],      // data Master MC, dimuat lazy saat tombol "Cari di Master MC" pertama kali dipakai
+  masterLoaded: false,
+  koreksiRows: [],      // hasil KOREKSI yang sudah tersimpan, dimuat ulang tiap kali overlay dibuka
+  user: null,           // sesi Supabase Auth yang sedang login (null = belum login = mode cari saja)
+};
+
+// ---------- settings ----------
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const s = raw ? JSON.parse(raw) : {};
+    return {
+      csvUrl: s.csvUrl || DEFAULT_CSV_URL,
+      masterCsvUrl: s.masterCsvUrl || DEFAULT_MASTER_CSV_URL,
+      supabaseUrl: s.supabaseUrl || DEFAULT_SUPABASE_URL,
+      supabaseAnonKey: s.supabaseAnonKey || DEFAULT_SUPABASE_ANON_KEY,
+    };
+  } catch (e) {
+    return { csvUrl: DEFAULT_CSV_URL, masterCsvUrl: DEFAULT_MASTER_CSV_URL, supabaseUrl: DEFAULT_SUPABASE_URL, supabaseAnonKey: DEFAULT_SUPABASE_ANON_KEY };
+  }
+}
+function saveSettings(s) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  state.settings = s;
+}
+function saveReady() {
+  return !!(supabaseClient && state.user);
+}
+
+// ---------- Supabase client & auth ----------
+
+let supabaseClient = null;
+
+function initSupabaseClient() {
+  const url = state.settings.supabaseUrl;
+  const key = state.settings.supabaseAnonKey;
+  if (!url || !key || url.includes('xxxxxxxx') || key.includes('PASTE_ANON')) {
+    supabaseClient = null;
+    return;
+  }
+  try {
+    supabaseClient = window.supabase.createClient(url, key);
+  } catch (e) {
+    console.error('Gagal membuat Supabase client:', e);
+    supabaseClient = null;
+  }
+}
+
+async function refreshAuthSession() {
+  if (!supabaseClient) { state.user = null; updateModeUI(); return; }
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    state.user = (data && data.session) ? data.session.user : null;
+  } catch (e) {
+    state.user = null;
+  }
+  updateModeUI();
+}
+
+function watchAuthChanges() {
+  if (!supabaseClient) return;
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    state.user = session ? session.user : null;
+    updateModeUI();
+    renderResults(false, state.results.length);
+  });
+}
+
+// ---------- CSV parser (menangani koma/kutip/baris baru di dalam kutip) ----------
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ',') {
+      row.push(field); field = '';
+    } else if (c === '\r') {
+      // dilewati, ditangani oleh \n
+    } else if (c === '\n') {
+      row.push(field); rows.push(row); row = []; field = '';
+    } else {
+      field += c;
+    }
+  }
+  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+// Cari index kolom berdasarkan NAMA header (bukan posisi tetap), supaya kalau ada
+// kolom baru/hilang/geser di Google Sheets, mapping tidak ikut rusak. Kalau nama
+// headernya tidak ketemu (mis. sheet sangat lama), baru pakai posisi tetap (fallback).
+function colIndexByName(header, names, fallback) {
+  const upper = header.map((h) => String(h || '').trim().toUpperCase());
+  for (const name of names) {
+    const i = upper.indexOf(name.toUpperCase());
+    if (i !== -1) return i;
+  }
+  return fallback;
+}
+
+// Sama seperti colIndexByName, tapi mencari header yang MENGANDUNG salah satu
+// kata kunci (bukan harus persis sama). Dipakai sebagai lapisan cadangan kalau
+// nama kolom di sheet sedikit berbeda (mis. "Total Pallet", "Jml Pallet", dst).
+function colIndexBySubstring(header, substrings, fallback) {
+  const upper = header.map((h) => String(h || '').trim().toUpperCase());
+  for (let i = 0; i < upper.length; i++) {
+    for (const s of substrings) {
+      if (upper[i] && upper[i].includes(s.toUpperCase())) return i;
+    }
+  }
+  return fallback;
+}
+
+// Susunan kolom (dicari berdasarkan nama header; posisi di bawah cuma fallback
+// kalau nama headernya tidak ketemu di CSV):
+// NO, LOC#, AC#, STS, MCS#, MC MODEL, C#, PD, SET, PART#, ED, SO#, SO PO#, WO#,
+// DATE, TRAN, GRX, REF#, ALT REF#, IN, OUT, BAL, CUTOMER (kolom W), UKURAN (kolom X),
+// TOTAL SALDO (kolom Y), INT (kolom Z), SALES (kolom AA), TOTAL PALLET (kolom AC)
+function extractRecords(rows) {
+  let headerIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].includes('LOC#') && rows[i].includes('MCS#')) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) throw new Error('Header data tidak ditemukan di CSV (kolom LOC#/MCS# tidak ada).');
+
+  const header = rows[headerIdx];
+  const iNo = colIndexByName(header, ['NO.', 'NO'], 0);
+  const iLoc = colIndexByName(header, ['LOC#'], 1);
+  const iAc = colIndexByName(header, ['AC#'], 2);
+  const iSts = colIndexByName(header, ['STS'], 3);
+  const iMcs = colIndexByName(header, ['MCS#'], 4);
+  const iModel = colIndexByName(header, ['MC MODEL'], 5);
+  const iC = colIndexByName(header, ['C#'], 6);
+  const iPart = colIndexByName(header, ['PART#'], 9);
+  const iSo = colIndexByName(header, ['SO#'], 11);
+  const iSoPo = colIndexByName(header, ['SO PO#'], 12);
+  const iWo = colIndexByName(header, ['WO#'], 13);
+  const iDate = colIndexByName(header, ['DATE'], 14);
+  const iRef = colIndexByName(header, ['REF#'], 17);
+  const iAltRef = colIndexByName(header, ['ALT REF#'], 18);
+  const iIn = colIndexByName(header, ['IN'], 19);
+  const iOut = colIndexByName(header, ['OUT'], 20);
+  const iBal = colIndexByName(header, ['BAL'], 21);
+  const iCustomer = colIndexByName(header, ['CUTOMER', 'CUSTOMER'], 22);
+  const iUkuran = colIndexByName(header, ['UKURAN'], 23);
+  const iTotalSaldo = colIndexByName(header, ['TOTAL SALDO'], 24);
+  const iInternal = colIndexByName(header, ['INT', "INT'S", 'INTERNAL'], 25);
+  const iSales = colIndexByName(header, ['SALES'], 26);
+  // Total Pallet: cari dulu berdasarkan nama header yang mengandung kata "PALLET".
+  // Kalau tidak ketemu, fallback ke posisi 2 kolom setelah SALES (SALES → mcfit → Total Pallet),
+  // sesuai susunan kolom di sheet ini. Fallback terakhir: posisi tetap kolom AC (28).
+  const iTotalPallet = colIndexBySubstring(header, ['TOTAL PALLET', 'JML PALLET', 'PALLET'], iSales + 2 || 28);
+
+  let dataStart = headerIdx + 1;
+  const nextRow = rows[dataStart] || [];
+  const nextRowEmpty = nextRow.every((cell) => String(cell || '').trim() === '');
+  if (nextRowEmpty) dataStart += 1; // lewati baris pemisah kosong kalau ada
+
+  const records = [];
+  for (let i = dataStart; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 5) continue;
+    const no = String(r[iNo] || '').trim();
+    const mcs = String(r[iMcs] || '').trim();
+    if (no === '' && mcs === '') continue; // baris kosong/#N/A di akhir laporan, berhenti anggap selesai
+
+    records.push({
+      no: r[iNo] || '', loc: r[iLoc] || '', ac: r[iAc] || '', sts: r[iSts] || '',
+      mcs: r[iMcs] || '', model: r[iModel] || '', c: r[iC] || '', part: r[iPart] || '',
+      so: r[iSo] || '', sopo: r[iSoPo] || '', wo: r[iWo] || '', date: r[iDate] || '',
+      ref: r[iRef] || '', altref: r[iAltRef] || '', in: r[iIn] || '', out: r[iOut] || '',
+      bal: r[iBal] || '', customer: r[iCustomer] || '',
+      ukuran: r[iUkuran] || '', totalSaldo: r[iTotalSaldo] || '', internal: r[iInternal] || '', sales: r[iSales] || '',
+      totalPallet: r[iTotalPallet] || '',
+    });
+  }
+  return records;
+}
+
+// Ambil tanggal & jam cutoff data dari cell A2 (baris ke-2, kolom pertama),
+// contoh isinya: "REPORT TITLE: FG OPEN ITEM BY AC# AS AT 15/08/2026 TIME : 09:24am"
+// Hasilnya cuma dipakai buat ditampilkan singkat sebagai badge "CD: dd/mm/yyyy HH:MMam".
+// Gabungkan Total Saldo & Total Pallet jadi satu baris singkat, mis. "3100 [P:10]".
+// Kalau Total Pallet kosong, tampil biasa (cuma total saldo) tanpa embel-embel.
+function formatTotalSaldoPallet(totalSaldo, totalPallet) {
+  const saldo = String(totalSaldo || '').trim();
+  const pallet = String(totalPallet || '').trim();
+  if (!saldo && !pallet) return '—';
+  if (!pallet) return saldo || '—';
+  return (saldo || '—') + ' [P:' + pallet + ']';
+}
+
+function extractCutoffInfo(rows) {
+  const a2 = String((rows[1] && rows[1][0]) || '').trim();
+  if (!a2) return '';
+  const dateMatch = a2.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/);
+  if (!dateMatch) return '';
+  const timeMatch = a2.match(/(\d{1,2}:\d{2}\s*(?:am|pm|AM|PM)?)/);
+  let label = dateMatch[1];
+  if (timeMatch) label += ' ' + timeMatch[1].replace(/\s+/g, '').toUpperCase();
+  return label;
+}
+
+function updateCutoffBadge(label) {
+  if (!el.cutoffBadge || !el.cutoffValue) return;
+  if (label) {
+    el.cutoffValue.textContent = label;
+    el.cutoffBadge.classList.remove('hidden');
+  } else {
+    el.cutoffBadge.classList.add('hidden');
+  }
+}
+
+// Kolom Master MC (sesuai file acuan): MC, SO, CUSTOMER, NAMA BARANG, BERAT,
+// SALES, INT'S, C.CODE, PIC, TGL MASUK, UKURAN, FLUTE
+function extractMasterRecords(rows) {
+  let headerIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].includes('MC') && rows[i].includes('NAMA BARANG')) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) throw new Error('Header Master MC tidak ditemukan (kolom MC/NAMA BARANG tidak ada).');
+
+  const header = rows[headerIdx];
+  const iMc = colIndexByName(header, ['MC'], 0);
+  const iSo = colIndexByName(header, ['SO'], 1);
+  const iCustomer = colIndexByName(header, ['CUSTOMER'], 2);
+  const iModel = colIndexByName(header, ['NAMA BARANG'], 3);
+  const iBerat = colIndexByName(header, ['BERAT'], 4);
+  const iSales = colIndexByName(header, ['SALES'], 5);
+  const iInternal = colIndexByName(header, ["INT'S", 'INT', 'INTERNAL'], 6);
+  const iCcode = colIndexByName(header, ['C.CODE', 'CCODE'], 7);
+  const iPic = colIndexByName(header, ['PIC'], 8);
+  const iUkuran = colIndexByName(header, ['UKURAN'], 10);
+  const iFlute = colIndexByName(header, ['FLUTE'], 11);
+
+  const records = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 2) continue;
+    const mc = String(r[iMc] || '').trim();
+    if (mc === '') continue;
+
+    records.push({
+      mc: r[iMc] || '', so: r[iSo] || '', customer: r[iCustomer] || '', model: r[iModel] || '',
+      berat: r[iBerat] || '', sales: r[iSales] || '', internal: r[iInternal] || '', ccode: r[iCcode] || '', pic: r[iPic] || '',
+      ukuran: r[iUkuran] || '', flute: r[iFlute] || '',
+    });
+  }
+  return records;
+}
+
+// Kolom sheet KOREKSI (dibaca berdasarkan nama header, bukan posisi tetap,
+// biar tidak gampang rusak kalau urutan kolom berubah). Header wajib ada
+// kolom "ID" (dibuat otomatis oleh code.gs) supaya entri bisa dicari & diedit lagi.
+function extractKoreksiRecords(rows) {
+  let headerIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].includes('ID') && rows[i].includes('MCS#')) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) {
+    throw new Error('Kolom ID belum ada di sheet KOREKSI. Perbarui code.gs backend dulu (lihat kode terbaru) supaya kolom ID otomatis dibuat.');
+  }
+
+  const header = rows[headerIdx];
+  const col = {};
+  header.forEach((h, idx) => { col[String(h || '').trim()] = idx; });
+  const get = (r, name) => (col[name] !== undefined ? (r[col[name]] || '') : '');
+
+  const records = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 2) continue;
+    const id = String(get(r, 'ID')).trim();
+    if (id === '') continue;
+
+    records.push({
+      id,
+      timestamp: get(r, 'Timestamp'),
+      editor: get(r, 'Editor'),
+      no: get(r, 'NO (baris laporan)'),
+      ref: get(r, 'REF# baru'),
+      so: get(r, 'SO#'),
+      c: get(r, 'C# baru'),
+      qty: get(r, 'QTY BARU'),
+      loc: get(r, 'LOC# baru'),
+      mcs: get(r, 'MCS#'),
+      customer: get(r, 'Customer'),
+      model: get(r, 'MC Model'),
+      balSistem: get(r, 'BAL sistem'),
+      selisih: get(r, 'Selisih Qty'),
+      editedBy: get(r, 'Diedit oleh'),
+      editedAt: get(r, 'Diedit pada'),
+    });
+  }
+  return records;
+}
+
+// ---------- dom refs ----------
+
+const el = {
+  searchInput: document.getElementById('search-input'),
+  btnSearch: document.getElementById('btn-search'),
+  btnClearSearch: document.getElementById('btn-clear-search'),
+  fieldChips: document.getElementById('field-chips'),
+  results: document.getElementById('results'),
+  summary: document.getElementById('result-summary'),
+  cardTemplate: document.getElementById('card-template'),
+
+  sheetOverlay: document.getElementById('sheet-overlay'),
+  sheetTitle: document.getElementById('sheet-title'),
+  sheetEyebrow: document.getElementById('sheet-eyebrow'),
+  sheetRefinfo: document.getElementById('sheet-refinfo'),
+  editTopNote: document.getElementById('edit-top-note'),
+  btnCloseSheet: document.getElementById('btn-close-sheet'),
+  editForm: document.getElementById('edit-form'),
+  editSheet: document.getElementById('edit-sheet'),
+  editLoc: document.getElementById('edit-loc'),
+  editC: document.getElementById('edit-c'),
+  editRef: document.getElementById('edit-ref'),
+  editSo: document.getElementById('edit-so'),
+  editBalSistem: document.getElementById('edit-bal-sistem'),
+  editBal: document.getElementById('edit-bal'),
+  editSelisihPreview: document.getElementById('edit-selisih-preview'),
+  editFallbackNote: document.getElementById('edit-fallback-note'),
+  saveStatus: document.getElementById('save-status'),
+
+  btnOpenMaster: document.getElementById('btn-open-master'),
+  btnInstallPwa: document.getElementById('btn-install-pwa'),
+  masterOverlay: document.getElementById('master-overlay'),
+  btnCloseMaster: document.getElementById('btn-close-master'),
+  masterSearchInput: document.getElementById('master-search-input'),
+  btnMasterSearch: document.getElementById('btn-master-search'),
+  btnClearMasterSearch: document.getElementById('btn-clear-master-search'),
+  masterSummary: document.getElementById('master-summary'),
+  masterResults: document.getElementById('master-results'),
+  masterCardTemplate: document.getElementById('master-card-template'),
+  setMasterCsv: document.getElementById('set-master-csv'),
+
+  btnOpenKoreksi: document.getElementById('btn-open-koreksi'),
+  koreksiOverlay: document.getElementById('koreksi-overlay'),
+  btnCloseKoreksi: document.getElementById('btn-close-koreksi'),
+  koreksiSearchInput: document.getElementById('koreksi-search-input'),
+  btnKoreksiSearch: document.getElementById('btn-koreksi-search'),
+  btnClearKoreksiSearch: document.getElementById('btn-clear-koreksi-search'),
+  koreksiSummary: document.getElementById('koreksi-summary'),
+  koreksiResults: document.getElementById('koreksi-results'),
+  koreksiCardTemplate: document.getElementById('koreksi-card-template'),
+
+  btnSettings: document.getElementById('btn-settings'),
+  btnRefresh: document.getElementById('btn-refresh'),
+  btnDownload: document.getElementById('btn-download'),
+  settingsOverlay: document.getElementById('settings-overlay'),
+  btnCloseSettings: document.getElementById('btn-close-settings'),
+  settingsForm: document.getElementById('settings-form'),
+  setCsv: document.getElementById('set-csv'),
+  setSupabaseUrl: document.getElementById('set-supabase-url'),
+  setSupabaseKey: document.getElementById('set-supabase-key'),
+
+  loginOverlay: document.getElementById('login-overlay'),
+  btnCloseLogin: document.getElementById('btn-close-login'),
+  loginForm: document.getElementById('login-form'),
+  loginEmail: document.getElementById('login-email'),
+  loginPassword: document.getElementById('login-password'),
+  loginError: document.getElementById('login-error'),
+  loginStatus: document.getElementById('login-status'),
+  btnLoginSubmit: document.getElementById('btn-login-submit'),
+  loggedInBox: document.getElementById('logged-in-box'),
+  loggedInEmail: document.getElementById('logged-in-email'),
+  btnLogout: document.getElementById('btn-logout'),
+  settingsStatus: document.getElementById('settings-status'),
+
+  offlineBanner: document.getElementById('offline-banner'),
+  dataBanner: document.getElementById('data-banner'),
+  toast: document.getElementById('toast'),
+
+  topbar: document.querySelector('.topbar'),
+  cutoffBadge: document.getElementById('cutoff-badge'),
+  cutoffValue: document.getElementById('cutoff-value'),
+  btnThemeToggle: document.getElementById('btn-theme-toggle'),
+  btnModeToggle: document.getElementById('btn-mode-toggle'),
+  themeIconMoon: document.getElementById('theme-icon-moon'),
+  themeIconSun: document.getElementById('theme-icon-sun'),
+  metaThemeColor: document.getElementById('meta-theme-color'),
+  btnScrollTop: document.getElementById('btn-scroll-top'),
+};
+
+// ---------- tema terang/gelap ----------
+
+const THEME_KEY = 'stockopname.theme';
+const THEME_COLOR = { dark: '#12161B', light: '#F3F4F6' };
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  el.themeIconMoon.classList.toggle('hidden', theme === 'light');
+  el.themeIconSun.classList.toggle('hidden', theme === 'dark');
+  if (el.metaThemeColor) el.metaThemeColor.setAttribute('content', THEME_COLOR[theme] || THEME_COLOR.dark);
+}
+
+function getCurrentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
+
+applyTheme(getCurrentTheme());
+
+el.btnThemeToggle.addEventListener('click', () => {
+  const next = getCurrentTheme() === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+});
+
+// ---------- mode: Cari Saja vs Admin (input/koreksi) ----------
+// Mode "Cari Saja" (default): user cuma bisa mencari & lihat info barang,
+// kartu hasil TIDAK bisa diketuk untuk masuk ke form input/koreksi, dan
+// tombol "+ Cari di Master MC (barang baru)" & "Edit Koreksi Tersimpan"
+// disembunyikan karena keduanya jalur untuk menambah/mengubah data.
+// Mode "Admin": semua fitur input/koreksi aktif seperti biasa.
+
+// Admin mode sekarang murni ditentukan oleh SESI LOGIN Supabase (state.user),
+// bukan toggle manual lagi — supaya benar-benar hanya admin yang login yang
+// bisa input/edit data.
+function isAdminMode() { return !!(supabaseClient && state.user); }
+
+function updateModeUI() {
+  const admin = isAdminMode();
+
+  el.btnModeToggle.dataset.mode = admin ? 'admin' : 'search';
+  el.btnModeToggle.setAttribute('aria-pressed', String(admin));
+  el.btnModeToggle.querySelector('.mode-toggle-text').textContent = admin
+    ? ('Admin: ' + (state.user.email || state.user.id))
+    : 'Masuk sebagai Admin';
+  el.btnModeToggle.querySelector('.mode-icon-lock').classList.toggle('hidden', admin);
+  el.btnModeToggle.querySelector('.mode-icon-unlock').classList.toggle('hidden', !admin);
+
+  if (el.btnOpenKoreksi) el.btnOpenKoreksi.classList.toggle('hidden', !admin);
+
+  document.body.classList.toggle('admin-mode', admin);
+  document.body.classList.toggle('search-only-mode', !admin);
+
+  // Sinkronkan tampilan modal login (kalau sedang terbuka)
+  if (el.loginForm) el.loginForm.classList.toggle('hidden', admin);
+  if (el.loggedInBox) el.loggedInBox.classList.toggle('hidden', !admin);
+  if (admin && el.loggedInEmail) el.loggedInEmail.textContent = state.user.email || state.user.id;
+}
+
+el.btnModeToggle.addEventListener('click', () => {
+  if (isAdminMode()) { openLogin(); return; } // tampilkan info + tombol keluar
+  if (!supabaseClient) {
+    showToast('Atur Supabase URL & Anon Key dulu di Pengaturan (⚙️)');
+    openSettings();
+    return;
+  }
+  openLogin();
+});
+
+function openLogin() {
+  el.loginError.textContent = '';
+  el.loginStatus.textContent = '';
+  updateModeUI();
+  showOverlay(el.loginOverlay);
+}
+function closeLogin() { hideOverlay(el.loginOverlay); }
+el.btnCloseLogin.addEventListener('click', closeLogin);
+el.loginOverlay.addEventListener('click', (e) => { if (e.target === el.loginOverlay) closeLogin(); });
+
+el.loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!supabaseClient) { showToast('Atur Supabase URL & Anon Key dulu di Pengaturan'); return; }
+  const email = el.loginEmail.value.trim();
+  const password = el.loginPassword.value;
+  if (!email || !password) return;
+
+  el.loginError.textContent = '';
+  el.loginStatus.textContent = 'Memeriksa…';
+  el.btnLoginSubmit.disabled = true;
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    state.user = data.user;
+    el.loginPassword.value = '';
+    el.loginStatus.textContent = 'Berhasil masuk ✓';
+    updateModeUI();
+    showToast('Mode Admin aktif — bisa input/koreksi');
+    setTimeout(closeLogin, 500);
+  } catch (err) {
+    console.error(err);
+    el.loginStatus.textContent = '';
+    el.loginError.textContent = 'Login gagal: ' + (err.message || 'periksa email/password');
+  } finally {
+    el.btnLoginSubmit.disabled = false;
+  }
+});
+
+el.btnLogout.addEventListener('click', async () => {
+  if (!supabaseClient) return;
+  try { await supabaseClient.auth.signOut(); } catch (e) {}
+  state.user = null;
+  updateModeUI();
+  closeLogin();
+  showToast('Sudah keluar dari Mode Admin');
+});
+
+// ---------- header sticky + efek kaca (glassmorphism) saat scroll ----------
+// Header kini STICKY (lihat CSS .topbar: position:sticky) sehingga selalu
+// menempel di atas layar walau daftar hasil discroll panjang. Class .scrolled
+// menambahkan efek blur/saturasi/bayangan begitu halaman mulai discroll.
+
+const SCROLL_GLASS_THRESHOLD = 8;
+const SCROLL_TOP_THRESHOLD = 360;
+
+function onWindowScroll() {
+  const y = window.scrollY || document.documentElement.scrollTop || 0;
+  el.topbar.classList.toggle('scrolled', y > SCROLL_GLASS_THRESHOLD);
+  el.btnScrollTop.classList.toggle('show', y > SCROLL_TOP_THRESHOLD);
+}
+window.addEventListener('scroll', onWindowScroll, { passive: true });
+onWindowScroll();
+
+el.btnScrollTop.addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ---------- tombol hapus (x) di setiap field isian ----------
+
+function initClearableInputs() {
+  document.querySelectorAll('.field-input-wrap').forEach((wrap) => {
+    const inputs = Array.from(wrap.querySelectorAll('input'));
+    const btn = wrap.querySelector('.input-clear-btn');
+    if (!inputs.length || !btn) return;
+    const visibleInput = () => inputs.find((i) => !i.classList.contains('hidden')) || inputs[0];
+    const update = () => btn.classList.toggle('show', visibleInput().value.length > 0);
+    update();
+    inputs.forEach((input) => input.addEventListener('input', update));
+    btn.addEventListener('click', () => {
+      inputs.forEach((input) => { input.value = ''; });
+      update();
+      visibleInput().dispatchEvent(new Event('input', { bubbles: true }));
+      visibleInput().focus();
+    });
+  });
+}
+initClearableInputs();
+
+// Dipanggil setelah kita mengisi input lewat JS (mis. buka form Pengaturan atau
+// buka form Koreksi dengan data lama) — soalnya set .value lewat JS TIDAK memicu
+// event 'input', jadi tombol ✕ tidak akan muncul kalau tidak di-refresh manual.
+function refreshClearButtons(scopeEl) {
+  const root = scopeEl || document;
+  root.querySelectorAll('.field-input-wrap').forEach((wrap) => {
+    const inputs = Array.from(wrap.querySelectorAll('input'));
+    const btn = wrap.querySelector('.input-clear-btn');
+    if (!inputs.length || !btn) return;
+    const visibleInput = inputs.find((i) => !i.classList.contains('hidden')) || inputs[0];
+    btn.classList.toggle('show', visibleInput.value.length > 0);
+  });
+}
+
+// ---------- buka/tutup overlay (bottom sheet) ----------
+// Dipakai untuk semua overlay (Pengaturan, Koreksi, Master MC, Edit item).
+// Ada 2 perbaikan di sini khusus untuk Chrome di HP:
+// 1) scrollTop bagian dalam sheet dipaksa ke 0 tiap dibuka, supaya judul di
+//    baris paling atas selalu langsung kelihatan (tidak nyangkut di posisi
+//    scroll form sebelumnya).
+// 2) scroll body dikunci selama overlay terbuka (lihat class body.overlay-open
+//    di CSS) supaya address bar Chrome tidak ikut collapse/expand saat overlay
+//    dibuka, yang sebelumnya bikin bagian atas sheet kepotong/tidak terbaca.
+let openOverlayCount = 0;
+function showOverlay(overlayEl) {
+  if (!overlayEl) return;
+  overlayEl.classList.remove('hidden');
+  const sheetEl = overlayEl.querySelector('.sheet');
+  if (sheetEl) sheetEl.scrollTop = 0;
+  openOverlayCount++;
+  document.body.classList.add('overlay-open');
+}
+function hideOverlay(overlayEl) {
+  if (!overlayEl) return;
+  overlayEl.classList.add('hidden');
+  openOverlayCount = Math.max(0, openOverlayCount - 1);
+  if (openOverlayCount === 0) document.body.classList.remove('overlay-open');
+}
+
+// ---------- tombol tunggal mengambang ABC/123 (mirip GSheet) ----------
+// Tiap field REF#/SO#/C#/LOC# sebenarnya punya 2 input yang saling
+// menggantikan: input "primary" (mode huruf) dan input "shadow" (mode
+// angka, inputmode="numeric" statis, tidak pernah diubah saat aktif).
+// Saat tombol ditekan, kita cuma PINDAH FOKUS ke input yang satunya
+// (bukan mengubah inputmode di input yang sedang fokus) — jadi HP tidak
+// pernah bingung menutup+membuka keyboard di elemen yang sama, dan tidak
+// ada lagi risiko macet/freeze. Nilai kedua input selalu disinkronkan.
+
+function initFloatingKeyboardToggle() {
+  const floatBtn = document.getElementById('kb-float-toggle');
+  if (!floatBtn) return;
+
+  const fieldIds = ['edit-ref', 'edit-so', 'edit-c', 'edit-loc'];
+  const fields = fieldIds.map((id) => {
+    const primary = document.getElementById(id);
+    const shadow = document.getElementById(id + '-shadow');
+    return primary && shadow ? { primary, shadow } : null;
+  }).filter(Boolean);
+  if (!fields.length) return;
+
+  let active = null; // { primary, shadow, mode: 'text' | 'numeric' }
+  let hideTimer = null;
+
+  function positionFloatBtn() {
+    const vv = window.visualViewport;
+    if (!vv) { floatBtn.style.bottom = '20px'; return; }
+    const keyboardInset = Math.max(window.innerHeight - vv.height - vv.offsetTop, 0);
+    floatBtn.style.bottom = (keyboardInset + 10) + 'px';
+  }
+
+  function showFor(field, mode) {
+    clearTimeout(hideTimer);
+    active = { primary: field.primary, shadow: field.shadow, mode };
+    // tombol menampilkan mode TUJUAN kalau ditekan (mirip GSheet)
+    floatBtn.textContent = mode === 'numeric' ? 'ABC' : '123';
+    floatBtn.classList.add('show');
+    positionFloatBtn();
+  }
+
+  function scheduleHide() {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      const stillFocused = fields.some((f) => document.activeElement === f.primary || document.activeElement === f.shadow);
+      if (!stillFocused) {
+        floatBtn.classList.remove('show');
+        active = null;
+      }
+    }, 200);
+  }
+
+  fields.forEach((f) => {
+    f.primary.addEventListener('focus', () => showFor(f, 'text'));
+    f.shadow.addEventListener('focus', () => showFor(f, 'numeric'));
+    f.primary.addEventListener('blur', scheduleHide);
+    f.shadow.addEventListener('blur', scheduleHide);
+    // sinkronkan isi ketikan real-time antara mode ABC & 123 di field yang sama
+    f.primary.addEventListener('input', () => { f.shadow.value = f.primary.value; });
+    f.shadow.addEventListener('input', () => {
+      f.primary.value = f.shadow.value;
+      f.primary.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', positionFloatBtn);
+    window.visualViewport.addEventListener('scroll', positionFloatBtn);
+  }
+
+  // Cegah field kehilangan fokus pas jari MENYENTUH tombol (bukan saat klik),
+  // supaya tombol tidak sempat disembunyikan sebelum tap-nya kebaca.
+  floatBtn.addEventListener('pointerdown', (e) => e.preventDefault());
+
+  floatBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!active) return;
+    const { primary, shadow, mode } = active;
+    if (mode === 'text') {
+      shadow.value = primary.value;
+      primary.classList.add('hidden');
+      shadow.classList.remove('hidden');
+      shadow.focus();
+    } else {
+      primary.value = shadow.value;
+      primary.dispatchEvent(new Event('input', { bubbles: true }));
+      shadow.classList.add('hidden');
+      primary.classList.remove('hidden');
+      primary.focus();
+    }
+  });
+}
+initFloatingKeyboardToggle();
+
+// ---------- offline banner ----------
+
+function updateOnlineStatus() {
+  el.offlineBanner.classList.toggle('hidden', navigator.onLine);
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+// ---------- toast ----------
+
+let toastTimer = null;
+function showToast(msg) {
+  el.toast.textContent = msg;
+  el.toast.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.toast.classList.add('hidden'), 2600);
+}
+
+// ---------- muat data CSV ----------
+
+async function loadData(forceRefresh) {
+  el.summary.textContent = 'Memuat data…';
+  el.dataBanner.classList.add('hidden');
+
+  const url = state.settings.csvUrl + (forceRefresh ? (state.settings.csvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now() : '');
+
+  try {
+    const res = await fetch(url, { cache: forceRefresh ? 'no-store' : 'default' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+
+    const rows = parseCSV(text);
+    const records = extractRecords(rows);
+
+    state.allRows = records;
+    localStorage.setItem(CSV_CACHE_KEY, JSON.stringify({ text, ts: Date.now() }));
+    updateCutoffBadge(extractCutoffInfo(rows));
+
+    el.summary.textContent = records.length + ' data siap dicari. Ketik kata kunci lalu tekan Cari.';
+    showToast('Data dimuat: ' + records.length + ' baris');
+  } catch (err) {
+    console.error(err);
+    // fallback ke cache lokal kalau ada
+    try {
+      const cached = JSON.parse(localStorage.getItem(CSV_CACHE_KEY) || 'null');
+      if (cached) {
+        const cachedRows = parseCSV(cached.text);
+        const records = extractRecords(cachedRows);
+        state.allRows = records;
+        updateCutoffBadge(extractCutoffInfo(cachedRows));
+        const waktu = new Date(cached.ts).toLocaleString('id-ID');
+        el.dataBanner.classList.remove('hidden');
+        el.dataBanner.innerHTML = 'Gagal ambil data terbaru — memakai cache ' + waktu
+          + ' <button id="btn-retry-load">Coba lagi</button>';
+        document.getElementById('btn-retry-load').addEventListener('click', () => loadData(true));
+        el.summary.textContent = records.length + ' data (dari cache) siap dicari.';
+        return;
+      }
+    } catch (e2) { /* abaikan */ }
+
+    updateCutoffBadge('');
+    el.summary.textContent = 'Gagal memuat data CSV. Cek link CSV di Pengaturan & koneksi internet.';
+  }
+}
+
+// ---------- field chips ----------
+
+el.fieldChips.addEventListener('click', (e) => {
+  const btn = e.target.closest('.chip');
+  if (!btn) return;
+  el.fieldChips.querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
+  btn.classList.add('active');
+  state.field = btn.dataset.field;
+});
+
+// ---------- pencarian (client-side, instan karena data sudah di memori) ----------
+
+el.btnSearch.addEventListener('click', runSearch);
+el.searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
+
+function updateClearBtn(input, btn) {
+  btn.classList.toggle('show', input.value.length > 0);
+}
+updateClearBtn(el.searchInput, el.btnClearSearch);
+el.searchInput.addEventListener('input', () => updateClearBtn(el.searchInput, el.btnClearSearch));
+el.btnClearSearch.addEventListener('click', () => {
+  el.searchInput.value = '';
+  updateClearBtn(el.searchInput, el.btnClearSearch);
+  el.searchInput.focus();
+});
+
+function runSearch() {
+  const q = el.searchInput.value.trim().toLowerCase();
+
+  if (q.length < 2) {
+    el.summary.textContent = 'Ketik minimal 2 karakter';
+    el.results.innerHTML = '';
+    return;
+  }
+  if (state.allRows.length === 0) {
+    el.summary.textContent = 'Data belum siap. Tunggu sebentar atau tekan tombol refresh.';
+    return;
+  }
+
+  const field = state.field;
+  const MAX_RESULTS = 300;
+
+  const matches = state.allRows.filter((r) => {
+    if (field === 'MCS') return String(r.mcs).toLowerCase().includes(q);
+    if (field === 'SO') return String(r.so).toLowerCase().includes(q);
+    if (field === 'REF') return String(r.ref).toLowerCase().includes(q);
+    if (field === 'LOC') return String(r.loc).toLowerCase().includes(q);
+    // "Semua": cari di SEMUA kolom yang ada di data (bukan cuma MCS#/SO#/REF#/LOC#),
+    // supaya perilakunya sama luasnya dengan pencarian di tab "Cari di Master MC" —
+    // ikut mencakup model/nama barang, AC#, C#, PART#, SO PO#, WO#, ALT REF#,
+    // customer, ukuran, internal, sales, dan STS.
+    return String(r.mcs).toLowerCase().includes(q)
+        || String(r.so).toLowerCase().includes(q)
+        || String(r.ref).toLowerCase().includes(q)
+        || String(r.loc).toLowerCase().includes(q)
+        || String(r.c).toLowerCase().includes(q)
+        || String(r.customer).toLowerCase().includes(q)
+        || String(r.internal).toLowerCase().includes(q)
+        || String(r.sales).toLowerCase().includes(q)
+        || String(r.model).toLowerCase().includes(q)
+        || String(r.ac).toLowerCase().includes(q)
+        || String(r.sts).toLowerCase().includes(q)
+        || String(r.part).toLowerCase().includes(q)
+        || String(r.sopo).toLowerCase().includes(q)
+        || String(r.wo).toLowerCase().includes(q)
+        || String(r.altref).toLowerCase().includes(q)
+        || String(r.ukuran).toLowerCase().includes(q)
+        || String(r.no).toLowerCase().includes(q);
+  });
+
+  const truncated = matches.length > MAX_RESULTS;
+  state.results = matches.slice(0, MAX_RESULTS);
+  renderResults(truncated, matches.length);
+}
+
+function renderResults(truncated, totalCount) {
+  el.results.innerHTML = '';
+
+  if (state.results.length === 0) {
+    el.summary.textContent = 'Tidak ada hasil';
+    return;
+  }
+
+  el.summary.textContent = totalCount + ' hasil ditemukan' + (truncated ? ' (ditampilkan 300 pertama, persempit pencarian)' : '');
+
+  state.results.forEach((item) => {
+    const node = el.cardTemplate.content.cloneNode(true);
+    const card = node.querySelector('.item-card');
+
+    const sts = String(item.sts || '').toUpperCase();
+    card.classList.add(sts === 'ACT' ? 'act' : sts === 'OBS' ? 'obs' : '');
+
+    node.querySelector('.mcs').textContent = 'MCS# ' + item.mcs;
+    node.querySelector('.sts').textContent = sts || '—';
+    if (state.savedThisSession.has(String(item.no))) {
+      node.querySelector('.saved-tag').classList.remove('hidden');
+    }
+
+    node.querySelector('.model').textContent = item.model || '';
+    node.querySelector('.loc').textContent = item.loc || '—';
+    node.querySelector('.c').textContent = item.c || '—';
+    node.querySelector('.so').textContent = item.so || '—';
+    node.querySelector('.ref').textContent = item.ref || '—';
+    node.querySelector('.bal').textContent = item.bal;
+    node.querySelector('.in').textContent = item.in;
+    node.querySelector('.out').textContent = item.out;
+    node.querySelector('.date').textContent = formatDate(item.date);
+    node.querySelector('.customer').textContent = item.customer || '';
+    node.querySelector('.ukuran').textContent = item.ukuran || '—';
+    node.querySelector('.total-saldo').textContent = formatTotalSaldoPallet(item.totalSaldo, item.totalPallet);
+    node.querySelector('.internal').textContent = item.internal || '—';
+    node.querySelector('.sales').textContent = item.sales || '—';
+    const editHint = node.querySelector('.card-edit-hint');
+    if (editHint) editHint.textContent = isAdminMode() ? 'Ketuk untuk koreksi ›' : 'Mode cari saja — info aja';
+
+    card.addEventListener('click', () => {
+      if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk input/koreksi'); return; }
+      openEditSheet(item);
+    });
+    card.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk input/koreksi'); return; }
+      openEditSheet(item);
+    });
+
+    el.results.appendChild(node);
+  });
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  try {
+    const dt = new Date(d);
+    if (isNaN(dt)) return String(d);
+    return dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch (e) {
+    return String(d);
+  }
+}
+
+// ---------- unduh Excel (hasil koreksi) ----------
+
+el.btnDownload.addEventListener('click', downloadExcel);
+
+async function downloadExcel() {
+  if (!navigator.onLine) {
+    showToast('Tidak ada koneksi internet');
+    return;
+  }
+  if (typeof XLSX === 'undefined') {
+    showToast('Komponen Excel gagal dimuat, cek koneksi & coba lagi');
+    return;
+  }
+
+  if (!supabaseClient) { showToast('Atur Supabase URL & Anon Key dulu di Pengaturan'); return; }
+  if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk unduh data koreksi'); return; }
+
+  showToast('Menyiapkan file Excel…');
+
+  try {
+    const { data, error } = await supabaseClient
+      .from(KOREKSI_TABLE)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5000);
+    if (error) throw error;
+
+    const header = ['ID', 'Timestamp', 'Diinput oleh', 'NO', 'MCS#', 'Model', 'Customer', 'BAL sistem', 'LOC# baru', 'C# baru', 'REF# baru', 'SO#', 'QTY BARU', 'Selisih Qty', 'Diedit oleh', 'Diedit pada'];
+    const rows = [header].concat((data || []).map((r) => [
+      r.id, r.created_at, r.created_by_email, r.no, r.mcs, r.model, r.customer,
+      r.bal_sistem, r.loc, r.c, r.ref, r.so, r.qty, r.selisih, r.updated_by_email || '', r.updated_at || '',
+    ]));
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'KOREKSI');
+
+    const today = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, 'Koreksi_Stock_Opname_' + today + '.xlsx');
+    showToast('File Excel diunduh');
+  } catch (err) {
+    console.error(err);
+    showToast('Gagal mengunduh: ' + (err.message || 'coba lagi'));
+  }
+}
+
+// ---------- refresh data manual ----------
+
+const refreshSplashEl = document.getElementById('refresh-splash');
+function showRefreshSplash(){ if (refreshSplashEl) refreshSplashEl.classList.add('show'); }
+function hideRefreshSplash(){ if (refreshSplashEl) refreshSplashEl.classList.remove('show'); }
+
+el.btnRefresh.addEventListener('click', async () => {
+  showRefreshSplash();
+  try {
+    await loadData(true);
+  } finally {
+    // beri jeda kecil biar animasi titik 3 sempat terlihat walau data cepat selesai dimuat
+    setTimeout(hideRefreshSplash, 350);
+  }
+});
+
+// ---------- edit sheet (form koreksi) ----------
+
+function openEditSheet(item, mode) {
+  state.activeItem = item;
+  state.isNewItem = mode === true || mode === 'new';
+  state.isUpdateMode = mode === 'update';
+  state.updateId = state.isUpdateMode ? item.id : null;
+
+  el.editSheet.classList.remove('mode-new', 'mode-update');
+  if (state.isNewItem) el.editSheet.classList.add('mode-new');
+  if (state.isUpdateMode) el.editSheet.classList.add('mode-update');
+
+  el.sheetEyebrow.textContent = state.isNewItem
+    ? 'BARANG BARU'
+    : state.isUpdateMode
+      ? 'EDIT KOREKSI TERSIMPAN'
+      : 'KOREKSI STOCK OPNAME';
+
+  el.sheetTitle.textContent = 'MCS# ' + item.mcs;
+  el.sheetRefinfo.textContent = state.isNewItem
+    ? 'Barang baru · ' + (item.model || '')
+    : state.isUpdateMode
+      ? 'Edit koreksi tersimpan · ' + (item.model || '')
+      : 'NO ' + item.no + ' · ' + (item.model || '');
+
+  el.editRef.value = item.ref || '';
+  el.editSo.value = item.so || '';
+  el.editC.value = item.c || '';
+  el.editBalSistem.textContent = state.isNewItem ? '0 (barang baru)' : item.bal;
+  el.editBal.value = state.isUpdateMode ? (item.qty !== undefined ? item.qty : '') : '';
+  el.editLoc.value = item.loc || '';
+
+  el.editTopNote.innerHTML = state.isNewItem
+    ? 'Barang baru akan disimpan sebagai <b>baris baru</b> di sheet KOREKSI.'
+    : state.isUpdateMode
+      ? 'Perubahan akan <b>menimpa</b> data koreksi ini (bukan menambah baris baru).'
+      : 'Koreksi disimpan sebagai <b>data baru</b> di sheet terpisah (tidak mengubah data sumber).';
+
+  el.editFallbackNote.textContent = state.isNewItem
+    ? 'Barang baru akan dicatat sebagai baris baru di sheet KOREKSI (NO baris laporan dikosongkan).'
+    : state.isUpdateMode
+      ? 'Field yang dikosongkan otomatis memakai nilai yang sudah tersimpan sebelumnya.'
+      : 'Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#/SO#).';
+
+  // reset tiap field balik ke mode ABC (primary) & sembunyikan tombol mengambang
+  el.editForm.querySelectorAll('.kb-shadow').forEach((shadow) => {
+    shadow.classList.add('hidden');
+    shadow.value = '';
+  });
+  el.editForm.querySelectorAll('.kb-primary').forEach((primary) => {
+    primary.classList.remove('hidden');
+  });
+  const kbFloatBtn = document.getElementById('kb-float-toggle');
+  if (kbFloatBtn) kbFloatBtn.classList.remove('show');
+  refreshClearButtons(el.editForm);
+
+  el.saveStatus.textContent = '';
+  el.saveStatus.className = 'save-status';
+  updateSelisihPreview();
+
+  showOverlay(el.sheetOverlay);
+}
+
+function updateSelisihPreview() {
+  const item = state.activeItem;
+  if (!item) return;
+  const val = el.editBal.value.trim();
+  if (val === '') {
+    el.editSelisihPreview.textContent = '';
+    el.editSelisihPreview.className = 'selisih-preview';
+    return;
+  }
+  const sel = Number(val) - Number(item.bal || 0);
+  el.editSelisihPreview.textContent = 'Selisih dari BAL sistem: ' + (sel > 0 ? '+' : '') + sel;
+  el.editSelisihPreview.className = 'selisih-preview ' + (sel > 0 ? 'pos' : sel < 0 ? 'neg' : 'zero');
+}
+el.editBal.addEventListener('input', updateSelisihPreview);
+
+function closeEditSheet() {
+  hideOverlay(el.sheetOverlay);
+  state.activeItem = null;
+  state.isNewItem = false;
+  state.isUpdateMode = false;
+  state.updateId = null;
+}
+el.btnCloseSheet.addEventListener('click', closeEditSheet);
+el.sheetOverlay.addEventListener('click', (e) => { if (e.target === el.sheetOverlay) closeEditSheet(); });
+
+el.editForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!state.activeItem) return;
+  const item = state.activeItem;
+
+  if (!supabaseClient) {
+    closeEditSheet();
+    openSettings();
+    showToast('Atur Supabase URL & Anon Key dulu ya');
+    return;
+  }
+  if (!isAdminMode()) {
+    closeEditSheet();
+    openLogin();
+    showToast('Login sebagai Admin dulu untuk menyimpan koreksi');
+    return;
+  }
+
+  const edits = {};
+  const newLoc = el.editLoc.value.trim();
+  const newC = el.editC.value.trim();
+  const newRef = el.editRef.value.trim();
+  const newSo = el.editSo.value.trim();
+  const newBal = el.editBal.value.trim();
+
+  if (newLoc !== String(item.loc || '')) edits.loc = newLoc;
+  if (newC !== String(item.c || '')) edits.c = newC;
+  if (newRef !== String(item.ref || '')) edits.ref = newRef;
+  if (newSo !== String(item.so || '')) edits.so = newSo;
+  if (newBal !== '') edits.bal = Number(newBal);
+
+  if (Object.keys(edits).length === 0) {
+    el.saveStatus.textContent = 'Isi minimal satu koreksi dulu.';
+    el.saveStatus.className = 'save-status';
+    return;
+  }
+  if (!navigator.onLine) {
+    el.saveStatus.textContent = 'Tidak ada koneksi internet.';
+    el.saveStatus.className = 'save-status err';
+    return;
+  }
+
+  el.saveStatus.textContent = 'Menyimpan…';
+  el.saveStatus.className = 'save-status';
+
+  const newQty = edits.bal !== undefined ? edits.bal : null;
+  const selisih = (newQty !== null && item.bal !== undefined && item.bal !== '') ? (newQty - Number(item.bal)) : null;
+
+  try {
+    let error;
+    if (state.isUpdateMode) {
+      // Mode update: perbarui baris koreksi yang sudah ada. `updated_by` &
+      // `updated_by_email` diambil dari sesi login saat ini (BUKAN input manual),
+      // jadi selalu jelas siapa yang terakhir mengedit.
+      const updatePayload = {
+        updated_by: state.user.id,
+        updated_by_email: state.user.email,
+        updated_at: new Date().toISOString(),
+      };
+      if (edits.loc !== undefined) updatePayload.loc = edits.loc;
+      if (edits.c !== undefined) updatePayload.c = edits.c;
+      if (edits.ref !== undefined) updatePayload.ref = edits.ref;
+      if (edits.so !== undefined) updatePayload.so = edits.so;
+      if (newQty !== null) { updatePayload.qty = newQty; updatePayload.selisih = selisih; }
+
+      ({ error } = await supabaseClient.from(KOREKSI_TABLE).update(updatePayload).eq('id', state.updateId));
+    } else {
+      // Mode simpan baru: `created_by`/`created_by_email` otomatis terisi dari
+      // akun admin yang sedang login lewat Supabase Auth (auth.uid()/email()),
+      // sehingga di tabel Supabase selalu ketahuan siapa yang input.
+      const insertPayload = {
+        no: String(item.no || ''),
+        mcs: String(item.mcs || ''),
+        model: item.model || '',
+        customer: item.customer || '',
+        bal_sistem: item.bal !== undefined && item.bal !== '' ? Number(item.bal) : null,
+        loc: edits.loc !== undefined ? edits.loc : (item.loc || ''),
+        c: edits.c !== undefined ? edits.c : (item.c || ''),
+        ref: edits.ref !== undefined ? edits.ref : (item.ref || ''),
+        so: edits.so !== undefined ? edits.so : (item.so || ''),
+        qty: newQty,
+        selisih: selisih,
+        is_new_item: !!state.isNewItem,
+        created_by: state.user.id,
+        created_by_email: state.user.email,
+      };
+      ({ error } = await supabaseClient.from(KOREKSI_TABLE).insert([insertPayload]));
+    }
+
+    if (error) throw error;
+
+    if (!state.isNewItem && !state.isUpdateMode) {
+      state.savedThisSession.add(String(item.no));
+      renderResults(false, state.results.length);
+    }
+    el.saveStatus.textContent = state.isUpdateMode ? 'Koreksi diperbarui ✓' : 'Tersimpan sebagai data baru ✓';
+    el.saveStatus.className = 'save-status ok';
+    showToast(state.isNewItem ? 'Barang baru tersimpan ke Supabase' : state.isUpdateMode ? 'Koreksi berhasil diperbarui' : 'Koreksi tersimpan ke Supabase');
+    setTimeout(closeEditSheet, 700);
+  } catch (err) {
+    console.error(err);
+    el.saveStatus.textContent = 'Gagal menyimpan: ' + (err.message || 'coba lagi');
+    el.saveStatus.className = 'save-status err';
+  }
+});
+
+// ---------- Master MC (barang baru) ----------
+
+el.btnOpenMaster.addEventListener('click', openMaster);
+el.btnCloseMaster.addEventListener('click', closeMaster);
+el.masterOverlay.addEventListener('click', () => {}); // sentuh area luar TIDAK menutup tab Master MC, harus tekan tombol ✕
+el.btnMasterSearch.addEventListener('click', runMasterSearch);
+el.masterSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runMasterSearch(); });
+el.masterSearchInput.addEventListener('input', () => updateClearBtn(el.masterSearchInput, el.btnClearMasterSearch));
+el.btnClearMasterSearch.addEventListener('click', () => {
+  el.masterSearchInput.value = '';
+  updateClearBtn(el.masterSearchInput, el.btnClearMasterSearch);
+  el.masterResults.innerHTML = '';
+  el.masterSummary.textContent = state.masterLoaded
+    ? state.masterRows.length + ' item Master MC siap dicari.'
+    : 'Ketik kata kunci lalu tekan Cari';
+  el.masterSearchInput.focus();
+});
+
+async function openMaster() {
+  showOverlay(el.masterOverlay);
+
+  // isi otomatis dari kolom pencarian utama, biar tinggal dihapus kalau tidak dipakai
+  el.masterSearchInput.value = el.searchInput.value.trim();
+  updateClearBtn(el.masterSearchInput, el.btnClearMasterSearch);
+
+  if (!state.masterLoaded) {
+    el.masterSummary.textContent = 'Memuat data Master MC…';
+    try {
+      const url = state.settings.masterCsvUrl;
+      const res = await fetch(url, { cache: 'default' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      state.masterRows = extractMasterRecords(parseCSV(text));
+      state.masterLoaded = true;
+      el.masterSummary.textContent = state.masterRows.length + ' item Master MC siap dicari.';
+      if (el.masterSearchInput.value.trim().length >= 2) runMasterSearch();
+    } catch (err) {
+      console.error(err);
+      el.masterSummary.textContent = 'Gagal memuat Master MC. Cek link CSV di Pengaturan & koneksi internet.';
+    }
+  } else {
+    el.masterSummary.textContent = state.masterRows.length + ' item Master MC siap dicari.';
+    if (el.masterSearchInput.value.trim().length >= 2) runMasterSearch();
+  }
+}
+
+function closeMaster() {
+  hideOverlay(el.masterOverlay);
+}
+
+function runMasterSearch() {
+  const q = el.masterSearchInput.value.trim().toLowerCase();
+  if (q.length < 2) {
+    el.masterSummary.textContent = 'Ketik minimal 2 karakter';
+    el.masterResults.innerHTML = '';
+    return;
+  }
+  if (!state.masterLoaded) {
+    el.masterSummary.textContent = 'Data Master MC belum siap, tunggu sebentar.';
+    return;
+  }
+
+  const MAX_RESULTS = 200;
+  const matches = state.masterRows.filter((r) =>
+    String(r.mc).toLowerCase().includes(q)
+    || String(r.model).toLowerCase().includes(q)
+    || String(r.customer).toLowerCase().includes(q)
+    || String(r.so).toLowerCase().includes(q)
+    || String(r.berat).toLowerCase().includes(q)
+    || String(r.sales).toLowerCase().includes(q)
+    || String(r.internal).toLowerCase().includes(q)
+    || String(r.ccode).toLowerCase().includes(q)
+    || String(r.pic).toLowerCase().includes(q)
+    || String(r.ukuran).toLowerCase().includes(q)
+    || String(r.flute).toLowerCase().includes(q)
+  );
+
+  const truncated = matches.length > MAX_RESULTS;
+  const shown = matches.slice(0, MAX_RESULTS);
+
+  el.masterResults.innerHTML = '';
+  if (shown.length === 0) {
+    el.masterSummary.textContent = 'Tidak ada hasil';
+    return;
+  }
+  el.masterSummary.textContent = matches.length + ' hasil ditemukan' + (truncated ? ' (ditampilkan 200 pertama)' : '');
+
+  shown.forEach((rec) => {
+    const node = el.masterCardTemplate.content.cloneNode(true);
+    node.querySelector('.mc-mc').textContent = 'MC# ' + rec.mc;
+    node.querySelector('.mc-model').textContent = rec.model || '';
+    node.querySelector('.mc-so').textContent = rec.so || '—';
+    node.querySelector('.mc-ukuran').textContent = rec.ukuran || '—';
+    node.querySelector('.mc-berat').textContent = rec.berat || '—';
+    node.querySelector('.mc-flute').textContent = rec.flute || '—';
+    node.querySelector('.mc-sales').textContent = rec.sales || '—';
+    node.querySelector('.mc-internal').textContent = rec.internal || '—';
+    node.querySelector('.mc-ccode').textContent = rec.ccode || '—';
+    node.querySelector('.mc-pic').textContent = rec.pic || '—';
+    node.querySelector('.mc-customer').textContent = rec.customer || '';
+
+    const card = node.querySelector('.item-card');
+    card.addEventListener('click', () => useMasterRecord(rec));
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter') useMasterRecord(rec); });
+
+    el.masterResults.appendChild(node);
+  });
+}
+
+function useMasterRecord(rec) {
+  if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk input barang baru'); return; }
+  closeMaster();
+  const newItem = {
+    no: '', mcs: rec.mc, so: rec.so, ref: '', model: rec.model,
+    loc: '', c: '', bal: 0, customer: rec.customer,
+  };
+  openEditSheet(newItem, true);
+}
+
+// ---------- Edit Koreksi Tersimpan ----------
+
+el.btnOpenKoreksi.addEventListener('click', openKoreksi);
+el.btnCloseKoreksi.addEventListener('click', closeKoreksi);
+el.koreksiOverlay.addEventListener('click', (e) => { if (e.target === el.koreksiOverlay) closeKoreksi(); });
+el.btnKoreksiSearch.addEventListener('click', runKoreksiSearch);
+el.koreksiSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runKoreksiSearch(); });
+el.koreksiSearchInput.addEventListener('input', () => updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch));
+el.btnClearKoreksiSearch.addEventListener('click', () => {
+  el.koreksiSearchInput.value = '';
+  updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch);
+  el.koreksiResults.innerHTML = '';
+  el.koreksiSummary.textContent = state.koreksiRows.length
+    ? state.koreksiRows.length + ' data koreksi siap dicari.'
+    : 'Ketik kata kunci lalu tekan Cari';
+  el.koreksiSearchInput.focus();
+});
+
+function mapKoreksiRowFromSupabase(r) {
+  return {
+    id: r.id,
+    timestamp: r.created_at,
+    editor: r.created_by_email || '',
+    no: r.no || '',
+    ref: r.ref || '',
+    so: r.so || '',
+    c: r.c || '',
+    qty: r.qty !== null && r.qty !== undefined ? r.qty : '',
+    loc: r.loc || '',
+    mcs: r.mcs || '',
+    customer: r.customer || '',
+    model: r.model || '',
+    balSistem: r.bal_sistem !== null && r.bal_sistem !== undefined ? r.bal_sistem : '',
+    selisih: r.selisih !== null && r.selisih !== undefined ? r.selisih : '',
+    editedBy: r.updated_by_email || '',
+    editedAt: r.updated_at || '',
+  };
+}
+
+async function openKoreksi() {
+  if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk edit koreksi'); return; }
+  showOverlay(el.koreksiOverlay);
+  el.koreksiSearchInput.value = el.searchInput.value.trim();
+  updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch);
+  el.koreksiSummary.textContent = 'Memuat data koreksi terbaru…';
+  el.koreksiResults.innerHTML = '';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from(KOREKSI_TABLE)
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(2000);
+    if (error) throw error;
+
+    state.koreksiRows = (data || []).map(mapKoreksiRowFromSupabase);
+    el.koreksiSummary.textContent = state.koreksiRows.length + ' data koreksi siap dicari.';
+    if (el.koreksiSearchInput.value.trim().length >= 2) runKoreksiSearch();
+  } catch (err) {
+    console.error(err);
+    el.koreksiSummary.textContent = 'Gagal memuat data koreksi: ' + err.message;
+  }
+}
+
+function closeKoreksi() {
+  hideOverlay(el.koreksiOverlay);
+}
+
+function runKoreksiSearch() {
+  const q = el.koreksiSearchInput.value.trim().toLowerCase();
+  if (q.length < 2) {
+    el.koreksiSummary.textContent = 'Ketik minimal 2 karakter';
+    el.koreksiResults.innerHTML = '';
+    return;
+  }
+  if (!state.koreksiRows.length) {
+    el.koreksiSummary.textContent = 'Data koreksi belum siap, tunggu sebentar.';
+    return;
+  }
+
+  const MAX_RESULTS = 200;
+  const matches = state.koreksiRows.filter((r) =>
+    String(r.mcs).toLowerCase().includes(q)
+    || String(r.no).toLowerCase().includes(q)
+    || String(r.editor).toLowerCase().includes(q)
+    || String(r.model).toLowerCase().includes(q)
+    || String(r.customer).toLowerCase().includes(q)
+  );
+
+  const truncated = matches.length > MAX_RESULTS;
+  const shown = matches.slice(0, MAX_RESULTS);
+
+  el.koreksiResults.innerHTML = '';
+  if (shown.length === 0) {
+    el.koreksiSummary.textContent = 'Tidak ada hasil';
+    return;
+  }
+  el.koreksiSummary.textContent = matches.length + ' hasil ditemukan' + (truncated ? ' (ditampilkan 200 pertama)' : '');
+
+  shown.forEach((rec) => {
+    const node = el.koreksiCardTemplate.content.cloneNode(true);
+    node.querySelector('.kx-mcs').textContent = 'MCS# ' + rec.mcs;
+    node.querySelector('.kx-model').textContent = rec.model || '';
+    node.querySelector('.kx-loc').textContent = rec.loc || '—';
+    node.querySelector('.kx-c').textContent = rec.c || '—';
+    node.querySelector('.kx-so').textContent = rec.so || '—';
+    node.querySelector('.kx-ref').textContent = rec.ref || '—';
+    node.querySelector('.kx-qty').textContent = rec.qty !== '' ? rec.qty : '—';
+    node.querySelector('.kx-selisih').textContent = rec.selisih !== '' ? 'Selisih ' + (Number(rec.selisih) > 0 ? '+' : '') + rec.selisih : '';
+    node.querySelector('.kx-meta').textContent = rec.editedBy
+      ? 'Diedit: ' + rec.editedBy + ' · ' + rec.editedAt
+      : 'Disimpan: ' + rec.editor + ' · ' + rec.timestamp;
+
+    const card = node.querySelector('.item-card');
+    card.addEventListener('click', () => useKoreksiRecord(rec));
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter') useKoreksiRecord(rec); });
+
+    el.koreksiResults.appendChild(node);
+  });
+}
+
+function useKoreksiRecord(rec) {
+  closeKoreksi();
+  const item = {
+    id: rec.id, no: rec.no, mcs: rec.mcs, so: rec.so, ref: rec.ref, model: rec.model,
+    loc: rec.loc, c: rec.c, bal: rec.balSistem, qty: rec.qty, customer: rec.customer,
+  };
+  openEditSheet(item, 'update');
+}
+
+// ---------- settings ----------
+
+function openSettings() {
+  el.setCsv.value = state.settings.csvUrl || DEFAULT_CSV_URL;
+  el.setMasterCsv.value = state.settings.masterCsvUrl || DEFAULT_MASTER_CSV_URL;
+  el.setSupabaseUrl.value = (state.settings.supabaseUrl && !state.settings.supabaseUrl.includes('xxxxxxxx')) ? state.settings.supabaseUrl : '';
+  el.setSupabaseKey.value = (state.settings.supabaseAnonKey && !state.settings.supabaseAnonKey.includes('PASTE_ANON')) ? state.settings.supabaseAnonKey : '';
+  el.settingsStatus.textContent = '';
+  refreshClearButtons(el.settingsForm);
+  showOverlay(el.settingsOverlay);
+}
+function closeSettings() { hideOverlay(el.settingsOverlay); }
+el.btnSettings.addEventListener('click', openSettings);
+el.btnCloseSettings.addEventListener('click', closeSettings);
+el.settingsOverlay.addEventListener('click', (e) => { if (e.target === el.settingsOverlay) closeSettings(); });
+
+el.settingsForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const csvChanged = el.setCsv.value.trim() !== state.settings.csvUrl;
+  const masterCsvChanged = el.setMasterCsv.value.trim() !== state.settings.masterCsvUrl;
+  const supabaseChanged = el.setSupabaseUrl.value.trim() !== state.settings.supabaseUrl
+    || el.setSupabaseKey.value.trim() !== state.settings.supabaseAnonKey;
+
+  saveSettings({
+    csvUrl: el.setCsv.value.trim(),
+    masterCsvUrl: el.setMasterCsv.value.trim(),
+    supabaseUrl: el.setSupabaseUrl.value.trim() || DEFAULT_SUPABASE_URL,
+    supabaseAnonKey: el.setSupabaseKey.value.trim() || DEFAULT_SUPABASE_ANON_KEY,
+  });
+  el.settingsStatus.textContent = 'Tersimpan ✓';
+  el.settingsStatus.className = 'save-status ok';
+  setTimeout(closeSettings, 500);
+  if (csvChanged) loadData(true);
+  if (masterCsvChanged) state.masterLoaded = false; // paksa muat ulang Master MC di kunjungan berikutnya
+  if (supabaseChanged) {
+    if (supabaseClient) { try { await supabaseClient.auth.signOut(); } catch (err) {} }
+    state.user = null;
+    initSupabaseClient();
+    watchAuthChanges();
+    await refreshAuthSession();
+  }
+});
+
+// ---------- inisialisasi ----------
+initSupabaseClient();
+watchAuthChanges();
+refreshAuthSession();
+loadData(false);
+
+// ---------- unduh sbg PWA (install prompt) ----------
+// Tombol "Unduh Aplikasi (PWA)" cuma muncul kalau browser mendukung & app belum
+// terpasang. Begitu sudah diunduh/dipasang, tombolnya otomatis hilang.
+
+function isRunningStandalone() {
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+    || window.navigator.standalone === true; // iOS Safari
+}
+
+let deferredInstallPrompt = null;
+
+if (el.btnInstallPwa && !isRunningStandalone()) {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    el.btnInstallPwa.classList.remove('hidden');
+  });
+
+  el.btnInstallPwa.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    el.btnInstallPwa.disabled = true;
+    deferredInstallPrompt.prompt();
+    try { await deferredInstallPrompt.userChoice; } catch (e) {}
+    deferredInstallPrompt = null;
+    el.btnInstallPwa.classList.add('hidden');
+    el.btnInstallPwa.disabled = false;
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    el.btnInstallPwa.classList.add('hidden');
+  });
+}
+
+// ---------- service worker ----------
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW gagal:', e));
+  });
+}
+</script>
+</body>
+</html>
