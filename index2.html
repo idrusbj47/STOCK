@@ -747,7 +747,6 @@ body.overlay-open{ overflow:hidden; }
       <button type="button" id="btn-logout" class="btn-secondary btn-full">Keluar dari Mode Admin</button>
     </div>
 
-    <p class="muted small">Akun admin dibuat lewat Supabase Dashboard (Authentication → Users), bukan dari halaman ini. Lihat PANDUAN-SUPABASE.md.</p>
   </div>
 </div>
 
@@ -1615,10 +1614,15 @@ async function loadData(forceRefresh) {
   el.summary.textContent = 'Memuat data…';
   el.dataBanner.classList.add('hidden');
 
-  const url = state.settings.csvUrl + (forceRefresh ? (state.settings.csvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now() : '');
+  // PENTING: selalu tempel timestamp + no-store, bukan cuma saat forceRefresh.
+  // Sebelumnya load pertama pakai cache:'default', jadi walau CSV sumber sudah
+  // diupdate, browser bisa saja masih menyajikan respons CSV lama dari cache-nya
+  // sendiri. Dengan selalu no-store + query _ts unik, browser dipaksa ambil
+  // ulang dari jaringan setiap kali halaman dibuka/direfresh.
+  const url = state.settings.csvUrl + (state.settings.csvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now();
 
   try {
-    const res = await fetch(url, { cache: forceRefresh ? 'no-store' : 'default' });
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
 
@@ -1895,16 +1899,18 @@ function openEditSheet(item, mode) {
   el.btnDeleteKoreksi.classList.toggle('hidden', !state.isUpdateMode);
 
   el.editTopNote.innerHTML = state.isNewItem
-    ? 'Barang baru akan disimpan sebagai <b>baris baru</b> di sheet KOREKSI.'
+    ? ''
     : state.isUpdateMode
       ? 'Perubahan akan <b>menimpa</b> data koreksi ini (bukan menambah baris baru).'
       : 'Koreksi disimpan sebagai <b>data baru</b> di sheet terpisah (tidak mengubah data sumber).';
+  el.editTopNote.classList.toggle('hidden', state.isNewItem);
 
   el.editFallbackNote.textContent = state.isNewItem
-    ? 'Barang baru akan dicatat sebagai baris baru di sheet KOREKSI (NO baris laporan dikosongkan).'
+    ? ''
     : state.isUpdateMode
       ? 'Field yang dikosongkan otomatis memakai nilai yang sudah tersimpan sebelumnya.'
       : 'Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#/SO#).';
+  el.editFallbackNote.classList.toggle('hidden', state.isNewItem);
 
   // reset tiap field balik ke mode ABC (primary) & sembunyikan tombol mengambang
   el.editForm.querySelectorAll('.kb-shadow').forEach((shadow) => {
@@ -1948,7 +1954,9 @@ function closeEditSheet() {
   state.updateId = null;
 }
 el.btnCloseSheet.addEventListener('click', closeEditSheet);
-el.sheetOverlay.addEventListener('click', (e) => { if (e.target === el.sheetOverlay) closeEditSheet(); });
+// Sengaja TIDAK menutup saat klik di luar area sheet (backdrop) — form ini
+// menyimpan input yang gampang tertekan tidak sengaja. Untuk keluar, pakai
+// tombol ✕ (btnCloseSheet) di atas.
 
 el.editForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -2116,8 +2124,8 @@ async function openMaster() {
   if (!state.masterLoaded) {
     el.masterSummary.textContent = 'Memuat data Master MC…';
     try {
-      const url = state.settings.masterCsvUrl;
-      const res = await fetch(url, { cache: 'default' });
+      const url = state.settings.masterCsvUrl + (state.settings.masterCsvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now();
+      const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const text = await res.text();
       state.masterRows = extractMasterRecords(parseCSV(text));
@@ -2203,6 +2211,7 @@ function useMasterRecord(rec) {
   const newItem = {
     no: '', mcs: rec.mc, so: rec.so, ref: '', model: rec.model,
     loc: '', c: '', bal: 0, customer: rec.customer,
+    internal: rec.internal, sales: rec.sales,
   };
   openEditSheet(newItem, true);
 }
