@@ -650,6 +650,7 @@ body.overlay-open{ overflow:hidden; }
       <div class="info-note" id="edit-fallback-note">Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#/SO#).</div>
 
       <button type="submit" id="btn-save" class="btn-primary btn-full">Simpan Koreksi</button>
+      <button type="button" id="btn-delete-koreksi" class="btn-secondary btn-full hidden" style="border-color:var(--red);color:var(--red);margin-top:8px;">Hapus Koreksi Ini</button>
       <div id="save-status" class="save-status" role="status"></div>
     </form>
   </div>
@@ -875,8 +876,8 @@ const DEFAULT_MASTER_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1
 // lewat menu Pengaturan (⚙️) di app tanpa perlu edit kode ini.
 // Anon/public key AMAN ditaruh di frontend — akses sesungguhnya dibatasi oleh
 // Row Level Security (RLS) di sisi database. Lihat PANDUAN-SUPABASE.md.
-const DEFAULT_SUPABASE_URL = 'https://xxxxxxxxxxxxxxxx.supabase.co';
-const DEFAULT_SUPABASE_ANON_KEY = 'PASTE_ANON_PUBLIC_KEY_DI_SINI';
+const DEFAULT_SUPABASE_URL = 'https://bpqiejowxcxyeewhoncr.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_3tCR_a01HgzEpH-5uypqGg_s8WvXsa9';
 const KOREKSI_TABLE = 'koreksi_stock_opname';
 
 const STORAGE_KEY = 'stockopname.settings.v3';
@@ -1215,6 +1216,7 @@ const el = {
   sheetTitle: document.getElementById('sheet-title'),
   sheetEyebrow: document.getElementById('sheet-eyebrow'),
   sheetRefinfo: document.getElementById('sheet-refinfo'),
+  btnDeleteKoreksi: document.getElementById('btn-delete-koreksi'),
   editTopNote: document.getElementById('edit-top-note'),
   btnCloseSheet: document.getElementById('btn-close-sheet'),
   editForm: document.getElementById('edit-form'),
@@ -1877,6 +1879,8 @@ function openEditSheet(item, mode) {
   el.editBal.value = state.isUpdateMode ? (item.qty !== undefined ? item.qty : '') : '';
   el.editLoc.value = item.loc || '';
 
+  el.btnDeleteKoreksi.classList.toggle('hidden', !state.isUpdateMode);
+
   el.editTopNote.innerHTML = state.isNewItem
     ? 'Barang baru akan disimpan sebagai <b>baris baru</b> di sheet KOREKSI.'
     : state.isUpdateMode
@@ -2036,6 +2040,34 @@ el.editForm.addEventListener('submit', async (e) => {
     console.error(err);
     el.saveStatus.textContent = 'Gagal menyimpan: ' + (err.message || 'coba lagi');
     el.saveStatus.className = 'save-status err';
+  }
+});
+
+el.btnDeleteKoreksi.addEventListener('click', async () => {
+  if (!state.isUpdateMode || !state.updateId) return;
+  if (!supabaseClient || !isAdminMode()) { showToast('Login sebagai Admin dulu'); return; }
+
+  const sure = window.confirm('Hapus data koreksi MCS# ' + (state.activeItem ? state.activeItem.mcs : '') + ' ini? Tindakan ini tidak bisa dibatalkan.');
+  if (!sure) return;
+
+  el.saveStatus.textContent = 'Menghapus…';
+  el.saveStatus.className = 'save-status';
+  el.btnDeleteKoreksi.disabled = true;
+
+  try {
+    const { error } = await supabaseClient.from(KOREKSI_TABLE).delete().eq('id', state.updateId);
+    if (error) throw error;
+
+    el.saveStatus.textContent = 'Terhapus ✓';
+    el.saveStatus.className = 'save-status ok';
+    showToast('Koreksi berhasil dihapus');
+    setTimeout(closeEditSheet, 500);
+  } catch (err) {
+    console.error(err);
+    el.saveStatus.textContent = 'Gagal menghapus: ' + (err.message || 'coba lagi');
+    el.saveStatus.className = 'save-status err';
+  } finally {
+    el.btnDeleteKoreksi.disabled = false;
   }
 });
 
