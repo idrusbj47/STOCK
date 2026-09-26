@@ -589,7 +589,7 @@ body.overlay-open{ overflow:hidden; }
     <div class="sheet-handle"></div>
     <div class="sheet-header">
       <div>
-        <span class="sheet-eyebrow" id="sheet-eyebrow">KOREKSI STOCK OPNAME</span>
+        <span class="sheet-eyebrow" id="sheet-eyebrow">INPUT STOCK OPNAME</span>
         <h2 id="sheet-title" class="mono"></h2>
       </div>
       <button id="btn-close-sheet" class="icon-btn" aria-label="Tutup">✕</button>
@@ -627,6 +627,11 @@ body.overlay-open{ overflow:hidden; }
       <div class="field field-lg readonly-field">
         <span class="field-label">BAL SISTEM <em>angka dari data sumber, tidak bisa diubah</em></span>
         <div id="edit-bal-sistem" class="mono readonly-value">—</div>
+      </div>
+
+      <div class="card-grid extra-grid" style="margin:0 0 14px;">
+        <div><span class="k">INTERNAL</span><span class="v mono" id="edit-internal">—</span></div>
+        <div><span class="k">SALES</span><span class="v mono" id="edit-sales">—</span></div>
       </div>
 
       <label class="field field-lg">
@@ -791,7 +796,7 @@ body.overlay-open{ overflow:hidden; }
 
     <div class="search-row master-search-row">
       <div class="search-input-wrap">
-        <input id="koreksi-search-input" type="text" inputmode="search" placeholder="Cari MCS#, NO, atau nama admin…" autocomplete="off" />
+        <input id="koreksi-search-input" type="text" inputmode="search" placeholder="Cari MCS#, NO, SO#, REF#, LOC#, model, customer, internal, sales, admin…" autocomplete="off" />
         <button type="button" id="btn-clear-koreksi-search" class="input-clear-btn" aria-label="Hapus pencarian">✕</button>
       </div>
       <button id="btn-koreksi-search" class="btn-primary">Cari</button>
@@ -815,6 +820,10 @@ body.overlay-open{ overflow:hidden; }
         <div><span class="k">C#</span><span class="v mono kx-c"></span></div>
         <div><span class="k">SO#</span><span class="v mono kx-so"></span></div>
         <div><span class="k">REF#</span><span class="v mono kx-ref"></span></div>
+      </div>
+      <div class="card-grid extra-grid">
+        <div><span class="k">INTERNAL</span><span class="v mono kx-internal"></span></div>
+        <div><span class="k">SALES</span><span class="v mono kx-sales"></span></div>
       </div>
       <div class="card-bottom">
         <div class="bal-block">
@@ -1226,6 +1235,8 @@ const el = {
   editRef: document.getElementById('edit-ref'),
   editSo: document.getElementById('edit-so'),
   editBalSistem: document.getElementById('edit-bal-sistem'),
+  editInternal: document.getElementById('edit-internal'),
+  editSales: document.getElementById('edit-sales'),
   editBal: document.getElementById('edit-bal'),
   editSelisihPreview: document.getElementById('edit-selisih-preview'),
   editFallbackNote: document.getElementById('edit-fallback-note'),
@@ -1812,10 +1823,10 @@ async function downloadExcel() {
       .limit(5000);
     if (error) throw error;
 
-    const header = ['ID', 'Timestamp', 'Diinput oleh', 'NO', 'MCS#', 'Model', 'Customer', 'BAL sistem', 'LOC# baru', 'C# baru', 'REF# baru', 'SO#', 'QTY BARU', 'Selisih Qty', 'Diedit oleh', 'Diedit pada'];
+    const header = ['ID', 'Timestamp', 'Diinput oleh', 'NO', 'REF# baru', 'SO#', 'Internal', 'Sales', 'Customer', 'MCS#', 'C# baru', 'Model', 'QTY BARU', 'BAL sistem', 'Selisih Qty', 'LOC# baru', 'Diedit oleh', 'Diedit pada'];
     const rows = [header].concat((data || []).map((r) => [
-      r.id, r.created_at, r.created_by_email, r.no, r.mcs, r.model, r.customer,
-      r.bal_sistem, r.loc, r.c, r.ref, r.so, r.qty, r.selisih, r.updated_by_email || '', r.updated_at || '',
+      r.id, r.created_at, r.created_by_email, r.no, r.ref, r.so, r.internal, r.sales, r.customer,
+      r.mcs, r.c, r.model, r.qty, r.bal_sistem, r.selisih, r.loc, r.updated_by_email || '', r.updated_at || '',
     ]));
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -1863,7 +1874,7 @@ function openEditSheet(item, mode) {
     ? 'BARANG BARU'
     : state.isUpdateMode
       ? 'EDIT KOREKSI TERSIMPAN'
-      : 'KOREKSI STOCK OPNAME';
+      : 'INPUT STOCK OPNAME';
 
   el.sheetTitle.textContent = 'MCS# ' + item.mcs;
   el.sheetRefinfo.textContent = state.isNewItem
@@ -1876,6 +1887,8 @@ function openEditSheet(item, mode) {
   el.editSo.value = item.so || '';
   el.editC.value = item.c || '';
   el.editBalSistem.textContent = state.isNewItem ? '0 (barang baru)' : item.bal;
+  el.editInternal.textContent = item.internal || '—';
+  el.editSales.textContent = item.sales || '—';
   el.editBal.value = state.isUpdateMode ? (item.qty !== undefined ? item.qty : '') : '';
   el.editLoc.value = item.loc || '';
 
@@ -2001,6 +2014,8 @@ el.editForm.addEventListener('submit', async (e) => {
       if (edits.ref !== undefined) updatePayload.ref = edits.ref;
       if (edits.so !== undefined) updatePayload.so = edits.so;
       if (newQty !== null) { updatePayload.qty = newQty; updatePayload.selisih = selisih; }
+      if (item.internal !== undefined) updatePayload.internal = item.internal || null;
+      if (item.sales !== undefined) updatePayload.sales = item.sales || null;
 
       ({ error } = await supabaseClient.from(KOREKSI_TABLE).update(updatePayload).eq('id', state.updateId));
     } else {
@@ -2012,6 +2027,8 @@ el.editForm.addEventListener('submit', async (e) => {
         mcs: String(item.mcs || ''),
         model: item.model || '',
         customer: item.customer || '',
+        internal: item.internal || null,
+        sales: item.sales || null,
         bal_sistem: item.bal !== undefined && item.bal !== '' ? Number(item.bal) : null,
         loc: edits.loc !== undefined ? edits.loc : (item.loc || ''),
         c: edits.c !== undefined ? edits.c : (item.c || ''),
@@ -2222,6 +2239,8 @@ function mapKoreksiRowFromSupabase(r) {
     mcs: r.mcs || '',
     customer: r.customer || '',
     model: r.model || '',
+    internal: r.internal || '',
+    sales: r.sales || '',
     balSistem: r.bal_sistem !== null && r.bal_sistem !== undefined ? r.bal_sistem : '',
     selisih: r.selisih !== null && r.selisih !== undefined ? r.selisih : '',
     editedBy: r.updated_by_email || '',
@@ -2277,6 +2296,15 @@ function runKoreksiSearch() {
     || String(r.editor).toLowerCase().includes(q)
     || String(r.model).toLowerCase().includes(q)
     || String(r.customer).toLowerCase().includes(q)
+    || String(r.so).toLowerCase().includes(q)
+    || String(r.ref).toLowerCase().includes(q)
+    || String(r.loc).toLowerCase().includes(q)
+    || String(r.c).toLowerCase().includes(q)
+    || String(r.qty).toLowerCase().includes(q)
+    || String(r.selisih).toLowerCase().includes(q)
+    || String(r.internal).toLowerCase().includes(q)
+    || String(r.sales).toLowerCase().includes(q)
+    || String(r.editedBy).toLowerCase().includes(q)
   );
 
   const truncated = matches.length > MAX_RESULTS;
@@ -2297,6 +2325,8 @@ function runKoreksiSearch() {
     node.querySelector('.kx-c').textContent = rec.c || '—';
     node.querySelector('.kx-so').textContent = rec.so || '—';
     node.querySelector('.kx-ref').textContent = rec.ref || '—';
+    node.querySelector('.kx-internal').textContent = rec.internal || '—';
+    node.querySelector('.kx-sales').textContent = rec.sales || '—';
     node.querySelector('.kx-qty').textContent = rec.qty !== '' ? rec.qty : '—';
     node.querySelector('.kx-selisih').textContent = rec.selisih !== '' ? 'Selisih ' + (Number(rec.selisih) > 0 ? '+' : '') + rec.selisih : '';
     node.querySelector('.kx-meta').textContent = rec.editedBy
@@ -2316,6 +2346,7 @@ function useKoreksiRecord(rec) {
   const item = {
     id: rec.id, no: rec.no, mcs: rec.mcs, so: rec.so, ref: rec.ref, model: rec.model,
     loc: rec.loc, c: rec.c, bal: rec.balSistem, qty: rec.qty, customer: rec.customer,
+    internal: rec.internal, sales: rec.sales,
   };
   openEditSheet(item, 'update');
 }
