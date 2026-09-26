@@ -702,11 +702,9 @@ body.overlay-open{ overflow:hidden; }
           <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
         </div>
       </label>
-      <div class="info-note">Nama editor <b>tidak</b> diisi manual lagi — otomatis diambil dari akun admin yang login (lihat tombol "Masuk sebagai Admin" di atas).</div>
       <button type="submit" class="btn-primary btn-full">Simpan Pengaturan</button>
       <div id="settings-status" class="save-status" role="status"></div>
     </form>
-    <p class="muted small">Pengaturan disimpan hanya di perangkat ini. Lihat PANDUAN-SUPABASE.md untuk cara mendapatkan URL &amp; anon key, dan cara bikin akun admin.</p>
   </div>
 </div>
 
@@ -744,9 +742,42 @@ body.overlay-open{ overflow:hidden; }
 
     <div id="logged-in-box" class="hidden" style="margin-top:6px;">
       <div class="login-status-row"><span class="login-status-dot on"></span>Masuk sebagai <b id="logged-in-email"></b></div>
+      <button type="button" id="btn-open-change-password" class="btn-secondary btn-full">Ganti Password</button>
       <button type="button" id="btn-logout" class="btn-secondary btn-full">Keluar dari Mode Admin</button>
     </div>
 
+  </div>
+</div>
+
+<!-- Ganti Password modal (hanya muncul kalau sudah login) -->
+<div id="change-password-overlay" class="sheet-overlay hidden">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="change-password-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <span class="sheet-eyebrow">AKUN ADMIN</span>
+        <h2 id="change-password-title">Ganti Password</h2>
+      </div>
+      <button id="btn-close-change-password" class="icon-btn" aria-label="Tutup">✕</button>
+    </div>
+
+    <form id="change-password-form" class="edit-form">
+      <label class="field">
+        <span class="field-label">Password baru</span>
+        <div class="field-input-wrap">
+          <input type="password" id="new-password" autocomplete="new-password" minlength="6" required />
+        </div>
+      </label>
+      <label class="field">
+        <span class="field-label">Ulangi password baru</span>
+        <div class="field-input-wrap">
+          <input type="password" id="new-password-confirm" autocomplete="new-password" minlength="6" required />
+        </div>
+      </label>
+      <div id="change-password-error" class="field-error"></div>
+      <button type="submit" id="btn-change-password-submit" class="btn-primary btn-full">Simpan Password Baru</button>
+      <div id="change-password-status" class="save-status" role="status"></div>
+    </form>
   </div>
 </div>
 
@@ -1286,6 +1317,16 @@ const el = {
   btnLogout: document.getElementById('btn-logout'),
   settingsStatus: document.getElementById('settings-status'),
 
+  btnOpenChangePassword: document.getElementById('btn-open-change-password'),
+  changePasswordOverlay: document.getElementById('change-password-overlay'),
+  btnCloseChangePassword: document.getElementById('btn-close-change-password'),
+  changePasswordForm: document.getElementById('change-password-form'),
+  newPassword: document.getElementById('new-password'),
+  newPasswordConfirm: document.getElementById('new-password-confirm'),
+  changePasswordError: document.getElementById('change-password-error'),
+  changePasswordStatus: document.getElementById('change-password-status'),
+  btnChangePasswordSubmit: document.getElementById('btn-change-password-submit'),
+
   offlineBanner: document.getElementById('offline-banner'),
   dataBanner: document.getElementById('data-banner'),
   toast: document.getElementById('toast'),
@@ -1377,7 +1418,8 @@ function openLogin() {
 }
 function closeLogin() { hideOverlay(el.loginOverlay); }
 el.btnCloseLogin.addEventListener('click', closeLogin);
-el.loginOverlay.addEventListener('click', (e) => { if (e.target === el.loginOverlay) closeLogin(); });
+// Sengaja TIDAK menutup saat klik di luar area dialog (backdrop) — untuk
+// keluar pakai tombol ✕ (btnCloseLogin) di atas.
 
 el.loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -1414,6 +1456,56 @@ el.btnLogout.addEventListener('click', async () => {
   updateModeUI();
   closeLogin();
   showToast('Sudah keluar dari Mode Admin');
+});
+
+// ---------- ganti password (hanya saat sudah login) ----------
+
+function openChangePassword() {
+  el.changePasswordForm.reset();
+  el.changePasswordError.textContent = '';
+  el.changePasswordStatus.textContent = '';
+  showOverlay(el.changePasswordOverlay);
+}
+function closeChangePassword() { hideOverlay(el.changePasswordOverlay); }
+
+el.btnOpenChangePassword.addEventListener('click', openChangePassword);
+el.btnCloseChangePassword.addEventListener('click', closeChangePassword);
+// Sengaja TIDAK menutup saat klik di luar area dialog (backdrop) — untuk
+// keluar pakai tombol ✕ (btnCloseChangePassword) di atas.
+
+el.changePasswordForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!supabaseClient || !state.user) { showToast('Login dulu sebagai Admin'); return; }
+
+  const pass1 = el.newPassword.value;
+  const pass2 = el.newPasswordConfirm.value;
+  el.changePasswordError.textContent = '';
+  el.changePasswordStatus.textContent = '';
+
+  if (pass1.length < 6) {
+    el.changePasswordError.textContent = 'Password baru minimal 6 karakter.';
+    return;
+  }
+  if (pass1 !== pass2) {
+    el.changePasswordError.textContent = 'Konfirmasi password tidak sama.';
+    return;
+  }
+
+  el.changePasswordStatus.textContent = 'Menyimpan…';
+  el.btnChangePasswordSubmit.disabled = true;
+  try {
+    const { error } = await supabaseClient.auth.updateUser({ password: pass1 });
+    if (error) throw error;
+    el.changePasswordStatus.textContent = 'Password berhasil diganti ✓';
+    showToast('Password berhasil diganti');
+    setTimeout(closeChangePassword, 700);
+  } catch (err) {
+    console.error(err);
+    el.changePasswordStatus.textContent = '';
+    el.changePasswordError.textContent = 'Gagal ganti password: ' + (err.message || 'coba lagi');
+  } finally {
+    el.btnChangePasswordSubmit.disabled = false;
+  }
 });
 
 // ---------- header sticky + efek kaca (glassmorphism) saat scroll ----------
@@ -2220,7 +2312,8 @@ function useMasterRecord(rec) {
 
 el.btnOpenKoreksi.addEventListener('click', openKoreksi);
 el.btnCloseKoreksi.addEventListener('click', closeKoreksi);
-el.koreksiOverlay.addEventListener('click', (e) => { if (e.target === el.koreksiOverlay) closeKoreksi(); });
+// Sengaja TIDAK menutup saat klik di luar area dialog (backdrop) — untuk
+// keluar pakai tombol ✕ (btnCloseKoreksi) di atas.
 el.btnKoreksiSearch.addEventListener('click', runKoreksiSearch);
 el.koreksiSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runKoreksiSearch(); });
 el.koreksiSearchInput.addEventListener('input', () => updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch));
@@ -2374,7 +2467,8 @@ function openSettings() {
 function closeSettings() { hideOverlay(el.settingsOverlay); }
 el.btnSettings.addEventListener('click', openSettings);
 el.btnCloseSettings.addEventListener('click', closeSettings);
-el.settingsOverlay.addEventListener('click', (e) => { if (e.target === el.settingsOverlay) closeSettings(); });
+// Sengaja TIDAK menutup saat klik di luar area dialog (backdrop) — untuk
+// keluar pakai tombol ✕ (btnCloseSettings) di atas.
 
 el.settingsForm.addEventListener('submit', async (e) => {
   e.preventDefault();
