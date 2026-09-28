@@ -435,6 +435,60 @@ body.overlay-open{ overflow:hidden; }
   padding:12px 18px; border-radius:10px; font-size:13.5px; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,0.4);
 }
 @media (min-width:720px){ .card-edit-hint{ display:block; } }
+
+/* ===== Perbaikan header mobile ===== */
+html,body{ overflow-x:hidden; }
+.topbar{ gap:10px; box-sizing:border-box; max-width:100%; }
+.brand{ min-width:0; }
+.topbar-actions{ flex:none; }
+@media (max-width:560px){
+  .topbar{ flex-wrap:wrap; padding-left:14px; padding-right:14px; }
+  .brand{ flex:1 1 100%; }
+  .brand-title{ font-size:24px; }
+  .topbar-actions{
+    flex:1 1 100%; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px;
+  }
+  .topbar-actions .icon-btn{ width:100%; min-width:0; height:40px; padding:0; }
+}
+@media (max-width:340px){
+  .topbar-actions{ gap:5px; }
+}
+
+/* ===== Animasi sukses ala iPhone ===== */
+.ok-overlay{
+  position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.38); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  opacity:0; pointer-events:none; transition:opacity .25s ease;
+}
+.ok-overlay.show{ opacity:1; pointer-events:auto; }
+.ok-card{
+  display:flex; flex-direction:column; align-items:center; gap:14px;
+  padding:28px 34px 22px; min-width:170px; border-radius:26px;
+  background:color-mix(in srgb, var(--surface, #1c1c1e) 92%, transparent);
+  border:1px solid color-mix(in srgb, var(--border, #333) 70%, transparent);
+  box-shadow:0 24px 60px rgba(0,0,0,0.45);
+  transform:scale(.7); opacity:0;
+}
+.ok-overlay.show .ok-card{ animation:okPop .5s cubic-bezier(.2,1.3,.4,1) forwards; }
+.ok-svg{ width:96px; height:96px; display:block; overflow:visible; }
+.ok-ring{ fill:none; stroke:#34c759; stroke-width:4; stroke-linecap:round;
+  stroke-dasharray:289; stroke-dashoffset:289; transform:rotate(-90deg); transform-origin:50% 50%; }
+.ok-fill{ fill:#34c759; opacity:0; transform:scale(.6); transform-origin:50% 50%; }
+.ok-tick{ fill:none; stroke:#fff; stroke-width:6; stroke-linecap:round; stroke-linejoin:round;
+  stroke-dasharray:60; stroke-dashoffset:60; }
+.ok-overlay.show .ok-ring{ animation:okRing .55s cubic-bezier(.65,0,.35,1) .05s forwards; }
+.ok-overlay.show .ok-fill{ animation:okFill .35s ease .5s forwards; }
+.ok-overlay.show .ok-tick{ animation:okTick .35s cubic-bezier(.65,0,.35,1) .55s forwards; }
+.ok-overlay.show .ok-svg{ animation:okBounce .4s ease .85s; }
+.ok-label{ font-size:15px; font-weight:600; color:var(--text, #fff); letter-spacing:.2px; text-align:center; }
+@keyframes okPop{ to{ transform:scale(1); opacity:1; } }
+@keyframes okRing{ to{ stroke-dashoffset:0; } }
+@keyframes okFill{ to{ opacity:1; transform:scale(1); } }
+@keyframes okTick{ to{ stroke-dashoffset:0; } }
+@keyframes okBounce{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.08); } }
+@media (prefers-reduced-motion: reduce){
+  .ok-overlay.show .ok-card,.ok-overlay.show .ok-ring,.ok-overlay.show .ok-fill,.ok-overlay.show .ok-tick,.ok-overlay.show .ok-svg{ animation-duration:.01s; animation-delay:0s; }
+}
 </style>
 </head>
 <body>
@@ -695,14 +749,14 @@ body.overlay-open{ overflow:hidden; }
         </div>
       </label>
       <label class="field">
-        <span class="field-label">Supabase Project URL <em>untuk simpan koreksi</em></span>
+        <span class="field-label">Alamat Server <em>untuk simpan koreksi</em></span>
         <div class="field-input-wrap">
-          <input type="url" id="set-supabase-url" placeholder="https://xxxxxxxx.supabase.co" required />
+          <input type="url" id="set-supabase-url" placeholder="https://xxxxxxxx…" required />
           <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
         </div>
       </label>
       <label class="field">
-        <span class="field-label">Supabase Anon Public Key</span>
+        <span class="field-label">Kunci Akses Publik</span>
         <div class="field-input-wrap">
           <input type="text" id="set-supabase-key" placeholder="eyJhbGciOi..." required />
           <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
@@ -1420,7 +1474,7 @@ function updateModeUI() {
 el.btnModeToggle.addEventListener('click', () => {
   if (isAdminMode()) { openLogin(); return; } // tampilkan info + tombol keluar
   if (!supabaseClient) {
-    showToast('Atur Supabase URL & Anon Key dulu di Pengaturan (⚙️)');
+    showToast('Koneksi simpan belum diatur, cek Pengaturan (⚙️)');
     openSettings();
     return;
   }
@@ -1440,7 +1494,7 @@ el.btnCloseLogin.addEventListener('click', closeLogin);
 
 el.loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!supabaseClient) { showToast('Atur Supabase URL & Anon Key dulu di Pengaturan'); return; }
+  if (!supabaseClient) { showToast('Koneksi simpan belum diatur, cek Pengaturan'); return; }
   const email = el.loginEmail.value.trim();
   const password = el.loginPassword.value;
   if (!email || !password) return;
@@ -1467,7 +1521,7 @@ el.loginForm.addEventListener('submit', async (e) => {
 });
 
 el.btnForgotPassword.addEventListener('click', async () => {
-  if (!supabaseClient) { showToast('Atur Supabase URL & Anon Key dulu di Pengaturan'); return; }
+  if (!supabaseClient) { showToast('Koneksi simpan belum diatur, cek Pengaturan'); return; }
   const email = el.loginEmail.value.trim();
   if (!email) {
     el.loginError.textContent = 'Isi email dulu, lalu tekan "Lupa Password?" lagi.';
@@ -1545,8 +1599,8 @@ el.changePasswordForm.addEventListener('submit', async (e) => {
     const { error } = await supabaseClient.auth.updateUser({ password: pass1 });
     if (error) throw error;
     el.changePasswordStatus.textContent = 'Password berhasil diganti ✓';
-    showToast('Password berhasil diganti');
-    setTimeout(closeChangePassword, 700);
+    showSuccess('Password diganti');
+    setTimeout(closeChangePassword, 900);
   } catch (err) {
     console.error(err);
     el.changePasswordStatus.textContent = '';
@@ -1954,7 +2008,7 @@ async function downloadExcel() {
     return;
   }
 
-  if (!supabaseClient) { showToast('Atur Supabase URL & Anon Key dulu di Pengaturan'); return; }
+  if (!supabaseClient) { showToast('Koneksi simpan belum diatur, cek Pengaturan'); return; }
   if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk unduh data koreksi'); return; }
 
   showToast('Menyiapkan file Excel…');
@@ -2106,7 +2160,7 @@ el.editForm.addEventListener('submit', async (e) => {
   if (!supabaseClient) {
     closeEditSheet();
     openSettings();
-    showToast('Atur Supabase URL & Anon Key dulu ya');
+    showToast('Koneksi simpan belum diatur, cek Pengaturan');
     return;
   }
   if (!isAdminMode()) {
@@ -2199,8 +2253,8 @@ el.editForm.addEventListener('submit', async (e) => {
     }
     el.saveStatus.textContent = state.isUpdateMode ? 'Koreksi diperbarui ✓' : 'Tersimpan sebagai data baru ✓';
     el.saveStatus.className = 'save-status ok';
-    showToast(state.isNewItem ? 'Barang baru tersimpan ke Supabase' : state.isUpdateMode ? 'Koreksi berhasil diperbarui' : 'Koreksi tersimpan ke Supabase');
-    setTimeout(closeEditSheet, 700);
+    showSuccess(state.isNewItem ? 'Barang baru tersimpan' : state.isUpdateMode ? 'Koreksi diperbarui' : 'Koreksi tersimpan');
+    setTimeout(closeEditSheet, 900);
   } catch (err) {
     console.error(err);
     el.saveStatus.textContent = 'Gagal menyimpan: ' + (err.message || 'coba lagi');
@@ -2533,7 +2587,8 @@ el.settingsForm.addEventListener('submit', async (e) => {
   });
   el.settingsStatus.textContent = 'Tersimpan ✓';
   el.settingsStatus.className = 'save-status ok';
-  setTimeout(closeSettings, 500);
+  showSuccess('Pengaturan tersimpan');
+  setTimeout(closeSettings, 700);
   if (csvChanged) loadData(true);
   if (masterCsvChanged) state.masterLoaded = false; // paksa muat ulang Master MC di kunjungan berikutnya
   if (supabaseChanged) {
@@ -2592,6 +2647,62 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW gagal:', e));
   });
 }
+</script>
+<div id="ok-overlay" class="ok-overlay" aria-hidden="true">
+  <div class="ok-card" role="status">
+    <svg class="ok-svg" viewBox="0 0 100 100">
+      <circle class="ok-fill" cx="50" cy="50" r="46"/>
+      <circle class="ok-ring" cx="50" cy="50" r="46"/>
+      <path class="ok-tick" d="M30 52 L44 66 L71 36"/>
+    </svg>
+    <div class="ok-label" id="ok-label">Berhasil</div>
+  </div>
+</div>
+<script>
+// ---------- animasi centang sukses + suara "ting" ala iPhone ----------
+(function(){
+  let ctx=null, hideTimer=null;
+  function getCtx(){
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC) return null;
+      if(!ctx) ctx=new AC();
+      if(ctx.state==='suspended') ctx.resume();
+      return ctx;
+    }catch(e){ return null; }
+  }
+  // siapkan audio saat ada sentuhan pertama supaya boleh bunyi di iPhone/Android
+  ['touchstart','pointerdown','click','keydown'].forEach(ev=>document.addEventListener(ev,getCtx,{passive:true}));
+  function chime(){
+    const c=getCtx(); if(!c) return;
+    const t=c.currentTime;
+    const master=c.createGain(); master.gain.value=0.9; master.connect(c.destination);
+    // dua nada bening bertingkat (mirip Apple Pay): E6 lalu B6, dengan overtone lonceng
+    [[1318.5,0],[1975.5,0.11]].forEach(([f,d])=>{
+      [[1,0.5],[2.0,0.16],[3.01,0.07]].forEach(([m,g])=>{
+        const o=c.createOscillator(), v=c.createGain();
+        o.type='sine'; o.frequency.value=f*m;
+        v.gain.setValueAtTime(0.0001,t+d);
+        v.gain.exponentialRampToValueAtTime(g,t+d+0.008);
+        v.gain.exponentialRampToValueAtTime(0.0001,t+d+(m===1?1.1:0.5));
+        o.connect(v); v.connect(master);
+        o.start(t+d); o.stop(t+d+1.2);
+      });
+    });
+    if(navigator.vibrate) try{ navigator.vibrate([12,40,18]); }catch(e){}
+  }
+  window.showSuccess=function(label){
+    const ov=document.getElementById('ok-overlay');
+    document.getElementById('ok-label').textContent=label||'Berhasil';
+    clearTimeout(hideTimer);
+    ov.classList.remove('show'); void ov.offsetWidth; // ulang animasi
+    ov.classList.add('show'); ov.setAttribute('aria-hidden','false');
+    setTimeout(chime,520); // pas centang mulai tergambar
+    hideTimer=setTimeout(()=>{ ov.classList.remove('show'); ov.setAttribute('aria-hidden','true'); },1900);
+  };
+  const ov=document.getElementById('ok-overlay');
+  ov.addEventListener('click',()=>{ clearTimeout(hideTimer); ov.classList.remove('show'); });
+})();
 </script>
 </body>
 </html>
