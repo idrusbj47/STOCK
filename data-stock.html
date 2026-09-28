@@ -1869,6 +1869,29 @@ el.fieldChips.addEventListener('click', (e) => {
 el.btnSearch.addEventListener('click', runSearch);
 el.searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
 
+// ---------- shortcut keyboard: Ctrl+1 / Alt+1 / "/" → fokus ke pencarian utama ----------
+function focusMainSearch() {
+  // tutup semua panel/overlay yang sedang terbuka supaya tab Cari kelihatan
+  [closeEditSheet, closeMaster, closeKoreksi, closeSettings, closeLogin, closeChangePassword]
+    .forEach((fn) => { try { fn(); } catch (err) {} });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  el.searchInput.focus({ preventScroll: true });
+  el.searchInput.select();
+}
+document.addEventListener('keydown', (e) => {
+  const key = e.key;
+  const isCtrl1 = (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (key === '1' || e.code === 'Digit1' || e.code === 'Numpad1');
+  const isAlt1 = e.altKey && !e.ctrlKey && !e.metaKey && (e.code === 'Digit1' || e.code === 'Numpad1');
+  const tag = (e.target && e.target.tagName || '').toLowerCase();
+  const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable);
+  const isSlash = key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !typing;
+  if (isCtrl1 || isAlt1 || isSlash) {
+    e.preventDefault();
+    e.stopPropagation();
+    focusMainSearch();
+  }
+}, true);
+
 function updateClearBtn(input, btn) {
   btn.classList.toggle('show', input.value.length > 0);
 }
