@@ -489,6 +489,9 @@ html,body{ overflow-x:hidden; }
 @media (prefers-reduced-motion: reduce){
   .ok-overlay.show .ok-card,.ok-overlay.show .ok-ring,.ok-overlay.show .ok-fill,.ok-overlay.show .ok-tick,.ok-overlay.show .ok-svg{ animation-duration:.01s; animation-delay:0s; }
 }
+
+.item-card:focus{ outline:none; }
+.item-card:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; box-shadow:0 0 0 5px color-mix(in srgb, var(--amber) 22%, transparent); }
 </style>
 </head>
 <body>
@@ -637,7 +640,7 @@ html,body{ overflow-x:hidden; }
           <span class="date"></span> · <span class="customer"></span>
         </div>
       </div>
-      <div class="card-edit-hint">Ketuk untuk koreksi ›</div>
+      <div class="card-edit-hint">Ketuk untuk input ›</div>
     </article>
   </template>
 
@@ -656,7 +659,7 @@ html,body{ overflow-x:hidden; }
     </div>
 
     <div class="sheet-refinfo muted" id="sheet-refinfo"></div>
-    <div class="info-note" id="edit-top-note">Koreksi disimpan sebagai <b>data baru</b> di sheet terpisah (tidak mengubah data sumber).</div>
+    <div class="info-note" id="edit-top-note">Disimpan sebagai <b>data baru</b> di sheet terpisah (tidak mengubah data sumber).</div>
 
     <form id="edit-form" class="edit-form">
       <label class="field field-lg">
@@ -714,7 +717,7 @@ html,body{ overflow-x:hidden; }
 
       <div class="info-note" id="edit-fallback-note">Field yang dikosongkan otomatis memakai nilai lama saat disimpan (LOC#/C#/REF#/SO#).</div>
 
-      <button type="submit" id="btn-save" class="btn-primary btn-full">Simpan Koreksi</button>
+      <button type="submit" id="btn-save" class="btn-primary btn-full">Simpan</button>
       <button type="button" id="btn-delete-koreksi" class="btn-secondary btn-full hidden" style="border-color:var(--red);color:var(--red);margin-top:8px;">Hapus Koreksi Ini</button>
       <div id="save-status" class="save-status" role="status"></div>
     </form>
@@ -749,7 +752,7 @@ html,body{ overflow-x:hidden; }
         </div>
       </label>
       <label class="field">
-        <span class="field-label">Alamat Server <em>untuk simpan koreksi</em></span>
+        <span class="field-label">Alamat Server <em>untuk menyimpan</em></span>
         <div class="field-input-wrap">
           <input type="url" id="set-supabase-url" placeholder="https://xxxxxxxx…" required />
           <button type="button" class="input-clear-btn" aria-label="Hapus">✕</button>
@@ -780,7 +783,7 @@ html,body{ overflow-x:hidden; }
       <button id="btn-close-login" class="icon-btn" aria-label="Tutup">✕</button>
     </div>
 
-    <div class="info-note">Hanya admin yang login yang bisa input/edit data. Data koreksi akan tercatat otomatis atas nama akun ini.</div>
+    <div class="info-note">Hanya admin yang login yang bisa input/edit data. Data akan tercatat otomatis atas nama akun ini.</div>
 
     <form id="login-form" class="edit-form">
       <label class="field">
@@ -1509,7 +1512,7 @@ el.loginForm.addEventListener('submit', async (e) => {
     el.loginPassword.value = '';
     el.loginStatus.textContent = 'Berhasil masuk ✓';
     updateModeUI();
-    showToast('Mode Admin aktif — bisa input/koreksi');
+    showToast('Mode Admin aktif — bisa input');
     setTimeout(closeLogin, 500);
   } catch (err) {
     console.error(err);
@@ -1869,26 +1872,92 @@ el.fieldChips.addEventListener('click', (e) => {
 el.btnSearch.addEventListener('click', runSearch);
 el.searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
 
-// ---------- shortcut keyboard: Ctrl+1 / Alt+1 / "/" → fokus ke pencarian utama ----------
+// ---------- shortcut keyboard (pakai Alt) ----------
+//  Alt+1 → kolom pencarian utama
+//  Alt+2 → daftar hasil (↑ ↓ pilih kartu, Enter buka dialog input)
+//  Alt+3 → di dalam dialog input: mulai isi field (↑ ↓ pindah field, Enter simpan)
+function closeAllPanels() {
+  // hanya tutup overlay yang memang sedang terbuka (biar penghitung overlay tidak keliru)
+  const pairs = [
+    [el.sheetOverlay, closeEditSheet], [el.masterOverlay, closeMaster], [el.koreksiOverlay, closeKoreksi],
+    [el.settingsOverlay, closeSettings], [el.loginOverlay, closeLogin], [el.changePasswordOverlay, closeChangePassword],
+  ];
+  pairs.forEach(([ov, fn]) => {
+    if (ov && !ov.classList.contains('hidden')) { try { fn(); } catch (err) {} }
+  });
+}
 function focusMainSearch() {
-  // tutup semua panel/overlay yang sedang terbuka supaya tab Cari kelihatan
-  [closeEditSheet, closeMaster, closeKoreksi, closeSettings, closeLogin, closeChangePassword]
-    .forEach((fn) => { try { fn(); } catch (err) {} });
+  closeAllPanels();
   window.scrollTo({ top: 0, behavior: 'smooth' });
   el.searchInput.focus({ preventScroll: true });
   el.searchInput.select();
 }
+function resultCards() { return Array.from(el.results.querySelectorAll('.item-card')); }
+function focusCard(card) {
+  if (!card) return;
+  card.focus({ preventScroll: true });
+  card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+function focusResults() {
+  closeAllPanels();
+  const cards = resultCards();
+  if (!cards.length) { showToast('Belum ada hasil, cari dulu (Alt+1)'); return; }
+  focusCard(cards[0]);
+}
+function sheetOpen() { return !el.editSheet.closest('.sheet-overlay').classList.contains('hidden'); }
+function formFocusables() {
+  return Array.from(el.editForm.querySelectorAll('input, #btn-save'))
+    .filter((n) => !n.disabled && !n.readOnly && !n.classList.contains('hidden') && n.offsetParent !== null && n.tabIndex !== -1);
+}
+function focusFirstFormField() {
+  const list = formFocusables();
+  const target = el.editBal && list.includes(el.editBal) ? el.editBal : list[0];
+  if (!target) return;
+  target.focus();
+  if (target.select) target.select();
+}
 document.addEventListener('keydown', (e) => {
-  const key = e.key;
-  const isCtrl1 = (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (key === '1' || e.code === 'Digit1' || e.code === 'Numpad1');
-  const isAlt1 = e.altKey && !e.ctrlKey && !e.metaKey && (e.code === 'Digit1' || e.code === 'Numpad1');
-  const tag = (e.target && e.target.tagName || '').toLowerCase();
-  const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable);
-  const isSlash = key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !typing;
-  if (isCtrl1 || isAlt1 || isSlash) {
-    e.preventDefault();
-    e.stopPropagation();
-    focusMainSearch();
+  // 1) Alt + angka
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+    if (e.code === 'Digit1' || e.code === 'Numpad1') { e.preventDefault(); focusMainSearch(); return; }
+    if (e.code === 'Digit2' || e.code === 'Numpad2') { e.preventDefault(); focusResults(); return; }
+    if (e.code === 'Digit3' || e.code === 'Numpad3') {
+      e.preventDefault();
+      if (sheetOpen()) focusFirstFormField(); else showToast('Buka dulu kartu hasil (Alt+2 lalu Enter)');
+      return;
+    }
+  }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+  // 2) Panah di dalam dialog input: pindah antar field
+  if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && sheetOpen() && e.target.closest && e.target.closest('#edit-form')) {
+    const list = formFocusables();
+    const idx = list.indexOf(e.target);
+    if (idx === -1) return;
+    e.preventDefault(); // cegah angka di kolom number naik/turun
+    const next = list[e.key === 'ArrowDown' ? Math.min(idx + 1, list.length - 1) : Math.max(idx - 1, 0)];
+    next.focus();
+    if (next.select) next.select();
+    return;
+  }
+
+  // 3) Panah di daftar hasil: pilih kartu; ↓ dari kolom pencarian masuk ke hasil
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    const anyOverlay = document.querySelector('.sheet-overlay:not(.hidden)');
+    if (anyOverlay) return;
+    const cards = resultCards();
+    if (!cards.length) return;
+    const card = e.target.closest && e.target.closest('.item-card');
+    if (card) {
+      e.preventDefault();
+      const i = cards.indexOf(card);
+      if (e.key === 'ArrowDown') focusCard(cards[Math.min(i + 1, cards.length - 1)]);
+      else if (i === 0) { el.searchInput.focus({ preventScroll: true }); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+      else focusCard(cards[i - 1]);
+    } else if (e.target === el.searchInput && e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusCard(cards[0]);
+    }
   }
 }, true);
 
@@ -1990,15 +2059,15 @@ function renderResults(truncated, totalCount) {
     node.querySelector('.internal').textContent = item.internal || '—';
     node.querySelector('.sales').textContent = item.sales || '—';
     const editHint = node.querySelector('.card-edit-hint');
-    if (editHint) editHint.textContent = isAdminMode() ? 'Ketuk untuk koreksi ›' : 'Mode cari saja — info aja';
+    if (editHint) editHint.textContent = isAdminMode() ? 'Ketuk untuk input ›' : 'Mode cari saja — info aja';
 
     card.addEventListener('click', () => {
-      if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk input/koreksi'); return; }
+      if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk input'); return; }
       openEditSheet(item);
     });
     card.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter') return;
-      if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk input/koreksi'); return; }
+      if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk input'); return; }
       openEditSheet(item);
     });
 
@@ -2114,12 +2183,13 @@ function openEditSheet(item, mode) {
   el.editLoc.value = item.loc || '';
 
   el.btnDeleteKoreksi.classList.toggle('hidden', !state.isUpdateMode);
+  document.getElementById('btn-save').textContent = state.isUpdateMode ? 'Simpan Perubahan Koreksi' : 'Simpan';
 
   el.editTopNote.innerHTML = state.isNewItem
     ? ''
     : state.isUpdateMode
       ? 'Perubahan akan <b>menimpa</b> data koreksi ini (bukan menambah baris baru).'
-      : 'Koreksi disimpan sebagai <b>data baru</b> di sheet terpisah (tidak mengubah data sumber).';
+      : 'Disimpan sebagai <b>data baru</b> di sheet terpisah (tidak mengubah data sumber).';
   el.editTopNote.classList.toggle('hidden', state.isNewItem);
 
   el.editFallbackNote.textContent = state.isNewItem
@@ -2189,7 +2259,7 @@ el.editForm.addEventListener('submit', async (e) => {
   if (!isAdminMode()) {
     closeEditSheet();
     openLogin();
-    showToast('Login sebagai Admin dulu untuk menyimpan koreksi');
+    showToast('Login sebagai Admin dulu untuk menyimpan');
     return;
   }
 
@@ -2207,7 +2277,7 @@ el.editForm.addEventListener('submit', async (e) => {
   if (newBal !== '') edits.bal = Number(newBal);
 
   if (Object.keys(edits).length === 0) {
-    el.saveStatus.textContent = 'Isi minimal satu koreksi dulu.';
+    el.saveStatus.textContent = 'Isi minimal satu data dulu.';
     el.saveStatus.className = 'save-status';
     return;
   }
@@ -2276,7 +2346,7 @@ el.editForm.addEventListener('submit', async (e) => {
     }
     el.saveStatus.textContent = state.isUpdateMode ? 'Koreksi diperbarui ✓' : 'Tersimpan sebagai data baru ✓';
     el.saveStatus.className = 'save-status ok';
-    showSuccess(state.isNewItem ? 'Barang baru tersimpan' : state.isUpdateMode ? 'Koreksi diperbarui' : 'Koreksi tersimpan');
+    showSuccess(state.isNewItem ? 'Barang baru tersimpan' : state.isUpdateMode ? 'Koreksi diperbarui' : 'Tersimpan');
     setTimeout(closeEditSheet, 900);
   } catch (err) {
     console.error(err);
