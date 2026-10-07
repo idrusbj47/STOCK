@@ -1946,6 +1946,7 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
 .view-tabs button,.rank-table th,.sf-seg button,.dim-switch button,.qv-filter-chip{text-transform:none!important;letter-spacing:0!important}
 .dhb .rank-table th,.dhb .rank-table td{padding:8px 7px}.dhb:has(#results-section:not(.hidden)) .rank-cell small{display:none}
 .dhb:has(#results-section:not(.hidden)) .bar-track{width:36px}
+.smg{grid-template-columns:60fr 40fr}@media(max-width:999px){.smg .chart-card{grid-column:auto!important;grid-row:auto!important}}
 </style>
 </head>
 <body>
@@ -1966,8 +1967,8 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
   </div>
   <nav class="view-tabs" id="view-tabs">
     <button data-view="overview" class="active">Overview</button>
-    <button data-view="date">Data Harian</button>
     <button data-view="summary">Pergerakan</button>
+    <button data-view="date">Data Harian</button>
     <button data-view="qview">Qview</button>
   </nav>
   <div class="ctl">
@@ -2081,15 +2082,15 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
     </div>
     <div class="mk" id="sm-kpi" style="grid-template-columns:repeat(5,1fr)"></div>
     <div class="smg">
-      <div class="chart-card big"><div class="chart-card-title">Tren Memo vs DO</div><p class="chart-card-sub">Tonase memo &amp; DO (batang) dengan % fulfillment (garis)</p><div class="chart-canvas-wrap"><canvas id="chart-memo-do"></canvas></div></div>
-      <div class="chart-card"><div class="chart-card-title">Tren Outstanding</div><p class="chart-card-sub">Tonase yang masih harus dipenuhi</p><div class="chart-canvas-wrap"><canvas id="chart-outstanding"></canvas></div></div>
-      <div class="chart-card"><div class="chart-card-title">Komposisi Status</div><p class="chart-card-sub">Persentase line per status, per tanggal</p><div class="chart-canvas-wrap"><canvas id="chart-status"></canvas></div></div>
+      <div class="chart-card" style="grid-column:1;grid-row:1"><div class="chart-card-title">Tren Memo vs DO</div><p class="chart-card-sub">Tonase memo &amp; DO (batang) dengan % fulfillment (garis)</p><div class="chart-canvas-wrap"><canvas id="chart-memo-do"></canvas></div></div>
+      <div class="chart-card" style="grid-column:2;grid-row:1"><div class="chart-card-title">Tren Outstanding</div><p class="chart-card-sub">Tonase yang masih harus dipenuhi</p><div class="chart-canvas-wrap"><canvas id="chart-outstanding"></canvas></div></div>
+      <div class="chart-card" style="grid-column:1;grid-row:2"><div class="chart-card-title">Tren Tonase DO vs Qview per Hari</div><p class="chart-card-sub">Tonase DO terkirim menurut memo dibandingkan tonase Qview di tanggal yang sama</p><div class="chart-canvas-wrap"><canvas id="chart-do-qview"></canvas></div></div>
+      <div class="chart-card" style="grid-column:2;grid-row:2"><div class="chart-card-title">Komposisi Status</div><p class="chart-card-sub">Persentase line per status, per tanggal</p><div class="chart-canvas-wrap"><canvas id="chart-status"></canvas></div></div>
     </div>
     <div id="sm-more">
       <div class="section-title" style="margin:0">Pergerakan per Tanggal <small id="summary-count"></small></div>
       <div class="rank-table-wrap" style="overflow:auto"><table class="rank-table"><thead><tr><th>Tanggal</th><th>Total Line</th><th>Tonase Memo</th><th>Tonase DO</th><th>% Terpenuhi</th><th>Tonase Sisa</th><th>Lunas</th><th>Kurang</th><th>Siap</th><th>Kosong &amp; Sisa Kirim</th></tr></thead><tbody id="summary-tbody"></tbody></table></div>
       <p class="summary-narrative" id="summary-average"></p>
-      <div class="chart-card" style="flex:none;height:280px"><div class="chart-card-title">Tren Tonase DO vs Qview per Hari</div><p class="chart-card-sub">Tonase DO terkirim menurut memo dibandingkan tonase Qview di tanggal yang sama</p><div class="chart-canvas-wrap"><canvas id="chart-do-qview"></canvas></div></div>
       <p class="muted" style="font-size:12px;margin:0">Klik baris tanggal atau titik grafik untuk membuka detailnya di Data Harian.</p>
     </div>
   </div>
@@ -4714,13 +4715,16 @@ const uiKc = (cls,ic,l,v,unit,note,extra) => `<div class="k"><div class="kic ${c
 
 function ovRender(){
   if(!UI_ID('ov-kpi') || !state.records) return;
-  const C = uiCalc(state.records), dl = state.dateList[state.dateIndex];
-  UI_ID('ov-per').textContent = dl ? 'Tanggal ' + dl.label : '';
+  const all = state.dateList.length ? state.dateList.flatMap(d => d.records) : state.records, nD = Math.max(state.dateList.length, 1), R0 = uiCalc(all);
+  const sc = o => Object.fromEntries(Object.entries(o).map(([k,v]) => [k, v / nD]));
+  const C = { ...R0, n: sc(R0.n), t: sc(R0.t), d: sc(R0.d), tm: R0.tm/nD, td: R0.td/nD, tot: R0.tot/nD, doLines: R0.doLines/nD, outLines: R0.outLines/nD, out: R0.out/nD };
+  const dl0 = state.dateList[0], dl1 = state.dateList[state.dateList.length-1];
+  UI_ID('ov-per').textContent = state.dateList.length ? `Rata-rata per tanggal · ${nD} tanggal (${dl0.label} – ${dl1.label})` : '';
   UI_ID('ov-kpi').innerHTML =
-    uiKc('out','doc','Tonase Memo',fmtNum(C.tm),'kg',fmtInt(C.tot)+' line') +
-    uiKc('in','truck','Tonase DO / Terkirim',fmtNum(C.td),'kg',fmtInt(C.doLines)+' line') +
+    uiKc('out','doc','Rata-rata Tonase Memo',fmtNum(C.tm),'kg',fmtInt(C.tot)+' line/hari · total '+fmtNum(R0.tm)) +
+    uiKc('in','truck','Rata-rata Tonase DO',fmtNum(C.td),'kg',fmtInt(C.doLines)+' line/hari · total '+fmtNum(R0.td)) +
     uiKc('bl','pct','Fulfillment DO',Math.round(C.ful)+'%','',C.ful>=FULFILL_TARGET?'Target ≥ '+FULFILL_TARGET+'% tercapai':'Target ≥ '+FULFILL_TARGET+'%',`<div class="pgbar"><i style="width:${Math.min(C.ful,100)}%;background:${C.ful>=FULFILL_TARGET?'var(--st-lunas)':'var(--st-kurang)'}"></i></div>`) +
-    uiKc('am','box','Tonase Outstanding',fmtNum(C.out),'kg',fmtInt(C.outLines)+' line');
+    uiKc('am','box','Rata-rata Outstanding',fmtNum(C.out),'kg',fmtInt(C.outLines)+' line/hari');
   UI_ID('ov-status').innerHTML = UI_ST.map(s=>`<div class="sc ${s}" data-status="${s}" title="Klik untuk lihat daftar"><div class="t">${statusLabel(s).toUpperCase()}</div><div style="display:flex;align-items:baseline;gap:10px"><span class="p">${uiPct(C.n[s],C.tot)}%</span><span class="ln">${fmtInt(C.n[s])} line</span></div><div class="d"><span>Memo ${fmtNum(C.t[s])}</span><span>DO ${fmtNum(C.d[s])}</span><span>Sisa ${fmtNum(C.t[s]-C.d[s])}</span></div></div>`).join('');
   UI_ID('ov-status').querySelectorAll('.sc').forEach(c=>c.addEventListener('click',()=>openDetail(c.dataset.status,null)));
   // komposisi
@@ -4741,9 +4745,9 @@ function ovRender(){
   ins.push(['warn','am','BOTTLENECK TERBESAR',statusLabel(bn),`${fmtNum(sisa(bn))} kg outstanding · ${fmtInt(C.n[bn])} line`]);
   ins.push(['bolt','bl','QUICK WIN','Siap Kirim',`${fmtNum(sisa('siap'))} kg sudah tersedia dan tinggal DO · ${fmtInt(C.n.siap)} line`]);
   ins.push(['flag','rd','RISIKO','Memo Kosong & Sisa Kirim',`${fmtInt(C.n.kosong)} line perlu perhatian · ${fmtNum(sisa('kosong'))} kg`]);
-  const g = {}; state.records.forEach(r=>{ if(r.status==='lunas') return; const k=r.internal||'(Kosong)'; (g[k]=g[k]||{n:0,kurang:0,siap:0,kosong:0}); g[k].n++; g[k][r.status]++; });
+  const g = {}; all.forEach(r=>{ if(r.status==='lunas') return; const k=r.internal||'(Kosong)'; (g[k]=g[k]||{n:0,kurang:0,siap:0,kosong:0}); g[k].n++; g[k][r.status]++; });
   const top = Object.entries(g).sort((a,b)=>b[1].n-a[1].n)[0];
-  if(top) ins.push(['users','out','INTERNAL PERLU PERHATIAN',escapeHtml(top[0]),`${top[1].n} line belum lunas (Kurang ${top[1].kurang} · Siap ${top[1].siap} · Kosong ${top[1].kosong})`]);
+  if(top) ins.push(['users','out','INTERNAL PERLU PERHATIAN',escapeHtml(top[0]),`${fmtInt(top[1].n/nD)} line/hari belum lunas (Kurang ${fmtInt(top[1].kurang/nD)} · Siap ${fmtInt(top[1].siap/nD)} · Kosong ${fmtInt(top[1].kosong/nD)})`]);
   UI_ID('ov-ins').innerHTML = ins.map(([i,c,t,b,d])=>`<div class="it"><div class="kic ${c}">${UI_SV(UI_IC[i])}</div><div><div class="t">${t}</div><div class="b">${b}</div><div class="d">${d}</div></div></div>`).join('');
 }
 UI_ID('ov-seg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; OV_MODE=b.dataset.m; UI_ID('ov-seg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); ovRender(); });
@@ -4795,7 +4799,7 @@ function qvAfter(){
 { const _q=renderQviewTable; renderQviewTable=function(){ _q.apply(this,arguments); qvAfter(); }; }
 
 /* navigasi halaman + presentasi */
-const UI_PAGES = ['overview','date','summary','qview'];
+const UI_PAGES = ['overview','summary','date','qview'];
 function uiResize(){ Object.values(charts).forEach(c=>c&&c.resize&&c.resize()); if(UI_QC) UI_QC.resize(); }
 function uiPage(){ const b=document.querySelector('#view-tabs .active'); return Math.max(0,UI_PAGES.indexOf(b&&b.dataset.view)); }
 function uiGo(i){ i=(i+UI_PAGES.length)%UI_PAGES.length; document.querySelector('#view-tabs [data-view="'+UI_PAGES[i]+'"]').click(); }
