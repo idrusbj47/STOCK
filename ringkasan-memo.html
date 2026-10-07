@@ -4725,26 +4725,26 @@ function ovRender(){
     uiKc('in','truck','Rata-rata Tonase DO',fmtNum(C.td),'kg',fmtInt(C.doLines)+' line/hari · total '+fmtNum(R0.td)) +
     uiKc('bl','pct','Fulfillment DO',Math.round(C.ful)+'%','',C.ful>=FULFILL_TARGET?'Target ≥ '+FULFILL_TARGET+'% tercapai':'Target ≥ '+FULFILL_TARGET+'%',`<div class="pgbar"><i style="width:${Math.min(C.ful,100)}%;background:${C.ful>=FULFILL_TARGET?'var(--st-lunas)':'var(--st-kurang)'}"></i></div>`) +
     uiKc('am','box','Rata-rata Outstanding',fmtNum(C.out),'kg',fmtInt(C.outLines)+' line/hari');
-  UI_ID('ov-status').innerHTML = UI_ST.map(s=>`<div class="sc ${s}" data-status="${s}" title="Klik untuk lihat daftar"><div class="t">${statusLabel(s).toUpperCase()}</div><div style="display:flex;align-items:baseline;gap:10px"><span class="p">${uiPct(C.n[s],C.tot)}%</span><span class="ln">${fmtInt(C.n[s])} line</span></div><div class="d"><span>Memo ${fmtNum(C.t[s])}</span><span>DO ${fmtNum(C.d[s])}</span><span>Sisa ${fmtNum(C.t[s]-C.d[s])}</span></div></div>`).join('');
+  UI_ID('ov-status').innerHTML = UI_ST.map(s=>`<div class="sc ${s}" data-status="${s}" title="Klik untuk lihat daftar"><div class="t">${statusLabel(s).toUpperCase()}</div><div style="display:flex;align-items:baseline;gap:10px"><span class="p">${uiPct(C.n[s],C.tot)}%</span><span class="ln">${fmtInt(C.n[s])} line/hari</span></div><div class="d"><span>Memo ${fmtNum(C.t[s])}</span><span>DO ${fmtNum(C.d[s])}</span><span>Sisa ${fmtNum(C.t[s]-C.d[s])}</span></div><div class="d" style="margin-top:2px;font-style:italic">rata-rata per tanggal</div></div>`).join('');
   UI_ID('ov-status').querySelectorAll('.sc').forEach(c=>c.addEventListener('click',()=>openDetail(c.dataset.status,null)));
   // komposisi
   const ton = OV_MODE==='ton', val = s => ton ? C.t[s] : C.n[s], tot = ton ? C.tm : C.tot;
-  UI_ID('ov-comp-t').textContent = 'Komposisi Status & Fulfillment (' + (ton?'Tonase':'Line') + ')';
+  UI_ID('ov-comp-t').textContent = 'Komposisi Status & Fulfillment (' + (ton?'Tonase':'Line') + ') · rata-rata per tanggal';
   UI_ID('ov-comp').innerHTML =
-    `<div class="barx">${UI_ST.filter(s=>val(s)>0).map(s=>`<div style="flex:${val(s)};background:var(--st-${s})" data-status="${s}" title="${statusLabel(s)}">${uiPct(val(s),tot)}%<small>${ton?fmtNum(val(s)):fmtInt(val(s))+' line'}</small></div>`).join('')}</div>
-     <div class="lgd">${UI_ST.map(s=>`<span><i style="background:var(--st-${s})"></i>${UI_STL[s]}</span>`).join('')}<span style="margin-left:auto">Total ${ton?'Memo: '+fmtNum(C.tm)+' kg':fmtInt(C.tot)+' line'}</span></div>
+    `<div class="barx">${UI_ST.filter(s=>val(s)>0).map(s=>`<div style="flex:${val(s)};background:var(--st-${s})" data-status="${s}" title="${statusLabel(s)}">${uiPct(val(s),tot)}%<small>${ton?fmtNum(val(s)):fmtInt(val(s))+' line/hari'}</small></div>`).join('')}</div>
+     <div class="lgd">${UI_ST.map(s=>`<span><i style="background:var(--st-${s})"></i>${UI_STL[s]}</span>`).join('')}<span style="margin-left:auto">Rata-rata ${ton?'Memo: '+fmtNum(C.tm)+' kg/hari':fmtInt(C.tot)+' line/hari'}</span></div>
      <div style="font-weight:700;font-size:13px;margin-bottom:6px">Fulfillment DO</div>
      <div style="display:flex;align-items:center;gap:14px"><div class="pgbar" style="height:16px;margin:0"><i style="width:${Math.min(C.ful,100)}%;background:${C.ful>=FULFILL_TARGET?'var(--st-lunas)':'var(--st-kurang)'}"></i></div><b style="font-size:22px">${Math.round(C.ful)}%</b></div>
-     <div class="muted" style="font-size:12px;margin-top:6px">DO ${fmtNum(C.td)} kg dari Memo ${fmtNum(C.tm)} kg</div>`;
+     <div class="muted" style="font-size:12px;margin-top:6px">DO ${fmtNum(C.td)} kg dari Memo ${fmtNum(C.tm)} kg (rata-rata per tanggal)</div>`;
   UI_ID('ov-comp').querySelectorAll('.barx div').forEach(c=>c.addEventListener('click',()=>openDetail(c.dataset.status,null)));
   // insight (rule-based dari data yang sama)
   const ins = [];
   ins.push(['pct','bl','FULFILLMENT',Math.round(C.ful)+'%',`${fmtNum(C.td)} dari ${fmtNum(C.tm)} kg telah terkirim`+(C.ful<FULFILL_TARGET?` · di bawah target ${FULFILL_TARGET}% (−${Math.round(FULFILL_TARGET-C.ful)}%)`:'')]);
   const sisa = s => C.t[s]-C.d[s];
   const bn = ['kurang','kosong'].sort((a,b)=>sisa(b)-sisa(a))[0];
-  ins.push(['warn','am','BOTTLENECK TERBESAR',statusLabel(bn),`${fmtNum(sisa(bn))} kg outstanding · ${fmtInt(C.n[bn])} line`]);
-  ins.push(['bolt','bl','QUICK WIN','Siap Kirim',`${fmtNum(sisa('siap'))} kg sudah tersedia dan tinggal DO · ${fmtInt(C.n.siap)} line`]);
-  ins.push(['flag','rd','RISIKO','Memo Kosong & Sisa Kirim',`${fmtInt(C.n.kosong)} line perlu perhatian · ${fmtNum(sisa('kosong'))} kg`]);
+  ins.push(['warn','am','BOTTLENECK TERBESAR',statusLabel(bn),`${fmtNum(sisa(bn))} kg outstanding/hari · ${fmtInt(C.n[bn])} line/hari`]);
+  ins.push(['bolt','bl','QUICK WIN','Siap Kirim',`${fmtNum(sisa('siap'))} kg sudah tersedia dan tinggal DO · ${fmtInt(C.n.siap)} line/hari`]);
+  ins.push(['flag','rd','RISIKO','Memo Kosong & Sisa Kirim',`${fmtInt(C.n.kosong)} line/hari perlu perhatian · ${fmtNum(sisa('kosong'))} kg`]);
   const g = {}; all.forEach(r=>{ if(r.status==='lunas') return; const k=r.internal||'(Kosong)'; (g[k]=g[k]||{n:0,kurang:0,siap:0,kosong:0}); g[k].n++; g[k][r.status]++; });
   const top = Object.entries(g).sort((a,b)=>b[1].n-a[1].n)[0];
   if(top) ins.push(['users','out','INTERNAL PERLU PERHATIAN',escapeHtml(top[0]),`${fmtInt(top[1].n/nD)} line/hari belum lunas (Kurang ${fmtInt(top[1].kurang/nD)} · Siap ${fmtInt(top[1].siap/nD)} · Kosong ${fmtInt(top[1].kosong/nD)})`]);
