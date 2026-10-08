@@ -222,7 +222,7 @@ function aligned(x, y, vx, vy, align) {
   };
 }
 
-// Line clipping (Cohen–Sutherland algorithm)
+// MC clipping (Cohen–Sutherland algorithm)
 // https://en.wikipedia.org/wiki/Cohen–Sutherland_algorithm
 
 var R_INSIDE = 0;
@@ -579,7 +579,7 @@ function drawText(ctx, lines, rect, model) {
     return;
   }
 
-  // Adjust coordinates based on text alignment and line height
+  // Adjust coordinates based on text alignment and mc height
   rect = textGeometry(rect, align, font);
 
   ctx.font = font.string;
@@ -2039,7 +2039,7 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
     <div class="stc" id="ov-status"></div>
     <div class="hero">
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h2 style="margin:0" id="ov-comp-t">Komposisi Umur Stok</h2><div class="seg" id="ov-seg"><button data-m="ton" class="on">Tonase</button><button data-m="line">Line</button></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h2 style="margin:0" id="ov-comp-t">Komposisi Umur Stok</h2><div class="seg" id="ov-seg"><button data-m="kg" class="on">Tonase</button><button data-m="mc">MC</button></div></div>
         <div id="ov-comp"></div>
         <div style="flex:1;min-height:150px;position:relative"><canvas id="ov-chart"></canvas></div>
       </div>
@@ -2083,14 +2083,14 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
     <div class="smg">
       <div class="chart-card" style="grid-column:1;grid-row:1"><div class="chart-card-title">Tonase SOB vs Kirim per Periode</div><p class="chart-card-sub">Tonase stok opname &amp; tonase kirim (batang), % kirim terhadap SOB (garis)</p><div class="chart-canvas-wrap"><canvas id="ch-mv1"></canvas></div></div>
       <div class="chart-card" style="grid-column:2;grid-row:1"><div class="chart-card-title">Komposisi Umur per Periode</div><p class="chart-card-sub">Persentase tonase per kelompok umur</p><div class="chart-canvas-wrap"><canvas id="ch-mv2"></canvas></div></div>
-      <div class="chart-card" style="grid-column:1;grid-row:2"><div class="chart-card-title">Perubahan Tonase per Internal</div><p class="chart-card-sub" id="ch-mv3-sub">Selisih tonase (ton) periode akhir dibanding periode awal</p><div class="chart-canvas-wrap"><canvas id="ch-mv3"></canvas></div></div>
+      <div class="chart-card" style="grid-column:1;grid-row:2"><div class="chart-card-title">Perubahan Tonase per Internal</div><p class="chart-card-sub" id="ch-mv3-sub">Selisih tonase (kg) periode akhir dibanding periode awal</p><div class="chart-canvas-wrap"><canvas id="ch-mv3"></canvas></div></div>
       <div class="chart-card" style="grid-column:2;grid-row:2"><div class="chart-card-title">Tren Stok Umur &gt; 3 Bulan</div><p class="chart-card-sub">Tonase slow-moving (batang) &amp; porsinya terhadap total (garis)</p><div class="chart-canvas-wrap"><canvas id="ch-mv4"></canvas></div></div>
     </div>
     <div id="mv-more" style="display:none;flex:0 0 42%;min-height:0;overflow:auto;flex-direction:column;gap:12px">
       <div class="section-title" style="margin:0">Ringkasan per Periode</div>
-      <div class="rank-table-wrap" style="overflow:auto"><table class="rank-table"><thead><tr><th>Periode</th><th>Line</th><th>Customer</th><th>Qty (pcs)</th><th>Tonase (ton)</th><th>Δ Tonase</th><th>Umur Rata-rata</th><th>&gt; 3 bln (ton)</th><th>% &gt; 3 bln</th><th>Kirim (ton)</th><th>% Kirim</th></tr></thead><tbody id="mv-tbody1"></tbody></table></div>
+      <div class="rank-table-wrap" style="overflow:auto"><table class="rank-table"><thead><tr><th>Periode</th><th>MC</th><th>Customer</th><th>Qty (pcs)</th><th>Tonase (kg)</th><th>Δ Tonase</th><th>Umur Rata-rata</th><th>&gt; 3 bln (kg)</th><th>% &gt; 3 bln</th><th>Kirim (kg)</th><th>% Kirim</th></tr></thead><tbody id="mv-tbody1"></tbody></table></div>
       <div class="section-title" style="margin:0">Perubahan per Internal <small id="mv-cnt"></small></div>
-      <div class="rank-table-wrap" style="overflow:auto"><table class="rank-table"><thead><tr><th>Internal</th><th>Tonase Awal (ton)</th><th>Tonase Akhir (ton)</th><th>Δ (ton)</th><th>Δ %</th><th>&gt; 3 bln Akhir (ton)</th></tr></thead><tbody id="mv-tbody2"></tbody></table></div>
+      <div class="rank-table-wrap" style="overflow:auto"><table class="rank-table"><thead><tr><th>Internal</th><th>Tonase Awal (kg)</th><th>Tonase Akhir (kg)</th><th>Δ (kg)</th><th>Δ %</th><th>&gt; 3 bln Akhir (kg)</th></tr></thead><tbody id="mv-tbody2"></tbody></table></div>
     </div>
   </div>
 
@@ -2162,17 +2162,21 @@ function parseCSV(text){
   if (field.length > 0 || row.length > 0){ row.push(field); rows.push(row); }
   return rows;
 }
-/* Tonase di sheet: tanpa koma = kg (mis. "511"); dengan koma = ton desimal (mis. "4,905" / "4,76") → dikali 1000 */
+/* Tonase di sheet: tanpa koma = kg (mis. "511"); dengan koma = kg desimal (mis. "4,905" / "4,76") → dikali 1000 */
 function parseTonaseKg(s){
   s = String(s == null ? '' : s).trim(); if (!s || s === '-') return 0;
   if (s.indexOf(',') >= 0){ const n = parseFloat(s.replace(/\./g,'').replace(',', '.')); return isNaN(n) ? 0 : n * 1000; }
   const n = parseFloat(s); return isNaN(n) ? 0 : n;
 }
-/* Kolom "Ton" blok KIRIM: pola titik-ribuan (mis. "3.251.769.346") = 3251,769346 kg; angka biasa ("37891.81") = kg */
+/* Kolom "Ton" blok KIRIM: nilai sudah dalam satuan TON, titik adalah pemisah DESIMAL (bukan ribuan) —
+   mis. "156.514" = 156,514 ton, "3.252" = 3,252 ton. Dikonversi ke kg (×1000) agar sebanding dengan stok (kg).
+   Jika sumber memakai format koma-desimal (mis. "156,514"), titik dianggap pemisah ribuan dan dibuang lebih dulu. */
 function parseKirimKg(s){
   s = String(s == null ? '' : s).trim(); if (!s || s === '-') return 0;
-  if (/^\d{1,3}(\.\d{3})+$/.test(s)) return parseInt(s.replace(/\./g,''), 10) / 1e6;
-  const n = parseFloat(s.replace(/,/g,'')); return isNaN(n) ? 0 : n;
+  let n;
+  if (s.indexOf(',') >= 0) n = parseFloat(s.replace(/\./g,'').replace(',', '.'));
+  else n = parseFloat(s.replace(/,/g,''));
+  return isNaN(n) ? 0 : n * 1000;
 }
 function parseIntLoose(s){ const n = parseFloat(String(s == null ? '' : s).replace(/,/g,'')); return isNaN(n) ? 0 : n; }
 function parseUmur(s){ const m = String(s || '').match(/(\d+)/); return m ? parseInt(m[1], 10) : 0; }
@@ -2276,7 +2280,7 @@ function groupBy(recs, prop, kirim){
 }
 function fineDist(recs, mode){
   const a = Array(10).fill(0);
-  for (const r of recs) a[fineIdx(r.um)] += mode === 'line' ? 1 : r.kg / 1000;
+  for (const r of recs) a[fineIdx(r.um)] += mode === 'mc' ? 1 : r.kg;
   return a;
 }
 
@@ -2284,12 +2288,12 @@ function fineDist(recs, mode){
 const $ = id => document.getElementById(id);
 const state = {
   view:'overview', settings: loadSettings(), periods:[], pi:-1, dim:'internal', ag:null, search:'', selected:null,
-  sortKey:'kg', sortDir:-1, source:'', loadedAt:null, ovMode:'ton', mvA:-1, mvB:-1, csvText:''
+  sortKey:'kg', sortDir:-1, source:'', loadedAt:null, ovMode:'kg', mvA:-1, mvB:-1, csvText:''
 };
 const charts = {};
 const fmtInt = n => Math.round(n || 0).toLocaleString('id-ID');
 const fmtNum = (n, d) => (n || 0).toLocaleString('id-ID', { minimumFractionDigits: d == null ? 1 : d, maximumFractionDigits: d == null ? 1 : d });
-const fmtTon = (kg, d) => fmtNum((kg || 0) / 1000, d == null ? 1 : d);
+const fmtTon = (kg, d) => fmtNum((kg || 0), d == null ? 0 : d);
 const fmtPct = (v, d) => fmtNum(v || 0, d == null ? 1 : d) + '%';
 const sgn = v => v > 0 ? '+' : v < 0 ? '−' : '';
 const pctOf = (a, b) => b > 0 ? a / b * 100 : 0;
@@ -2422,53 +2426,53 @@ function setView(v){
 /* ================= 1. OVERVIEW ================= */
 function renderOverview(){
   const P = cur(), pv = prevOf(P), C = P.c, V = pv && pv.c;
-  $('ov-per').textContent = `SOB ${P.key} · ${fmtInt(C.n)} line` + (pv ? ` · dibanding ${pv.key}` : '');
+  $('ov-per').textContent = `SOB ${P.key} · ${fmtInt(C.n)} mc` + (pv ? ` · dibanding ${pv.key}` : '');
   const dKg = V ? C.kg - V.kg : 0, dN = V ? C.n - V.n : 0, dAge = V ? C.age - V.age : 0;
   const kPct = pctOf(P.kirimKg, C.kg);
   $('ov-kpi').innerHTML =
-    kc('out','box','Total Stok (Tonase SOB)', fmtTon(C.kg), 'ton', V ? `${dTag(dKg, sgn(dKg)+fmtTon(Math.abs(dKg))+' ton ('+sgn(dKg)+fmtNum(Math.abs(pctOf(dKg, V.kg)))+'%)', null)} vs ${pv.key}` : fmtInt(C.qty) + ' pcs') +
-    kc('bl','doc','Total Line SOB', fmtInt(C.n), 'line', `${fmtInt(C.cusN)} customer · ${fmtNum(C.qty/1e6,2)} jt pcs` + (V ? ` · ${dTag(dN, sgn(dN)+fmtInt(Math.abs(dN)), null)}` : '')) +
+    kc('out','box','Total Stok (Tonase SOB)', fmtTon(C.kg), 'kg', V ? `${dTag(dKg, sgn(dKg)+fmtTon(Math.abs(dKg))+' kg ('+sgn(dKg)+fmtNum(Math.abs(pctOf(dKg, V.kg)))+'%)', null)} vs ${pv.key}` : fmtInt(C.qty) + ' pcs') +
+    kc('bl','doc','Total MC SOB', fmtInt(C.n), 'mc', `${fmtInt(C.cusN)} customer · ${fmtNum(C.qty/1e6,2)} jt pcs` + (V ? ` · ${dTag(dN, sgn(dN)+fmtInt(Math.abs(dN)), null)}` : '')) +
     kc('am','clock','Umur Rata-rata (bobot tonase)', fmtNum(C.age), 'bulan', `Tertua ${fmtInt(C.max)} bln` + (V ? ` · ${dTag(dAge, sgn(dAge)+fmtNum(Math.abs(dAge))+' bln', true)}` : '')) +
-    kc('in','truck',`Realisasi Kirim ${P.kirimLabel || ''}`, fmtPct(kPct, 0), '', `${fmtTon(P.kirimKg)} ton terkirim · target ≥ ${KIRIM_TARGET}%`, `<div class="pgbar"><i style="width:${Math.min(kPct,100)}%;background:${kPct >= KIRIM_TARGET ? 'var(--st-lunas)' : 'var(--st-kurang)'}"></i></div>`);
+    kc('in','truck',`Realisasi Kirim ${P.kirimLabel || ''}`, fmtPct(kPct, 0), '', `${fmtTon(P.kirimKg)} kg terkirim · target ≥ ${KIRIM_TARGET}%`, `<div class="pgbar"><i style="width:${Math.min(kPct,100)}%;background:${kPct >= KIRIM_TARGET ? 'var(--st-lunas)' : 'var(--st-kurang)'}"></i></div>`);
   $('ov-status').innerHTML = AG.map((a,i) => {
     const g = C.g[i], pg = V ? V.g[i] : null, d = pg ? g.kg - pg.kg : 0;
-    return `<div class="sc ${a.k}" data-ag="${i}" title="Klik untuk lihat rincian"><div class="t">${a.l.toUpperCase()} · ${a.r}</div><div style="display:flex;align-items:baseline;gap:10px"><span class="p">${fmtNum(pctOf(g.kg, C.kg), 0)}%</span><span class="ln">${fmtInt(g.n)} line</span></div><div class="d"><span>Tonase ${fmtTon(g.kg)} ton</span><span>Qty ${fmtInt(g.qty)}</span>${pg ? `<span>${dTag(d, sgn(d)+fmtTon(Math.abs(d))+' ton', i >= 2)}</span>` : ''}</div></div>`;
+    return `<div class="sc ${a.k}" data-ag="${i}" title="Klik untuk lihat rincian"><div class="t">${a.l.toUpperCase()} · ${a.r}</div><div style="display:flex;align-items:baseline;gap:10px"><span class="p">${fmtNum(pctOf(g.kg, C.kg), 0)}%</span><span class="ln">${fmtInt(g.n)} mc</span></div><div class="d"><span>Tonase ${fmtTon(g.kg)} kg</span><span>Qty ${fmtInt(g.qty)}</span>${pg ? `<span>${dTag(d, sgn(d)+fmtTon(Math.abs(d))+' kg', i >= 2)}</span>` : ''}</div></div>`;
   }).join('');
   $('ov-status').querySelectorAll('.sc').forEach(c => c.addEventListener('click', () => { state.ag = +c.dataset.ag; state.selected = null; setView('detail'); }));
-  const ton = state.ovMode === 'ton', val = i => ton ? C.g[i].kg : C.g[i].n, tot = ton ? C.kg : C.n;
-  $('ov-comp-t').textContent = 'Komposisi Umur Stok (' + (ton ? 'Tonase' : 'Line') + ')';
-  $('ov-comp').innerHTML = `<div class="barx">${AG.map((a,i) => val(i) > 0 ? `<div style="flex:${val(i)};background:var(--st-${['lunas','siap','kurang','kosong'][i]})" data-ag="${i}" title="${a.l}: ${ton ? fmtTon(val(i)) + ' ton' : fmtInt(val(i)) + ' line'}">${fmtNum(pctOf(val(i), tot), 0)}%${pctOf(val(i), tot) >= 8 ? `<small>${ton ? fmtTon(val(i)) + ' ton' : fmtInt(val(i)) + ' line'}</small>` : ''}</div>` : '').join('')}</div>
-    <div class="lgd">${AG.map((a,i) => `<span><i style="background:var(--st-${['lunas','siap','kurang','kosong'][i]})"></i>${a.l} (${a.r})</span>`).join('')}<span style="margin-left:auto">Total ${ton ? fmtTon(C.kg) + ' ton' : fmtInt(C.n) + ' line'}</span></div>`;
+  const kg = state.ovMode === 'kg', val = i => kg ? C.g[i].kg : C.g[i].n, tot = kg ? C.kg : C.n;
+  $('ov-comp-t').textContent = 'Komposisi Umur Stok (' + (kg ? 'Tonase' : 'MC') + ')';
+  $('ov-comp').innerHTML = `<div class="barx">${AG.map((a,i) => val(i) > 0 ? `<div style="flex:${val(i)};background:var(--st-${['lunas','siap','kurang','kosong'][i]})" data-ag="${i}" title="${a.l}: ${kg ? fmtTon(val(i)) + ' kg' : fmtInt(val(i)) + ' mc'}">${fmtNum(pctOf(val(i), tot), 0)}%${pctOf(val(i), tot) >= 8 ? `<small>${kg ? fmtTon(val(i)) + ' kg' : fmtInt(val(i)) + ' mc'}</small>` : ''}</div>` : '').join('')}</div>
+    <div class="lgd">${AG.map((a,i) => `<span><i style="background:var(--st-${['lunas','siap','kurang','kosong'][i]})"></i>${a.l} (${a.r})</span>`).join('')}<span style="margin-left:auto">Total ${kg ? fmtTon(C.kg) + ' kg' : fmtInt(C.n) + ' mc'}</span></div>`;
   $('ov-comp').querySelectorAll('.barx div').forEach(c => c.addEventListener('click', () => { state.ag = +c.dataset.ag; state.selected = null; setView('detail'); }));
   drawAgeChart(P, pv);
   $('ov-ins').innerHTML = buildInsights(P, pv).map(([i,c,t,b,d]) => `<div class="it"><div class="kic ${c}">${SV(IC[i])}</div><div><div class="t">${t}</div><div class="b">${b}</div><div class="d">${d}</div></div></div>`).join('');
 }
 function drawAgeChart(P, pv){
-  const c = colors(), ton = state.ovMode === 'ton';
+  const c = colors(), kg = state.ovMode === 'kg';
   const cu = fineDist(P.recs, state.ovMode), pr = pv ? fineDist(pv.recs, state.ovMode) : null;
   const barCol = [0,1,2,3,4,5,6,7,8,9].map(i => c.ag[i <= 1 ? 0 : i <= 3 ? 1 : i <= 6 ? 2 : 3]);
   const ds = [{ label: P.key, data: cu, backgroundColor: barCol, borderRadius: 4, datalabels:{ display:false } }];
   if (pr) ds.unshift({ label: pv.key, data: pr, backgroundColor: getTheme() === 'light' ? 'rgba(100,110,140,.28)' : 'rgba(180,190,220,.28)', borderRadius: 4, datalabels:{ display:false } });
   mkChart('ov-chart', { type:'bar', data:{ labels: FINE_LABELS, datasets: ds }, options:{ responsive:true, maintainAspectRatio:false,
     plugins:{ legend:{ display: !!pr, position:'top', align:'end', labels:{ color:c.muted, boxWidth:10, boxHeight:10 } },
-      title:{ display:true, text:'Sebaran ' + (ton ? 'tonase (ton)' : 'jumlah line') + ' per umur stok (bulan)', color:c.muted, font:{ size:12, weight:'600' }, align:'start' },
-      tooltip:{ callbacks:{ title: i => 'Umur ' + i[0].label + ' bulan', label: i => i.dataset.label + ': ' + (ton ? fmtNum(i.parsed.y) + ' ton' : fmtInt(i.parsed.y) + ' line') } } },
+      title:{ display:true, text:'Sebaran ' + (kg ? 'tonase (kg)' : 'jumlah mc') + ' per umur stok (bulan)', color:c.muted, font:{ size:12, weight:'600' }, align:'start' },
+      tooltip:{ callbacks:{ title: i => 'Umur ' + i[0].label + ' bulan', label: i => i.dataset.label + ': ' + (kg ? fmtNum(i.parsed.y) + ' kg' : fmtInt(i.parsed.y) + ' mc') } } },
     scales:{ x:{ ticks:{ color:c.muted }, grid:{ display:false } }, y:{ beginAtZero:true, ticks:{ color:c.muted, callback: v => fmtNum(v, 0) }, grid:{ color:c.grid } } } } });
 }
 function buildInsights(P, pv){
   const C = P.c, V = pv && pv.c, out = [];
   const dKg = V ? C.kg - V.kg : 0;
-  out.push(['box','out','TOTAL STOK', `${fmtTon(C.kg)} ton`, `${fmtInt(C.n)} line · ${fmtInt(C.cusN)} customer` + (V ? ` · ${sgn(dKg)}${fmtTon(Math.abs(dKg))} ton vs ${pv.key}` : '')]);
+  out.push(['box','out','TOTAL STOK', `${fmtTon(C.kg)} kg`, `${fmtInt(C.n)} mc · ${fmtInt(C.cusN)} customer` + (V ? ` · ${sgn(dKg)}${fmtTon(Math.abs(dKg))} kg vs ${pv.key}` : '')]);
   const topCus = groupBy(P.recs, 'customer').sort((a,b) => b.kg - a.kg)[0];
-  if (topCus) out.push(['trophy','bl','CUSTOMER TERBESAR', escapeHtml(topCus.name), `${fmtTon(topCus.kg)} ton (${fmtNum(pctOf(topCus.kg, C.kg))}% dari total) · ${fmtInt(topCus.n)} line`]);
-  out.push(['warn','am','SLOW MOVING (> 3 BULAN)', fmtPct(C.slowPct), `${fmtTon(C.slow)} ton · ${fmtInt(C.slowN)} line` + (V ? ` · ${V.slowPct > C.slowPct ? 'membaik dari ' : 'memburuk dari '}${fmtPct(V.slowPct)} (${pv.key})` : '')]);
+  if (topCus) out.push(['trophy','bl','CUSTOMER TERBESAR', escapeHtml(topCus.name), `${fmtTon(topCus.kg)} kg (${fmtNum(pctOf(topCus.kg, C.kg))}% dari total) · ${fmtInt(topCus.n)} mc`]);
+  out.push(['warn','am','SLOW MOVING (> 3 BULAN)', fmtPct(C.slowPct), `${fmtTon(C.slow)} kg · ${fmtInt(C.slowN)} mc` + (V ? ` · ${V.slowPct > C.slowPct ? 'membaik dari ' : 'memburuk dari '}${fmtPct(V.slowPct)} (${pv.key})` : '')]);
   const deadCus = groupBy(P.recs.filter(r => r.ag === 3), 'customer').sort((a,b) => b.kg - a.kg)[0];
-  out.push(['flag','rd','DEAD STOCK (> 6 BULAN)', `${fmtTon(C.g[3].kg)} ton`, `${fmtInt(C.g[3].n)} line · tertua ${fmtInt(C.max)} bulan` + (deadCus ? ` · terbesar: ${escapeHtml(deadCus.name)} (${fmtTon(deadCus.kg)} ton)` : '')]);
+  out.push(['flag','rd','DEAD STOCK (> 6 BULAN)', `${fmtTon(C.g[3].kg)} kg`, `${fmtInt(C.g[3].n)} mc · tertua ${fmtInt(C.max)} bulan` + (deadCus ? ` · terbesar: ${escapeHtml(deadCus.name)} (${fmtTon(deadCus.kg)} kg)` : '')]);
   const topInt = groupBy(P.recs, 'internal').filter(o => o.kg >= C.kg * 0.02).sort((a,b) => b.slow - a.slow)[0];
-  if (topInt) out.push(['users','out','INTERNAL PERLU PERHATIAN', escapeHtml(topInt.name), `${fmtTon(topInt.slow)} ton umur > 3 bln (${fmtNum(topInt.slowPct)}% dari stok ${fmtTon(topInt.kg)} ton)`]);
+  if (topInt) out.push(['users','out','INTERNAL PERLU PERHATIAN', escapeHtml(topInt.name), `${fmtTon(topInt.slow)} kg umur > 3 bln (${fmtNum(topInt.slowPct)}% dari stok ${fmtTon(topInt.kg)} kg)`]);
   const kp = pctOf(P.kirimKg, C.kg);
-  out.push(['truck','in','REALISASI KIRIM ' + (P.kirimLabel || ''), fmtPct(kp), `${fmtTon(P.kirimKg)} ton dari stok SOB ${fmtTon(C.kg)} ton` + (kp < KIRIM_TARGET ? ` · di bawah target ${KIRIM_TARGET}%` : ' · target tercapai')]);
-  out.push(['check','am','KUALITAS DATA', `${fmtInt(P.zeroN)} line tonase/qty 0`, `${fmtInt(P.dupN)} baris berpotensi duplikat (SO, MCS, model, tanggal & qty sama) — perlu dicek di sheet`]);
+  out.push(['truck','in','REALISASI KIRIM ' + (P.kirimLabel || ''), fmtPct(kp), `${fmtTon(P.kirimKg)} kg dari stok SOB ${fmtTon(C.kg)} kg` + (kp < KIRIM_TARGET ? ` · di bawah target ${KIRIM_TARGET}%` : ' · target tercapai')]);
+  out.push(['check','am','KUALITAS DATA', `${fmtInt(P.zeroN)} mc tonase/qty 0`, `${fmtInt(P.dupN)} baris berpotensi duplikat (SO, MCS, model, tanggal & qty sama) — perlu dicek di sheet`]);
   return out;
 }
 
@@ -2491,15 +2495,15 @@ function renderDetail(){
   const selScope = state.selected ? scope.filter(r => nrm(r[state.selected.dim]) === state.selected.key) : scope;
   const C = calc(selScope);
   $('dt-mini').innerHTML =
-    kc('out','box','Tonase Stok', fmtTon(C.kg), 'ton', fmtInt(C.n) + ' line') +
+    kc('out','box','Tonase Stok', fmtTon(C.kg), 'kg', fmtInt(C.n) + ' mc') +
     kc('bl','layers','Qty', fmtInt(C.qty), 'pcs', fmtInt(C.cusN) + ' customer') +
     kc('am','clock','Umur Rata-rata', fmtNum(C.age), 'bulan', 'Tertua ' + fmtInt(C.max) + ' bln') +
-    kc('in','warn','Umur > 3 Bulan', fmtPct(C.slowPct), '', fmtTon(C.slow) + ' ton · ' + fmtInt(C.slowN) + ' line');
+    kc('in','warn','Umur > 3 Bulan', fmtPct(C.slowPct), '', fmtTon(C.slow) + ' kg · ' + fmtInt(C.slowN) + ' mc');
   $('rank-title').textContent = 'Stok per ' + DIM_LABEL[prop];
   $('rank-count').textContent = fmtInt(rows.length) + ' ' + DIM_LABEL[prop].toLowerCase();
   const th = (key, label, x) => `<th data-sort="${key}" class="${x || ''} ${sk === key ? (sd > 0 ? 'asc' : 'desc') : ''}">${label}</th>`;
-  $('rank-thead').innerHTML = '<tr>' + th('name', DIM_LABEL[prop]) + th('n','Line') + th('qty','Qty','cq') + th('kg','Tonase (ton)') +
-    AG.map((a,i) => `<th data-sort="g${i}" class="${sk === 'g'+i ? (sd > 0 ? 'asc' : 'desc') : ''}">${a.l}</th>`).join('') + th('slowPct','% &gt; 3 bln') + th('age','Umur Rata²','cq') + th('kirim','Kirim (ton)') + th('kPct','% Kirim') + '</tr>';
+  $('rank-thead').innerHTML = '<tr>' + th('name', DIM_LABEL[prop]) + th('n','MC') + th('qty','Qty','cq') + th('kg','Tonase (kg)') +
+    AG.map((a,i) => `<th data-sort="g${i}" class="${sk === 'g'+i ? (sd > 0 ? 'asc' : 'desc') : ''}">${a.l}</th>`).join('') + th('slowPct','% &gt; 3 bln') + th('age','Umur Rata²','cq') + th('kirim','Kirim (kg)') + th('kPct','% Kirim') + '</tr>';
   const tb = $('rank-tbody');
   const mx = rows.reduce((a,o) => Math.max(a, o.kg), 0) || 1;
   tb.innerHTML = rows.length ? rows.map(o => `<tr data-key="${escapeHtml(o.key)}" class="${state.selected && state.selected.key === o.key ? 'selected' : ''}">
@@ -2522,11 +2526,11 @@ function renderItems(scope){
   if (state.selected) list = scope.filter(r => nrm(r[state.selected.dim]) === state.selected.key);
   list = list.slice().sort((a,b) => b.kg - a.kg);
   const cap = 150, shown = list.slice(0, cap);
-  $('results-count').textContent = fmtInt(list.length) + ' line' + (list.length > cap ? ` · ${cap} teratas` : '') + ' · ' + fmtTon(list.reduce((a,r) => a + r.kg, 0)) + ' ton';
+  $('results-count').textContent = fmtInt(list.length) + ' mc' + (list.length > cap ? ` · ${cap} teratas` : '') + ' · ' + fmtTon(list.reduce((a,r) => a + r.kg, 0)) + ' kg';
   $('results').innerHTML = shown.length ? shown.map(r => `<div class="item-card"><div class="item-top"><span class="mono">${escapeHtml(r.so)} · MCS ${escapeHtml(r.mcs || '-')}</span><span class="status-badge sb-${AG[r.ag].k}">${r.um} bln</span></div>
     <div class="item-model">${escapeHtml(r.model)}</div><div class="item-grid">
     <div><span class="k">Customer</span><span class="v">${escapeHtml(r.customer)}</span></div><div><span class="k">Internal / Sales</span><span class="v">${escapeHtml(r.internal)} / ${escapeHtml(r.sales)}</span></div>
-    <div><span class="k">Qty</span><span class="v">${fmtInt(r.qty)} pcs</span></div><div><span class="k">Tonase</span><span class="v">${fmtNum(r.kg / 1000, 3)} ton</span></div></div>
+    <div><span class="k">Qty</span><span class="v">${fmtInt(r.qty)} pcs</span></div><div><span class="k">Tonase</span><span class="v">${fmtNum(r.kg, 0)} kg</span></div></div>
     <div class="item-meta">Masuk gudang ${escapeHtml(r.tgl || '-')} · Fit ${escapeHtml(r.fit || '-')} · Berat ${fmtNum(r.berat, 2)} kg</div></div>`).join('')
     : '<div class="empty-note">Tidak ada item.</div>';
 }
@@ -2542,15 +2546,15 @@ function renderMove(){
   $('mv-info').textContent = `${Ps.length} periode tersedia (${Ps[0].key} – ${Ps[Ps.length-1].key})`;
   const dK = B.c.kg - A.c.kg, same = A === B;
   $('mv-kpi').innerHTML =
-    kc('out','box','Tonase SOB ' + B.key, fmtTon(B.c.kg), 'ton', same ? '' : dTag(dK, sgn(dK)+fmtTon(Math.abs(dK))+' ton vs '+A.key, null)) +
-    kc('bl','doc','Line ' + B.key, fmtInt(B.c.n), '', same ? '' : dTag(B.c.n - A.c.n, sgn(B.c.n-A.c.n)+fmtInt(Math.abs(B.c.n-A.c.n)), null)) +
-    kc('am','warn','Umur > 3 Bulan', fmtPct(B.c.slowPct), '', same ? fmtTon(B.c.slow)+' ton' : dTag(B.c.slowPct - A.c.slowPct, sgn(B.c.slowPct-A.c.slowPct)+fmtNum(Math.abs(B.c.slowPct-A.c.slowPct))+' poin', true)) +
+    kc('out','box','Tonase SOB ' + B.key, fmtTon(B.c.kg), 'kg', same ? '' : dTag(dK, sgn(dK)+fmtTon(Math.abs(dK))+' kg vs '+A.key, null)) +
+    kc('bl','doc','MC ' + B.key, fmtInt(B.c.n), '', same ? '' : dTag(B.c.n - A.c.n, sgn(B.c.n-A.c.n)+fmtInt(Math.abs(B.c.n-A.c.n)), null)) +
+    kc('am','warn','Umur > 3 Bulan', fmtPct(B.c.slowPct), '', same ? fmtTon(B.c.slow)+' kg' : dTag(B.c.slowPct - A.c.slowPct, sgn(B.c.slowPct-A.c.slowPct)+fmtNum(Math.abs(B.c.slowPct-A.c.slowPct))+' poin', true)) +
     kc('out','clock','Umur Rata-rata', fmtNum(B.c.age), 'bln', same ? '' : dTag(B.c.age - A.c.age, sgn(B.c.age-A.c.age)+fmtNum(Math.abs(B.c.age-A.c.age)), true)) +
-    kc('in','truck','Kirim ' + (B.kirimLabel || ''), fmtTon(B.kirimKg), 'ton', fmtPct(pctOf(B.kirimKg, B.c.kg), 0) + ' dari SOB');
+    kc('in','truck','Kirim ' + (B.kirimLabel || ''), fmtTon(B.kirimKg), 'kg', fmtPct(pctOf(B.kirimKg, B.c.kg), 0) + ' dari SOB');
   const c = colors(), labels = Ps.map(p => p.key);
   mkChart('ch-mv1', { type:'bar', data:{ labels, datasets:[
-    { label:'Tonase SOB (ton)', data: Ps.map(p => p.c.kg/1000), backgroundColor:c.primary, borderRadius:5, yAxisID:'y', datalabels:{ display:true, anchor:'end', align:'end', color:c.text, font:{ size:11, weight:'700' }, formatter: v => fmtNum(v,0) } },
-    { label:'Tonase Kirim (ton)', data: Ps.map(p => p.kirimKg/1000), backgroundColor:c.green, borderRadius:5, yAxisID:'y', datalabels:{ display:true, anchor:'end', align:'end', color:c.text, font:{ size:11, weight:'700' }, formatter: v => fmtNum(v,0) } },
+    { label:'Tonase SOB (kg)', data: Ps.map(p => p.c.kg), backgroundColor:c.primary, borderRadius:5, yAxisID:'y', datalabels:{ display:true, anchor:'end', align:'end', color:c.text, font:{ size:11, weight:'700' }, formatter: v => fmtNum(v,0) } },
+    { label:'Tonase Kirim (kg)', data: Ps.map(p => p.kirimKg), backgroundColor:c.green, borderRadius:5, yAxisID:'y', datalabels:{ display:true, anchor:'end', align:'end', color:c.text, font:{ size:11, weight:'700' }, formatter: v => fmtNum(v,0) } },
     { type:'line', label:'% Kirim', data: Ps.map(p => pctOf(p.kirimKg, p.c.kg)), borderColor:'#f59e0b', backgroundColor:'#f59e0b', tension:.25, yAxisID:'y2', pointRadius:4, datalabels:{ display:false } }] },
     options:{ responsive:true, maintainAspectRatio:false, layout:{ padding:{ top:8 } }, plugins:{ legend:{ position:'top', align:'end', labels:{ color:c.muted, boxWidth:10, boxHeight:10 } }, tooltip:{ callbacks:{ label: i => i.dataset.label + ': ' + fmtNum(i.parsed.y) } } },
       scales:{ x:{ ticks:{ color:c.muted }, grid:{ display:false } }, y:{ beginAtZero:true, grace:'18%', ticks:{ color:c.muted, callback: v => fmtNum(v,0) }, grid:{ color:c.grid } }, y2:{ position:'right', beginAtZero:true, grace:'18%', ticks:{ color:c.muted, callback: v => v + '%' }, grid:{ display:false } } } } });
@@ -2558,13 +2562,13 @@ function renderMove(){
     options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'top', align:'end', labels:{ color:c.muted, boxWidth:10, boxHeight:10 } }, tooltip:{ callbacks:{ label: i => i.dataset.label + ': ' + fmtNum(i.parsed.y) + '%' } } },
       scales:{ x:{ stacked:true, ticks:{ color:c.muted }, grid:{ display:false } }, y:{ stacked:true, max:100, ticks:{ color:c.muted, callback: v => v + '%' }, grid:{ color:c.grid } } } } });
   const ch = internalDelta(A, B), top = ch.filter(o => o.d > 0).slice(0, 7).concat(ch.filter(o => o.d < 0).slice(-7)).sort((a,b) => b.d - a.d);
-  $('ch-mv3-sub').textContent = same ? 'Pilih dua periode berbeda untuk melihat perubahan' : `Selisih tonase (ton) ${B.key} dibanding ${A.key} — naik/turun terbesar`;
-  mkChart('ch-mv3', { type:'bar', data:{ labels: top.map(o => o.name), datasets:[{ label:'Δ ton', data: top.map(o => o.d/1000), backgroundColor: top.map(o => o.d >= 0 ? c.ag[2] : c.ag[0]), borderRadius:4, datalabels:{ display:true, anchor:'end', align:'end', color:c.text, font:{ size:10, weight:'700' }, formatter: v => sgn(v) + fmtNum(Math.abs(v)) } }] },
-    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{ padding:{ right:8, left:4 } }, plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: i => 'Δ ' + sgn(i.parsed.x) + fmtNum(Math.abs(i.parsed.x)) + ' ton' } } },
+  $('ch-mv3-sub').textContent = same ? 'Pilih dua periode berbeda untuk melihat perubahan' : `Selisih tonase (kg) ${B.key} dibanding ${A.key} — naik/turun terbesar`;
+  mkChart('ch-mv3', { type:'bar', data:{ labels: top.map(o => o.name), datasets:[{ label:'Δ kg', data: top.map(o => o.d), backgroundColor: top.map(o => o.d >= 0 ? c.ag[2] : c.ag[0]), borderRadius:4, datalabels:{ display:true, anchor:'end', align:'end', color:c.text, font:{ size:10, weight:'700' }, formatter: v => sgn(v) + fmtNum(Math.abs(v)) } }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{ padding:{ right:8, left:4 } }, plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: i => 'Δ ' + sgn(i.parsed.x) + fmtNum(Math.abs(i.parsed.x)) + ' kg' } } },
       scales:{ x:{ grace:'14%', ticks:{ color:c.muted }, grid:{ color:c.grid } }, y:{ ticks:{ color:c.muted, font:{ size:10.5 }, autoSkip:false }, grid:{ display:false } } } } });
   mkChart('ch-mv4', { type:'bar', data:{ labels, datasets:[
-    { label:'Tonase > 3 bln (ton)', data: Ps.map(p => p.c.slow/1000), backgroundColor:c.ag[2], borderRadius:5, yAxisID:'y', datalabels:{ display:true, anchor:'end', align:'end', color:c.text, font:{ size:11, weight:'700' }, formatter: v => fmtNum(v,0) } },
-    { label:'Dead > 6 bln (ton)', data: Ps.map(p => p.c.g[3].kg/1000), backgroundColor:c.ag[3], borderRadius:5, yAxisID:'y', datalabels:{ display:true, anchor:'end', align:'end', color:c.text, font:{ size:11, weight:'700' }, formatter: v => fmtNum(v,0) } },
+    { label:'Tonase > 3 bln (kg)', data: Ps.map(p => p.c.slow), backgroundColor:c.ag[2], borderRadius:5, yAxisID:'y', datalabels:{ display:true, anchor:'end', align:'end', color:c.text, font:{ size:11, weight:'700' }, formatter: v => fmtNum(v,0) } },
+    { label:'Dead > 6 bln (kg)', data: Ps.map(p => p.c.g[3].kg), backgroundColor:c.ag[3], borderRadius:5, yAxisID:'y', datalabels:{ display:true, anchor:'end', align:'end', color:c.text, font:{ size:11, weight:'700' }, formatter: v => fmtNum(v,0) } },
     { type:'line', label:'% > 3 bln', data: Ps.map(p => p.c.slowPct), borderColor:c.primary, backgroundColor:c.primary, tension:.25, yAxisID:'y2', pointRadius:4, datalabels:{ display:false } }] },
     options:{ responsive:true, maintainAspectRatio:false, layout:{ padding:{ top:8 } }, plugins:{ legend:{ position:'top', align:'end', labels:{ color:c.muted, boxWidth:10, boxHeight:10 } } },
       scales:{ x:{ ticks:{ color:c.muted }, grid:{ display:false } }, y:{ beginAtZero:true, grace:'18%', ticks:{ color:c.muted, callback: v => fmtNum(v,0) }, grid:{ color:c.grid } }, y2:{ position:'right', beginAtZero:true, grace:'18%', ticks:{ color:c.muted, callback: v => v + '%' }, grid:{ display:false } } } } });
@@ -2593,35 +2597,35 @@ function buildReportHTML(P){
   const hdr = sub => `<div class="pr-header"><div><div class="pr-brand-eyebrow">PT Karya Indah Multiguna · Dept. Stock Barang Jadi (SBJ)</div><div class="pr-brand-title">Laporan <span class="accent">Stock Opname</span> Gudang (SOB)</div><div style="font-size:11px;color:#475467;margin-top:2px">${sub}</div></div>
     <div class="pr-meta">Periode SOB: <b>${escapeHtml(P.name)}</b><br>Blok kirim: ${escapeHtml(P.kirimLabel || '-')}<br>Dicetak: ${now.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})} ${now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
   const kpi = AG.map((a,i) => { const g = C.g[i];
-    return `<div class="pr-kpi ${PR_CLS[i]}"><div class="l">${a.l} · ${a.r}</div><div class="v">${fmtTon(g.kg)} ton</div><div class="s">${fmtNum(pctOf(g.kg, C.kg),0)}% tonase · ${fmtInt(g.n)} line · ${fmtInt(g.qty)} pcs</div></div>`; }).join('');
-  const sumBar = `<div class="pr-tonase"><span>Total stok SOB <b>${fmtTon(C.kg)} ton</b> · ${fmtInt(C.n)} line · ${fmtInt(C.cusN)} customer · ${fmtInt(C.qty)} pcs</span><span>Umur rata-rata <b>${fmtNum(C.age)} bln</b> · > 3 bln <b>${fmtPct(C.slowPct)}</b></span><span>Kirim <b>${fmtTon(P.kirimKg)} ton</b> (${fmtPct(pctOf(P.kirimKg, C.kg),0)})</span></div>`;
+    return `<div class="pr-kpi ${PR_CLS[i]}"><div class="l">${a.l} · ${a.r}</div><div class="v">${fmtTon(g.kg)} kg</div><div class="s">${fmtNum(pctOf(g.kg, C.kg),0)}% tonase · ${fmtInt(g.n)} mc · ${fmtInt(g.qty)} pcs</div></div>`; }).join('');
+  const sumBar = `<div class="pr-tonase"><span>Total stok SOB <b>${fmtTon(C.kg)} kg</b> · ${fmtInt(C.n)} mc · ${fmtInt(C.cusN)} customer · ${fmtInt(C.qty)} pcs</span><span>Umur rata-rata <b>${fmtNum(C.age)} bln</b> · > 3 bln <b>${fmtPct(C.slowPct)}</b></span><span>Kirim <b>${fmtTon(P.kirimKg)} kg</b> (${fmtPct(pctOf(P.kirimKg, C.kg),0)})</span></div>`;
   /* A. referensi bulanan */
   const Ps = state.periods;
-  const A = repTable(['Periode','Line','Customer','Qty (pcs)','Tonase (ton)','Δ Tonase (ton)','Umur Rata² (bln)','> 3 bln (ton)','% > 3 bln','Dead > 6 bln (ton)','Kirim (ton)','% Kirim'],
+  const A = repTable(['Periode','MC','Customer','Qty (pcs)','Tonase (kg)','Δ Tonase (kg)','Umur Rata² (bln)','> 3 bln (kg)','% > 3 bln','Dead > 6 bln (kg)','Kirim (kg)','% Kirim'],
     Ps.map((p,i) => { const d = i ? p.c.kg - Ps[i-1].c.kg : null;
       return [`<b>${escapeHtml(p.key)}</b>${p === P ? ' ◀' : ''}`, fmtInt(p.c.n), fmtInt(p.c.cusN), fmtInt(p.c.qty), fmtTon(p.c.kg), d == null ? '–' : sgn(d)+fmtTon(Math.abs(d)), fmtNum(p.c.age), fmtTon(p.c.slow), fmtPct(p.c.slowPct), fmtTon(p.c.g[3].kg), fmtTon(p.kirimKg), fmtPct(pctOf(p.kirimKg, p.c.kg))]; }));
   /* B. komposisi umur */
   const bk = [[0,0,'0 bulan'],[1,1,'1 bulan'],[2,2,'2 bulan'],[3,3,'3 bulan'],[4,6,'4–6 bulan'],[7,12,'7–12 bulan'],[13,24,'13–24 bulan'],[25,999,'> 24 bulan']];
   const B = bk.map(([lo,hi,l]) => { const rs = P.recs.filter(r => r.um >= lo && r.um <= hi), c = calc(rs);
     return [l, `<span class="pr-badge ${['baru','normal','lama','mati'][agIdx(lo)]}">${AG[agIdx(lo)].l}</span>`, fmtInt(c.n), fmtInt(c.qty), fmtTon(c.kg), fmtPct(pctOf(c.kg, C.kg))]; });
-  const Bt = repTable(['Umur Stok','Kelompok','Line','Qty (pcs)','Tonase (ton)','% Tonase'], B, ['Total','',fmtInt(C.n),fmtInt(C.qty),fmtTon(C.kg),'100%'], 2);
+  const Bt = repTable(['Umur Stok','Kelompok','MC','Qty (pcs)','Tonase (kg)','% Tonase'], B, ['Total','',fmtInt(C.n),fmtInt(C.qty),fmtTon(C.kg),'100%'], 2);
   /* C. per internal */
   const gi = groupBy(P.recs, 'internal', P.kirim).sort((a,b) => b.kg - a.kg);
   const T = gi.reduce((t,o) => { t.n += o.n; t.qty += o.qty; t.kg += o.kg; t.kirim += o.kirim; o.g.forEach((v,i) => t.g[i] += v); return t; }, { n:0, qty:0, kg:0, kirim:0, g:[0,0,0,0] });
-  const Ci = repTable(['Internal','Line','Qty (pcs)','Tonase (ton)','Baru (ton)','Normal (ton)','Lama (ton)','Dead (ton)','% > 3 bln','Umur Rata²','Kirim (ton)','% Kirim'],
+  const Ci = repTable(['Internal','MC','Qty (pcs)','Tonase (kg)','Baru (kg)','Normal (kg)','Lama (kg)','Dead (kg)','% > 3 bln','Umur Rata²','Kirim (kg)','% Kirim'],
     gi.map(o => [escapeHtml(o.name), fmtInt(o.n), fmtInt(o.qty), fmtTon(o.kg), fmtTon(o.g[0]), fmtTon(o.g[1]), fmtTon(o.g[2]), fmtTon(o.g[3]), o.kg > 0 ? fmtPct(o.slowPct,0) : '–', o.kg > 0 ? fmtNum(o.age) : '–', fmtTon(o.kirim), o.kg > 0 ? fmtPct(o.kPct,0) : '–']),
     ['Total', fmtInt(T.n), fmtInt(T.qty), fmtTon(T.kg), fmtTon(T.g[0]), fmtTon(T.g[1]), fmtTon(T.g[2]), fmtTon(T.g[3]), fmtPct(pctOf(T.g[2]+T.g[3], T.kg),0), fmtNum(C.age), fmtTon(T.kirim), fmtPct(pctOf(T.kirim, T.kg),0)]);
   /* D. top customer & E. dead stock */
   const gc = groupBy(P.recs, 'customer').sort((a,b) => b.kg - a.kg).slice(0, 15);
-  const D = repTable(['#','Customer','Line','Qty (pcs)','Tonase (ton)','% Total','Umur Rata²','> 3 bln (ton)','Dead (ton)'],
+  const D = repTable(['#','Customer','MC','Qty (pcs)','Tonase (kg)','% Total','Umur Rata²','> 3 bln (kg)','Dead (kg)'],
     gc.map((o,i) => [i+1, escapeHtml(o.name), fmtInt(o.n), fmtInt(o.qty), fmtTon(o.kg), fmtPct(pctOf(o.kg, C.kg)), fmtNum(o.age), fmtTon(o.slow), fmtTon(o.g[3])]), null, 2);
   const dead = groupBy(P.recs.filter(r => r.ag >= 2), 'customer').sort((a,b) => b.slow - a.slow).slice(0, 15);
-  const E = repTable(['#','Customer','Line (> 3 bln)','Lama 4–6 (ton)','Dead > 6 (ton)','Total > 3 bln (ton)','Umur Tertua (bln)'],
+  const E = repTable(['#','Customer','MC (> 3 bln)','Lama 4–6 (kg)','Dead > 6 (kg)','Total > 3 bln (kg)','Umur Tertua (bln)'],
     dead.map((o,i) => [i+1, escapeHtml(o.name), fmtInt(o.gn[2] + o.gn[3]), fmtTon(o.g[2]), fmtTon(o.g[3]), fmtTon(o.slow), fmtInt(o.max)]), null, 2);
   const Ek = groupBy(P.recs.filter(r => r.ag === 3), 'model').sort((a,b) => b.kg - a.kg).slice(0, 10);
-  const F = repTable(['#','Model (Dead Stock > 6 bln)','Line','Qty (pcs)','Tonase (ton)','Umur Tertua (bln)'],
+  const F = repTable(['#','Model (Dead Stock > 6 bln)','MC','Qty (pcs)','Tonase (kg)','Umur Tertua (bln)'],
     Ek.map((o,i) => [i+1, escapeHtml(o.name), fmtInt(o.n), fmtInt(o.qty), fmtTon(o.kg), fmtInt(o.max)]), null, 2);
-  const note = `<div class="pr-note"><b>Catatan:</b> Sumber data sheet "STOCK GUDANG - SOB" (blok SOB ${escapeHtml(P.key)}). Tonase dalam ton (kg ÷ 1.000). Umur = lama stok sejak tanggal masuk gudang, dibulatkan sesuai kolom Umur pada sheet; umur rata-rata dibobot tonase. Kelompok umur: Baru 0–1 bln, Normal 2–3 bln, Lama 4–6 bln, Dead Stock &gt; 6 bln. Kirim = total kolom KIRIM (${escapeHtml(P.kirimLabel || '-')}) pada blok yang sama; % kirim = kirim ÷ tonase SOB. ${P.zeroN ? fmtInt(P.zeroN) + ' line bertonase/qty 0 dan ' : ''}${fmtInt(P.dupN)} baris berpotensi duplikat tetap dihitung apa adanya.</div>`;
+  const note = `<div class="pr-note"><b>Catatan:</b> Sumber data sheet "STOCK GUDANG - SOB" (blok SOB ${escapeHtml(P.key)}). Tonase dalam Kg. Umur = lama stok sejak tanggal masuk gudang, dibulatkan sesuai kolom Umur pada sheet; umur rata-rata dibobot tonase. Kelompok umur: Baru 0–1 bln, Normal 2–3 bln, Lama 4–6 bln, Dead Stock &gt; 6 bln. Kirim = total kolom KIRIM (${escapeHtml(P.kirimLabel || '-')}) pada blok yang sama; % kirim = kirim ÷ tonase SOB. ${P.zeroN ? fmtInt(P.zeroN) + ' mc bertonase/qty 0 dan ' : ''}${fmtInt(P.dupN)} baris berpotensi duplikat tetap dihitung apa adanya.</div>`;
   return `<div class="pr-page">${hdr('Ringkasan stock opname bulanan di gudang')}<div class="pr-kpi-grid">${kpi}</div>${sumBar}
       <div class="pr-section-title">A. Referensi Ringkasan Bulanan</div>${A}<div class="pr-section-title">B. Komposisi Umur Stok — ${escapeHtml(P.key)}</div>${Bt}${note}<div class="pr-footer">Ringkasan SOB · ${escapeHtml(P.key)} · hal. 1</div></div>
     <div class="pr-page">${hdr('Rekap per internal')}<div class="pr-section-title">C. Rekap Stok per Internal — ${escapeHtml(P.key)}</div>${Ci}<div class="pr-footer">Ringkasan SOB · ${escapeHtml(P.key)} · hal. 2</div></div>
@@ -2642,15 +2646,15 @@ function doPrint(){
 function downloadExcel(){
   const P = cur(); if (!P) return;
   if (typeof XLSX === 'undefined'){ showToast('Komponen Excel belum termuat, cek koneksi'); return; }
-  const wb = XLSX.utils.book_new(), C = P.c, t = kg => Math.round(kg) / 1000;
+  const wb = XLSX.utils.book_new(), C = P.c, t = kg => Math.round(kg);
   const add = (name, aoa, widths) => { const ws = XLSX.utils.aoa_to_sheet(aoa); if (widths) ws['!cols'] = widths.map(w => ({ wch: w })); XLSX.utils.book_append_sheet(wb, ws, name.slice(0,31)); };
-  add('Ringkasan Bulanan', [['Periode','Line','Customer','Qty (pcs)','Tonase (ton)','Umur Rata-rata (bln)','> 3 bln (ton)','% > 3 bln','Dead > 6 bln (ton)','Kirim (label)','Kirim (ton)','% Kirim']]
+  add('Ringkasan Bulanan', [['Periode','MC','Customer','Qty (pcs)','Tonase (kg)','Umur Rata-rata (bln)','> 3 bln (kg)','% > 3 bln','Dead > 6 bln (kg)','Kirim (label)','Kirim (kg)','% Kirim']]
     .concat(state.periods.map(p => [p.key, p.c.n, p.c.cusN, p.c.qty, t(p.c.kg), +p.c.age.toFixed(2), t(p.c.slow), +p.c.slowPct.toFixed(2), t(p.c.g[3].kg), p.kirimLabel, t(p.kirimKg), +pctOf(p.kirimKg, p.c.kg).toFixed(2)])), [10,8,10,12,13,18,13,10,17,12,12,9]);
-  add('Umur ' + P.key, [['Umur Stok','Kelompok','Line','Qty (pcs)','Tonase (ton)','% Tonase']].concat(
+  add('Umur ' + P.key, [['Umur Stok','Kelompok','MC','Qty (pcs)','Tonase (kg)','% Tonase']].concat(
     [[0,0,'0 bulan'],[1,1,'1 bulan'],[2,2,'2 bulan'],[3,3,'3 bulan'],[4,6,'4-6 bulan'],[7,12,'7-12 bulan'],[13,24,'13-24 bulan'],[25,999,'> 24 bulan']].map(([lo,hi,l]) => { const c = calc(P.recs.filter(r => r.um >= lo && r.um <= hi)); return [l, AG[agIdx(lo)].l, c.n, c.qty, t(c.kg), +pctOf(c.kg, C.kg).toFixed(2)]; })), [14,12,8,12,13,10]);
   [['internal','Internal'],['sales','Sales'],['customer','Customer']].forEach(([prop, lbl]) => {
     const g = groupBy(P.recs, prop, P.kirim).sort((a,b) => b.kg - a.kg);
-    add('Per ' + lbl + ' ' + P.key, [[lbl,'Line','Qty (pcs)','Tonase (ton)','Baru (ton)','Normal (ton)','Lama (ton)','Dead (ton)','% > 3 bln','Umur Rata-rata (bln)','Kirim (ton)','% Kirim']].concat(
+    add('Per ' + lbl + ' ' + P.key, [[lbl,'MC','Qty (pcs)','Tonase (kg)','Baru (kg)','Normal (kg)','Lama (kg)','Dead (kg)','% > 3 bln','Umur Rata-rata (bln)','Kirim (kg)','% Kirim']].concat(
       g.map(o => [o.name, o.n, o.qty, t(o.kg), t(o.g[0]), t(o.g[1]), t(o.g[2]), t(o.g[3]), +o.slowPct.toFixed(2), +o.age.toFixed(2), t(o.kirim), +o.kPct.toFixed(2)])), [34,8,12,13,11,12,11,11,10,18,11,9]);
   });
   add('Detail ' + P.key, [['SO','Internal','Sales','Customer','Master Card','Fit','Model','Berat (kg)','Qty (pcs)','Tonase (kg)','Tgl Masuk','Umur (bln)','Kelompok']].concat(
@@ -2665,7 +2669,7 @@ const AI_INSTRUCTION = `Tolong analisa data stock opname gudang (SOB) di atas se
 - Komposisi umur stok. Soroti stok Lama (4–6 bln) dan Dead Stock (> 6 bln): seberapa besar risikonya terhadap cashflow dan ruang gudang.
 - Realisasi kirim terhadap tonase SOB: apakah stok bergerak cukup cepat.
 - Internal dan customer yang perlu mendapat perhatian. Jangan hanya melihat tonase total, lihat juga porsi stok umur > 3 bulan.
-- Bedakan masalah berdasarkan jumlah line dan berdasarkan tonase, karena line sedikit dapat bertonase besar.
+- Bedakan masalah berdasarkan jumlah mc dan berdasarkan tonase, karena mc sedikit dapat bertonase besar.
 - Potensi anomali data (tonase/qty 0, baris duplikat, nama customer yang ditulis berbeda untuk perusahaan yang sama).
 - Prioritas tindak lanjut untuk minggu ini (penagihan/konfirmasi kirim, negosiasi pengambilan, penjualan stok mati).
 
@@ -2681,23 +2685,23 @@ function buildAIText(){
   const L = [];
   L.push(`DATA RINGKASAN STOCK OPNAME GUDANG (SOB) — PT Karya Indah Multiguna, Dept. SBJ`);
   L.push(`Periode SOB: ${P.name} (${P.key}) | Blok kirim: ${P.kirimLabel || '-'}`);
-  L.push(`Satuan tonase: ton (kg ÷ 1.000). Umur dalam bulan sejak tanggal masuk gudang. Kelompok umur: Baru 0–1 bln, Normal 2–3 bln, Lama 4–6 bln, Dead Stock > 6 bln.\n`);
+  L.push(`Satuan tonase: Kg. Umur dalam bulan sejak tanggal masuk gudang. Kelompok umur: Baru 0–1 bln, Normal 2–3 bln, Lama 4–6 bln, Dead Stock > 6 bln.\n`);
   L.push(`RINGKASAN UTAMA`);
-  L.push(`- Total stok: ${fmtTon(C.kg)} ton | ${fmtInt(C.n)} line | ${fmtInt(C.cusN)} customer | ${fmtInt(C.qty)} pcs`);
+  L.push(`- Total stok: ${fmtTon(C.kg)} kg | ${fmtInt(C.n)} mc | ${fmtInt(C.cusN)} customer | ${fmtInt(C.qty)} pcs`);
   L.push(`- Umur rata-rata (bobot tonase): ${fmtNum(C.age)} bln | tertua ${fmtInt(C.max)} bln`);
-  L.push(`- Stok umur > 3 bln: ${fmtTon(C.slow)} ton (${fmtPct(C.slowPct)}) | ${fmtInt(C.slowN)} line`);
-  L.push(`- Kirim ${P.kirimLabel || ''}: ${fmtTon(P.kirimKg)} ton (${fmtPct(pctOf(P.kirimKg, C.kg))} dari SOB)`);
-  if (V) L.push(`- Dibanding ${pv.key}: tonase ${sgn(C.kg-V.kg)}${fmtTon(Math.abs(C.kg-V.kg))} ton, line ${sgn(C.n-V.n)}${fmtInt(Math.abs(C.n-V.n))}, % > 3 bln ${fmtPct(V.slowPct)} → ${fmtPct(C.slowPct)}`);
+  L.push(`- Stok umur > 3 bln: ${fmtTon(C.slow)} kg (${fmtPct(C.slowPct)}) | ${fmtInt(C.slowN)} mc`);
+  L.push(`- Kirim ${P.kirimLabel || ''}: ${fmtTon(P.kirimKg)} kg (${fmtPct(pctOf(P.kirimKg, C.kg))} dari SOB)`);
+  if (V) L.push(`- Dibanding ${pv.key}: tonase ${sgn(C.kg-V.kg)}${fmtTon(Math.abs(C.kg-V.kg))} kg, mc ${sgn(C.n-V.n)}${fmtInt(Math.abs(C.n-V.n))}, % > 3 bln ${fmtPct(V.slowPct)} → ${fmtPct(C.slowPct)}`);
   L.push(`\nKOMPOSISI UMUR`);
-  AG.forEach((a,i) => L.push(`- ${a.l} (${a.r}): ${fmtTon(C.g[i].kg)} ton (${fmtPct(pctOf(C.g[i].kg, C.kg))}) | ${fmtInt(C.g[i].n)} line | ${fmtInt(C.g[i].qty)} pcs`));
-  L.push(`\nREKAP PER INTERNAL (tonase | line | Baru/Normal/Lama/Dead ton | % > 3 bln | kirim ton)`);
+  AG.forEach((a,i) => L.push(`- ${a.l} (${a.r}): ${fmtTon(C.g[i].kg)} kg (${fmtPct(pctOf(C.g[i].kg, C.kg))}) | ${fmtInt(C.g[i].n)} mc | ${fmtInt(C.g[i].qty)} pcs`));
+  L.push(`\nREKAP PER INTERNAL (tonase | mc | Baru/Normal/Lama/Dead kg | % > 3 bln | kirim kg)`);
   groupBy(P.recs, 'internal', P.kirim).sort((a,b) => b.kg - a.kg).forEach(o => L.push(`- ${o.name}: ${fmtTon(o.kg)} | ${fmtInt(o.n)} | ${o.g.map(v => fmtTon(v)).join('/')} | ${fmtPct(o.slowPct,0)} | ${fmtTon(o.kirim)}`));
-  L.push(`\n15 CUSTOMER TERBESAR (tonase | line | umur rata² | > 3 bln ton | dead ton)`);
+  L.push(`\n15 CUSTOMER TERBESAR (tonase | mc | umur rata² | > 3 bln kg | dead kg)`);
   groupBy(P.recs, 'customer').sort((a,b) => b.kg - a.kg).slice(0,15).forEach(o => L.push(`- ${o.name}: ${fmtTon(o.kg)} | ${fmtInt(o.n)} | ${fmtNum(o.age)} bln | ${fmtTon(o.slow)} | ${fmtTon(o.g[3])}`));
   L.push(`\n10 CUSTOMER DENGAN DEAD STOCK TERBESAR`);
-  groupBy(P.recs.filter(r => r.ag === 3), 'customer').sort((a,b) => b.kg - a.kg).slice(0,10).forEach(o => L.push(`- ${o.name}: ${fmtTon(o.kg)} ton | ${fmtInt(o.n)} line | tertua ${fmtInt(o.max)} bln`));
-  if (state.periods.length > 1){ L.push(`\nTREN BULANAN (periode | tonase | line | % > 3 bln | kirim ton)`); state.periods.forEach(p => L.push(`- ${p.key}: ${fmtTon(p.c.kg)} | ${fmtInt(p.c.n)} | ${fmtPct(p.c.slowPct)} | ${fmtTon(p.kirimKg)}`)); }
-  L.push(`\nKUALITAS DATA: ${fmtInt(P.zeroN)} line tonase/qty 0; ${fmtInt(P.dupN)} baris berpotensi duplikat.\n`);
+  groupBy(P.recs.filter(r => r.ag === 3), 'customer').sort((a,b) => b.kg - a.kg).slice(0,10).forEach(o => L.push(`- ${o.name}: ${fmtTon(o.kg)} kg | ${fmtInt(o.n)} mc | tertua ${fmtInt(o.max)} bln`));
+  if (state.periods.length > 1){ L.push(`\nTREN BULANAN (periode | tonase | mc | % > 3 bln | kirim kg)`); state.periods.forEach(p => L.push(`- ${p.key}: ${fmtTon(p.c.kg)} | ${fmtInt(p.c.n)} | ${fmtPct(p.c.slowPct)} | ${fmtTon(p.kirimKg)}`)); }
+  L.push(`\nKUALITAS DATA: ${fmtInt(P.zeroN)} mc tonase/qty 0; ${fmtInt(P.dupN)} baris berpotensi duplikat.\n`);
   L.push(AI_INSTRUCTION);
   return L.join('\n');
 }
