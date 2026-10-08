@@ -1,327 +1,65 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Presentasi · SBJ Apps</title>
-<meta name="description" content="Presentasi bulanan — Ringkasan Palet & Ringkasan Memo" />
-<meta name="theme-color" content="#12161B" />
-<script>
-  (function(){
-    try{
-      var saved = localStorage.getItem('stockopname.theme');
-      var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-      document.documentElement.setAttribute('data-theme', theme);
-    }catch(e){}
-  })();
-</script>
-<link rel="manifest" href="manifest.json" />
-<link rel="icon" href="icons/icon.png" />
-<link rel="apple-touch-icon" href="icons/icon.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Presentasi · SBJ Apps</title><meta name="description" content="Presentasi bulanan — Ringkasan Palet, Memo & SOB"><meta name="theme-color" content="#12161B">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('stockopname.theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark')}catch(e){document.documentElement.dataset.theme='dark'}</script>
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icons/icon.png"><link rel="apple-touch-icon" href="icons/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
 <style>
-:root{
-  --bg: #12161B;
-  --surface: #1B2129;
-  --surface-2: #212831;
-  --border: #2A323C;
-  --text: #EDEFF2;
-  --muted: #8B95A1;
-  --amber: #FFB020;
-  --green: #34D399;
-  --red: #F45B69;
-  --violet: #A78BFA;
-  --font-display: 'Barlow Condensed', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --on-accent: #06251A;
-  color-scheme: dark;
-}
-html[data-theme="light"]{
-  --bg: #F3F4F6;
-  --surface: #FFFFFF;
-  --surface-2: #EEF0F3;
-  --border: #DCE0E6;
-  --text: #171B21;
-  --muted: #667085;
-  --amber: #B8770F;
-  --green: #12996B;
-  --red: #DC3E4E;
-  --violet: #7C5CE0;
-  --on-accent: #FFFFFF;
-  color-scheme: light;
-}
-*{ box-sizing: border-box; }
-html, body{ height:100%; margin:0; }
-body{
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-body);
-  -webkit-font-smoothing: antialiased;
-  display:flex; flex-direction:column;
-  transition: background-color .25s ease, color .25s ease;
-}
-
-/* ===== Top bar ===== */
-header.topbar{
-  flex:0 0 auto;
-  display:flex; align-items:center; gap:12px;
-  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  border-bottom:1px solid var(--border);
-}
-.icon-btn{
-  flex:0 0 auto; width:38px; height:38px; border-radius:10px;
-  border:1px solid var(--border); background: var(--surface); color: var(--text);
-  display:flex; align-items:center; justify-content:center; cursor:pointer; text-decoration:none;
-}
-.icon-btn:active{ transform: scale(.94); }
-.icon-btn:focus-visible, .tab:focus-visible{ outline:2px solid var(--green); outline-offset:2px; }
-.brand{ flex:1; min-width:0; display:flex; flex-direction:column; }
-.brand-eyebrow{ font-family: var(--font-mono); font-size:10px; letter-spacing:.08em; color: var(--muted); text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.brand-title{ font-family: var(--font-display); font-weight:700; font-size:21px; margin:0; letter-spacing:.01em; text-transform:uppercase; white-space:nowrap; }
-.brand-title .accent{ color: var(--green); }
-.actions{ display:flex; gap:8px; }
-
-/* ===== Tabs ===== */
-nav.tabs{
-  flex:0 0 auto;
-  display:flex; gap:6px; padding:10px 14px 0;
-  border-bottom:1px solid var(--border);
-  background: var(--bg);
-  overflow-x:auto; scrollbar-width:none;
-}
-nav.tabs::-webkit-scrollbar{ display:none; }
-.tab{
-  position:relative; flex:0 0 auto;
-  display:flex; align-items:center; gap:8px;
-  padding:10px 16px 12px; border:0; background:transparent; cursor:pointer;
-  color: var(--muted); font-family: var(--font-display); font-weight:700; font-size:17px;
-  letter-spacing:.02em; text-transform:uppercase; border-radius:10px 10px 0 0;
-  transition: color .15s ease, background-color .15s ease;
-}
-.tab svg{ flex:0 0 auto; }
-.tab:hover{ color: var(--text); }
-.tab[aria-selected="true"]{ color: var(--text); background: var(--surface); }
-.tab[aria-selected="true"]::after{
-  content:""; position:absolute; left:0; right:0; bottom:-1px; height:3px; background: var(--tab-accent);
-  border-radius:3px 3px 0 0;
-}
-.tab[data-tab="palet"]{ --tab-accent: var(--amber); }
-.tab[data-tab="memo"]{ --tab-accent: var(--violet); }
-.tab[aria-selected="true"] svg{ color: var(--tab-accent); }
-.tab-hint{
-  margin-left:auto; align-self:center; padding:0 4px 8px;
-  font-family: var(--font-mono); font-size:11px; color: var(--muted); white-space:nowrap;
-}
-.tab-hint kbd{
-  font-family: inherit; font-size:10.5px; padding:1px 6px; border:1px solid var(--border);
-  border-radius:5px; background: var(--surface); color: var(--text);
-}
-@media (max-width: 640px){ .tab-hint{ display:none; } }
-
-/* ===== Stage ===== */
-main.stage{ position:relative; flex:1 1 auto; min-height:0; background: var(--surface); }
-.pane{ position:absolute; inset:0; display:none; }
-.pane.active{ display:block; }
-.pane iframe{ width:100%; height:100%; border:0; background: var(--surface); display:block; }
-
-.pane-loading{
-  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
-  color: var(--muted); font-family: var(--font-mono); font-size:12px; letter-spacing:.04em;
-  background: var(--surface); pointer-events:none; transition: opacity .25s ease;
-}
-.pane-loading.done{ opacity:0; }
-.spinner{
-  width:26px; height:26px; border-radius:50%; border:3px solid var(--border); border-top-color: var(--green);
-  animation: spin .8s linear infinite;
-}
-@keyframes spin{ to{ transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce){ .spinner{ animation-duration:2.4s; } }
-
-.pane-fallback{
-  position:absolute; right:12px; bottom:calc(12px + env(safe-area-inset-bottom, 0px));
-  font-size:12px; color: var(--muted); background: var(--surface-2); border:1px solid var(--border);
-  border-radius:999px; padding:6px 12px; text-decoration:none;
-}
-.pane-fallback:hover{ color: var(--text); }
-
-/* ===== Presentation mode (fullscreen) ===== */
-body.is-fullscreen header.topbar{ display:none; }
-body.is-fullscreen nav.tabs{ padding-top: calc(6px + env(safe-area-inset-top, 0px)); }
-body.is-fullscreen .tab{ padding:8px 14px 10px; font-size:15px; }
+:root{--bg:#12161B;--surface:#1B2129;--surface-2:#212831;--border:#2A323C;--text:#EDEFF2;--muted:#8B95A1;--amber:#FFB020;--green:#34D399;--violet:#A78BFA;--cyan:#38BDF8;--display:'Barlow Condensed',sans-serif;--body:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;color-scheme:dark}
+html[data-theme=light]{--bg:#F3F4F6;--surface:#FFF;--surface-2:#EEF0F3;--border:#DCE0E6;--text:#171B21;--muted:#667085;--amber:#B8770F;--green:#12996B;--violet:#7C5CE0;--cyan:#0284C7;color-scheme:light}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--body);-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
+.topbar{flex:none;display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;background:var(--bg);border-bottom:1px solid var(--border)}
+.icon-btn{flex:none;width:38px;height:38px;border:1px solid var(--border);border-radius:10px;display:grid;place-items:center;background:var(--surface);color:var(--text);text-decoration:none;cursor:pointer}.icon-btn:active{transform:scale(.94)}.icon-btn:focus-visible,.tab:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.brand{flex:1;min-width:0}.brand-eyebrow{display:block;font:10px var(--mono);letter-spacing:.08em;color:var(--muted);text-transform:uppercase;white-space:nowrap}.brand-title{font:700 21px var(--display);text-transform:uppercase;letter-spacing:.01em;margin:0;white-space:nowrap}.brand-title .accent{color:var(--green)}.actions{display:flex;gap:8px}
+.tabs{flex:none;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:10px 14px 0;border-bottom:1px solid var(--border);background:var(--bg)}.tabs::-webkit-scrollbar{display:none}
+.tab{position:relative;flex:none;display:flex;align-items:center;gap:8px;padding:10px 16px 12px;border:0;border-radius:10px 10px 0 0;background:transparent;color:var(--muted);font:700 17px var(--display);letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;cursor:pointer;transition:color .15s,background .15s}.tab:hover{color:var(--text)}.tab svg{flex:none}
+.tab[aria-selected=true]{color:var(--text);background:var(--surface)}.tab[aria-selected=true]:after{content:"";position:absolute;bottom:-1px;left:0;right:0;height:3px;border-radius:3px 3px 0 0;background:var(--tab-accent)}.tab[aria-selected=true] svg{color:var(--tab-accent)}.tab[data-tab=palet]{--tab-accent:var(--amber)}.tab[data-tab=memo]{--tab-accent:var(--violet)}.tab[data-tab=sob]{--tab-accent:var(--cyan)}
+.tab-hint{margin-left:auto;align-self:center;padding:0 4px 8px;font:11px var(--mono);color:var(--muted);white-space:nowrap}.tab-hint kbd{padding:1px 6px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);font:10px var(--mono)}
+.stage{position:relative;flex:1;min-height:0;background:var(--surface)}.pane{position:absolute;inset:0;display:none}.pane.active{display:block}.pane iframe{width:100%;height:100%;border:0;display:block;background:var(--surface)}
+.pane-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--surface);color:var(--muted);font:12px var(--mono);letter-spacing:.04em;pointer-events:none;transition:opacity .25s}.pane-loading.done{opacity:0}.spinner{width:26px;height:26px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--green);animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.pane-fallback{position:absolute;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));padding:6px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface-2);color:var(--muted);font-size:12px;text-decoration:none}.pane-fallback:hover{color:var(--text)}
+body.is-fullscreen .topbar{display:none}body.is-fullscreen .tabs{padding-top:calc(6px + env(safe-area-inset-top,0px))}body.is-fullscreen .tab{padding:8px 14px 10px;font-size:15px}
+@media(max-width:640px){.tab-hint{display:none}.tab{padding:9px 12px 11px;font-size:15px}}@media(prefers-reduced-motion:reduce){.spinner{animation-duration:2.4s}}
 </style>
 </head>
 <body>
-
 <header class="topbar">
-  <a href="index.html" class="icon-btn" aria-label="Kembali ke menu utama" title="Menu utama">
-    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-  </a>
-  <div class="brand">
-    <span class="brand-eyebrow">Meeting bulanan</span>
-    <h1 class="brand-title">Presen<span class="accent">tasi</span></h1>
-  </div>
-  <div class="actions">
-    <button id="btn-fullscreen" class="icon-btn" aria-label="Layar penuh" title="Layar penuh (F)">
-      <svg id="fs-enter" viewBox="0 0 24 24" width="19" height="19"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-      <svg id="fs-exit" viewBox="0 0 24 24" width="19" height="19" style="display:none;"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
-    </button>
-    <button id="btn-theme-toggle" class="icon-btn" aria-label="Ganti tema" title="Ganti tema">
-      <svg id="theme-icon-moon" viewBox="0 0 24 24" width="19" height="19"><path fill="currentColor" d="M12.3 2a9.5 9.5 0 108.7 13.6A8 8 0 0112.3 2z"/></svg>
-      <svg id="theme-icon-sun" viewBox="0 0 24 24" width="19" height="19" style="display:none;"><path fill="currentColor" d="M12 7a5 5 0 100 10 5 5 0 000-10zm0-5a1 1 0 011 1v2a1 1 0 11-2 0V3a1 1 0 011-1zm0 17a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1zM3.51 4.93a1 1 0 011.41 0l1.41 1.41A1 1 0 114.93 7.76L3.51 6.34a1 1 0 010-1.41zm14.16 14.16a1 1 0 011.41 0l1.41 1.41a1 1 0 11-1.41 1.41l-1.41-1.41a1 1 0 010-1.41zM2 12a1 1 0 011-1h2a1 1 0 110 2H3a1 1 0 01-1-1zm17 0a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zM4.93 19.07a1 1 0 010-1.41l1.41-1.41a1 1 0 111.41 1.41l-1.41 1.41a1 1 0 01-1.41 0zM18.09 6.34l1.41-1.41a1 1 0 111.41 1.41l-1.41 1.42a1 1 0 11-1.41-1.42z"/></svg>
-    </button>
-  </div>
-</header>
-
+<a href="index.html" class="icon-btn" title="Menu utama" aria-label="Kembali ke menu utama"><svg viewBox="0 0 24 24" width="20" height="20"><path d="m15 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+<div class="brand"><span class="brand-eyebrow">Meeting bulanan</span><h1 class="brand-title">Presen<span class="accent">tasi</span></h1></div>
+<div class="actions">
+<button id="btn-fullscreen" class="icon-btn" title="Layar penuh (F)" aria-label="Layar penuh"><svg id="fs-enter" viewBox="0 0 24 24" width="19" height="19"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><svg id="fs-exit" viewBox="0 0 24 24" width="19" height="19" style="display:none"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<button id="btn-theme-toggle" class="icon-btn" title="Ganti tema" aria-label="Ganti tema"><svg id="theme-icon-moon" viewBox="0 0 24 24" width="19" height="19"><path fill="currentColor" d="M12.3 2a9.5 9.5 0 108.7 13.6A8 8 0 0112.3 2z"/></svg><svg id="theme-icon-sun" viewBox="0 0 24 24" width="19" height="19" style="display:none"><path fill="currentColor" d="M12 7a5 5 0 100 10 5 5 0 000-10zm0-5a1 1 0 011 1v2a1 1 0 11-2 0V3a1 1 0 011-1zm0 17a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1zM3.51 4.93a1 1 0 011.41 0l1.41 1.41A1 1 0 114.93 7.76L3.51 6.34a1 1 0 010-1.41zm14.16 14.16a1 1 0 011.41 0l1.41 1.41a1 1 0 11-1.41 1.41l-1.41-1.41a1 1 0 010-1.41zM2 12a1 1 0 011-1h2a1 1 0 110 2H3a1 1 0 01-1-1zm17 0a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zM4.93 19.07a1 1 0 010-1.41l1.41-1.41a1 1 0 111.41 1.41l-1.41 1.41a1 1 0 01-1.41 0zM18.09 6.34l1.41-1.41a1 1 0 111.41 1.41l-1.41 1.42a1 1 0 11-1.41-1.42z"/></svg></button>
+</div></header>
 <nav class="tabs" role="tablist" aria-label="Materi presentasi">
-  <button class="tab" role="tab" id="tab-palet" data-tab="palet" aria-controls="pane-palet" aria-selected="true">
-    <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M3 14h18v2H3v-2zm1-3l2-6h12l2 6H4zm-1 7h18v2H3v-2z"/></svg>
-    Ringkasan Palet
-  </button>
-  <button class="tab" role="tab" id="tab-memo" data-tab="memo" aria-controls="pane-memo" aria-selected="false" tabindex="-1">
-    <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M5 3h14a1 1 0 011 1v16l-4-2-3 2-3-2-3 2-3-2V4a1 1 0 011-1zm2 5h10V6H7v2zm0 4h10v-2H7v2zm0 4h6v-2H7v2z"/></svg>
-    Ringkasan Memo
-  </button>
-  <span class="tab-hint"><kbd>1</kbd> <kbd>2</kbd> pindah tab &nbsp;·&nbsp; <kbd>F</kbd> layar penuh</span>
+<button class="tab" role="tab" id="tab-palet" data-tab="palet" aria-controls="pane-palet" aria-selected="true"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M3 14h18v2H3v-2zm1-3 2-6h12l2 6H4zm-1 7h18v2H3v-2z"/></svg>Ringkasan Palet</button>
+<button class="tab" role="tab" id="tab-memo" data-tab="memo" aria-controls="pane-memo" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M5 3h14a1 1 0 011 1v16l-4-2-3 2-3-2-3 2-3-2V4a1 1 0 011-1zm2 5h10V6H7v2zm0 4h10v-2H7v2zm0 4h6v-2H7v2z"/></svg>Ringkasan Memo</button>
+<button class="tab" role="tab" id="tab-sob" data-tab="sob" aria-controls="pane-sob" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 7h18v12H3zM7 7V4h10v3M3 12h18M8 15h3m2 0h3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/></svg>Ringkasan SOB</button>
+<span class="tab-hint"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> pindah tab &nbsp;·&nbsp; <kbd>F</kbd> layar penuh</span>
 </nav>
-
 <main class="stage">
-  <section class="pane active" id="pane-palet" role="tabpanel" aria-labelledby="tab-palet">
-    <div class="pane-loading"><div class="spinner"></div>Memuat ringkasan palet…</div>
-    <iframe data-src="ringkasan-palet.html" title="Ringkasan Palet" loading="lazy"></iframe>
-    <a class="pane-fallback" href="ringkasan-palet.html" target="_blank" rel="noopener">Buka di tab baru</a>
-  </section>
-
-  <section class="pane" id="pane-memo" role="tabpanel" aria-labelledby="tab-memo">
-    <div class="pane-loading"><div class="spinner"></div>Memuat ringkasan memo…</div>
-    <iframe data-src="ringkasan-memo.html" title="Ringkasan Memo" loading="lazy"></iframe>
-    <a class="pane-fallback" href="ringkasan-memo.html" target="_blank" rel="noopener">Buka di tab baru</a>
-  </section>
+<section class="pane active" id="pane-palet" role="tabpanel" aria-labelledby="tab-palet"><div class="pane-loading"><div class="spinner"></div>Memuat ringkasan palet…</div><iframe data-src="ringkasan-palet.html" title="Ringkasan Palet" loading="lazy"></iframe><a class="pane-fallback" href="ringkasan-palet.html" target="_blank" rel="noopener">Buka di tab baru</a></section>
+<section class="pane" id="pane-memo" role="tabpanel" aria-labelledby="tab-memo"><div class="pane-loading"><div class="spinner"></div>Memuat ringkasan memo…</div><iframe data-src="ringkasan-memo.html" title="Ringkasan Memo" loading="lazy"></iframe><a class="pane-fallback" href="ringkasan-memo.html" target="_blank" rel="noopener">Buka di tab baru</a></section>
+<section class="pane" id="pane-sob" role="tabpanel" aria-labelledby="tab-sob"><div class="pane-loading"><div class="spinner"></div>Memuat ringkasan SOB…</div><iframe data-src="ringkasan-sob.html" title="Ringkasan SOB" loading="lazy"></iframe><a class="pane-fallback" href="ringkasan-sob.html" target="_blank" rel="noopener">Buka di tab baru</a></section>
 </main>
-
 <script>
-(function(){
-  var tabs  = Array.prototype.slice.call(document.querySelectorAll('.tab'));
-  var panes = { palet: document.getElementById('pane-palet'), memo: document.getElementById('pane-memo') };
-  var order = ['palet','memo'];
-
-  /* ---------- Tema (disinkronkan dengan menu utama) ---------- */
-  function getTheme(){ return document.documentElement.getAttribute('data-theme') || 'dark'; }
-  function pushThemeToFrames(theme){
-    document.querySelectorAll('iframe').forEach(function(f){
-      try{ f.contentDocument.documentElement.setAttribute('data-theme', theme); }catch(e){}
-    });
-  }
-  function applyTheme(theme){
-    document.documentElement.setAttribute('data-theme', theme);
-    try{ localStorage.setItem('stockopname.theme', theme); }catch(e){}
-    document.getElementById('theme-icon-sun').style.display  = theme === 'dark' ? '' : 'none';
-    document.getElementById('theme-icon-moon').style.display = theme === 'dark' ? 'none' : '';
-    var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'dark' ? '#12161B' : '#F3F4F6');
-    pushThemeToFrames(theme);
-  }
-  applyTheme(getTheme());
-  document.getElementById('btn-theme-toggle').addEventListener('click', function(){
-    applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
-  });
-
-  /* ---------- Muat iframe sekali saja, saat tab pertama kali dibuka ---------- */
-  function loadPane(key){
-    var pane = panes[key];
-    var frame = pane.querySelector('iframe');
-    if (frame.getAttribute('src')) return;
-    var loader = pane.querySelector('.pane-loading');
-    frame.addEventListener('load', function(){
-      loader.classList.add('done');
-      pushThemeToFrames(getTheme());
-    });
-    frame.setAttribute('src', frame.getAttribute('data-src'));
-  }
-
-  /* ---------- Pindah tab ---------- */
-  function showTab(key, opts){
-    if (!panes[key]) key = 'palet';
-    tabs.forEach(function(t){
-      var on = t.dataset.tab === key;
-      t.setAttribute('aria-selected', on ? 'true' : 'false');
-      t.tabIndex = on ? 0 : -1;
-    });
-    order.forEach(function(k){ panes[k].classList.toggle('active', k === key); });
-    loadPane(key);
-    if (!opts || !opts.silent) {
-      try{ history.replaceState(null, '', '#' + key); }catch(e){ location.hash = key; }
-    }
-  }
-
-  tabs.forEach(function(t){
-    t.addEventListener('click', function(){ showTab(t.dataset.tab); });
-    t.addEventListener('keydown', function(e){
-      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-      var i = order.indexOf(t.dataset.tab);
-      var next = order[(i + (e.key === 'ArrowRight' ? 1 : order.length - 1)) % order.length];
-      showTab(next);
-      document.getElementById('tab-' + next).focus();
-    });
-  });
-
-  /* ---------- Layar penuh untuk presentasi ---------- */
-  var fsEnter = document.getElementById('fs-enter');
-  var fsExit  = document.getElementById('fs-exit');
-  function inFullscreen(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
-  function toggleFullscreen(){
-    var el = document.documentElement;
-    if (!inFullscreen()) {
-      (el.requestFullscreen || el.webkitRequestFullscreen || function(){}).call(el);
-    } else {
-      (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
-    }
-  }
-  function syncFullscreenUI(){
-    var on = inFullscreen();
-    document.body.classList.toggle('is-fullscreen', on);
-    fsEnter.style.display = on ? 'none' : '';
-    fsExit.style.display  = on ? '' : 'none';
-  }
-  document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
-  document.addEventListener('fullscreenchange', syncFullscreenUI);
-  document.addEventListener('webkitfullscreenchange', syncFullscreenUI);
-
-  /* ---------- Pintasan keyboard ---------- */
-  function onKey(e){
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    var tag = (e.target && e.target.tagName || '').toLowerCase();
-    if (tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable)) return;
-    if (e.key === '1') showTab('palet');
-    else if (e.key === '2') showTab('memo');
-    else if (e.key === 'f' || e.key === 'F') toggleFullscreen();
-  }
-  document.addEventListener('keydown', onKey);
-  // Pintasan tetap jalan saat fokus berada di dalam iframe
-  document.querySelectorAll('iframe').forEach(function(f){
-    f.addEventListener('load', function(){
-      try{ f.contentDocument.addEventListener('keydown', onKey); }catch(e){}
-    });
-  });
-
-  /* ---------- Awal: buka tab sesuai hash (#palet / #memo) ---------- */
-  var initial = (location.hash || '').replace('#','');
-  showTab(panes[initial] ? initial : 'palet', { silent: true });
-  window.addEventListener('hashchange', function(){
-    var h = (location.hash || '').replace('#','');
-    if (panes[h]) showTab(h, { silent: true });
-  });
-
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function(){
-      navigator.serviceWorker.register('sw.js').catch(function(e){ console.warn('SW gagal:', e); });
-    });
-  }
+(()=>{
+const $=id=>document.getElementById(id),tabs=[...document.querySelectorAll('.tab')],panes=Object.fromEntries([...document.querySelectorAll('.pane')].map(p=>[p.id.slice(5),p])),order=tabs.map(t=>t.dataset.tab),frames=[...document.querySelectorAll('iframe')];
+const getTheme=()=>document.documentElement.dataset.theme||'dark';
+function pushTheme(theme){frames.forEach(f=>{if(!f.getAttribute('src'))return;try{let w=f.contentWindow;if(typeof w.applyTheme==='function')w.applyTheme(theme);else w.document.documentElement.dataset.theme=theme}catch(e){}})}
+function applyTheme(theme){document.documentElement.dataset.theme=theme;try{localStorage.setItem('stockopname.theme',theme)}catch(e){}$('theme-icon-sun').style.display=theme==='dark'?'':'none';$('theme-icon-moon').style.display=theme==='dark'?'none':'';document.querySelector('meta[name="theme-color"]').content=theme==='dark'?'#12161B':'#F3F4F6';pushTheme(theme)}
+function loadPane(key){let p=panes[key],f=p.querySelector('iframe');if(f.hasAttribute('src'))return;f.addEventListener('load',()=>{p.querySelector('.pane-loading').classList.add('done');pushTheme(getTheme())});f.src=f.dataset.src}
+function showTab(key,silent=false){if(!panes[key])key=order[0];tabs.forEach(t=>{let on=t.dataset.tab===key;t.setAttribute('aria-selected',String(on));t.tabIndex=on?0:-1});order.forEach(k=>panes[k].classList.toggle('active',k===key));loadPane(key);if(!silent){try{history.replaceState(null,'','#'+key)}catch(e){location.hash=key}}}
+const fullscreen=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+function toggleFullscreen(){let target=fullscreen()?document:document.documentElement,fn=fullscreen()?(document.exitFullscreen||document.webkitExitFullscreen):(target.requestFullscreen||target.webkitRequestFullscreen);if(fn)Promise.resolve(fn.call(target)).catch(()=>{})}
+function syncFullscreen(){let on=fullscreen();document.body.classList.toggle('is-fullscreen',on);$('fs-enter').style.display=on?'none':'';$('fs-exit').style.display=on?'':'none'}
+function onKey(e){if(e.ctrlKey||e.altKey||e.metaKey||e.repeat)return;let el=e.target,tag=(el&&el.tagName||'').toLowerCase();if(['input','textarea','select'].includes(tag)||(el&&el.isContentEditable))return;if(/^[1-3]$/.test(e.key))showTab(order[Number(e.key)-1]);else if(e.key.toLowerCase()==='f')toggleFullscreen()}
+tabs.forEach(t=>{t.addEventListener('click',()=>showTab(t.dataset.tab));t.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();let i=order.indexOf(t.dataset.tab),next=order[(i+(e.key==='ArrowRight'?1:order.length-1))%order.length];showTab(next);$('tab-'+next).focus()})});
+$('btn-theme-toggle').addEventListener('click',()=>applyTheme(getTheme()==='dark'?'light':'dark'));$('btn-fullscreen').addEventListener('click',toggleFullscreen);document.addEventListener('fullscreenchange',syncFullscreen);document.addEventListener('webkitfullscreenchange',syncFullscreen);document.addEventListener('keydown',onKey);
+frames.forEach(f=>f.addEventListener('load',()=>{try{f.contentDocument.addEventListener('keydown',onKey)}catch(e){}}));applyTheme(getTheme());showTab(location.hash.slice(1),true);window.addEventListener('hashchange',()=>{let key=location.hash.slice(1);if(panes[key])showTab(key,true)});
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW gagal:',e)));
 })();
 </script>
 </body>
