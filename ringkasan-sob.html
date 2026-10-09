@@ -1905,6 +1905,16 @@ html:not([data-theme="light"]) .kic{background:#232c52}
 .bar-track{display:inline-block;width:60px;height:6px;background:var(--grid);border-radius:4px;overflow:hidden;vertical-align:middle;margin-right:6px}.bar-fill{display:block;height:100%;background:var(--st-lunas)}
 .results{display:flex;flex-direction:column;gap:8px}.item-card{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:10px 14px}.item-card:hover{border-color:var(--primary)}
 .item-grid .k{display:block;font-family:var(--font-body)}.item-card .k{padding:0;border:0;background:none;display:block}
+/* detail item: tabel ringkas (judul di atas, data di bawah) */
+.results:has(.dt-items){display:block}
+.dt-items{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:11.5px;min-width:780px}
+.dt-items th{position:sticky;top:0;z-index:2;background:var(--surface-2);color:var(--muted);font:600 10.5px var(--font-body);text-transform:none;letter-spacing:0;text-align:left;padding:7px 6px;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dt-items td{padding:5px 6px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle;overflow:hidden;text-overflow:ellipsis}
+.dt-items tbody tr:hover td{background:var(--surface-2)}
+.dt-items .r{text-align:right;font-variant-numeric:tabular-nums}
+.dt-items .mono{font-family:var(--font-mono);font-size:10.5px;color:var(--muted)}
+.dt-items th:nth-child(1){width:92px}.dt-items th:nth-child(2){width:48px}.dt-items th:nth-child(5){width:108px}.dt-items th:nth-child(6){width:58px}.dt-items th:nth-child(7){width:62px}.dt-items th:nth-child(8){width:74px}.dt-items th:nth-child(9){width:34px}.dt-items th:nth-child(10){width:52px}.dt-items th:nth-child(11){width:62px}
+.dt-items .status-badge{padding:2px 8px;font-size:10px}
 /* pergerakan */
 .smg{flex:1;min-height:0;display:grid;grid-template-columns:60fr 40fr;grid-template-rows:1fr 1fr;gap:12px}.smg .big{grid-row:1/3}
 .chart-card{padding:12px 16px;display:flex;flex-direction:column;min-height:0;margin:0}.chart-card .chart-card-title{font:700 15px var(--font-display);text-transform:none;margin:0}.chart-card .chart-card-sub{font-size:11.5px;color:var(--muted);margin:2px 0 6px}
@@ -1935,7 +1945,7 @@ html:not([data-theme="light"]) .kic{background:#232c52}
 /* presentation */
 #pn{display:none;position:fixed;bottom:12px;right:18px;z-index:60;background:var(--navy);color:#fff;border-radius:999px;padding:4px;align-items:center;gap:4px;opacity:.85}#pn button{background:transparent;border:0;color:#fff;width:34px;height:30px;border-radius:50%;cursor:pointer;font-size:18px}#pn button:hover{background:rgba(255,255,255,.18)}#pn span{font-size:12px;font-weight:600;min-width:44px;text-align:center}
 body.pres #pn{display:flex}body.pres{font-size:16px}body.pres .topbar{padding:6px 22px}body.pres .brand .sub,body.pres .more,body.pres #btn-ai,body.pres .cutoff-badge{display:none}
-body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres #btn-reset-filter,body.pres .sum-filter-info,body.pres #btn-sm-table{display:none!important}
+body.pres #sm-more,body.pres .search-panel,body.pres #btn-reset-filter,body.pres .sum-filter-info,body.pres #btn-sm-table{display:none!important}
 @media(min-width:1000px){html,body{height:100%;overflow:hidden}body{display:flex;flex-direction:column}.main{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px 22px 14px}.pg{flex:1}body.pres .main{padding-bottom:52px}}
 @media(max-width:1500px){.brand .sub{display:none}}
 @media(max-width:1250px){.btn .tx{display:none}.btn{padding:0 11px}}
@@ -1983,7 +1993,7 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
 .empty-note{padding:26px;color:var(--muted);text-align:center}
 @media(max-width:999px){.pbar{flex-wrap:wrap}.paper{padding:14px}.pbar .src{display:none}}
 
-.dhb:has(#results-section:not(.hidden)){grid-template-columns:62fr 38fr}
+.dhb:has(#results-section:not(.hidden)){grid-template-columns:52fr 48fr}
 @media(max-width:1750px){.dhb .cq{display:none}}
 .barx div{overflow:hidden;padding:0 2px;white-space:nowrap}
 
@@ -2592,13 +2602,10 @@ function renderItems(scope){
   let list = scope;
   if (state.selected) list = scope.filter(r => nrm(r[state.selected.dim]) === state.selected.key);
   list = list.slice().sort((a,b) => b.kg - a.kg);
-  const cap = 150, shown = list.slice(0, cap);
+  const cap = 300, shown = list.slice(0, cap);
   $('results-count').textContent = fmtInt(list.length) + ' mc' + (list.length > cap ? ` · ${cap} teratas` : '') + ' · ' + fmtTon(list.reduce((a,r) => a + r.kg, 0)) + ' kg';
-  $('results').innerHTML = shown.length ? shown.map(r => `<div class="item-card"><div class="item-top"><span class="mono">${escapeHtml(r.so)} · MCS ${escapeHtml(r.mcs || '-')}</span><span class="status-badge sb-${AG[r.ag].k}">${r.um} bln</span></div>
-    <div class="item-model">${escapeHtml(r.model)}</div><div class="item-grid">
-    <div><span class="k">Customer</span><span class="v">${escapeHtml(r.customer)}</span></div><div><span class="k">Internal / Sales</span><span class="v">${escapeHtml(r.internal)} / ${escapeHtml(r.sales)}</span></div>
-    <div><span class="k">Qty</span><span class="v">${fmtInt(r.qty)} pcs</span></div><div><span class="k">Tonase</span><span class="v">${fmtNum(r.kg, 0)} kg</span></div></div>
-    <div class="item-meta">Masuk gudang ${escapeHtml(r.tgl || '-')} · Fit ${escapeHtml(r.fit || '-')} · Berat ${fmtNum(r.berat, 2)} kg</div></div>`).join('')
+  $('results').innerHTML = shown.length ? `<table class="dt-items"><thead><tr><th>SO</th><th>MCS</th><th>Model</th><th>Customer</th><th>Internal / Sales</th><th class="r">Qty (pcs)</th><th class="r">Tonase (kg)</th><th>Masuk Gudang</th><th>Fit</th><th class="r">Berat (kg)</th><th class="r">Umur</th></tr></thead><tbody>` +
+    shown.map(r => `<tr><td class="mono">${escapeHtml(r.so)}</td><td class="mono">${escapeHtml(r.mcs || '-')}</td><td class="tx" title="${escapeHtml(r.model)}">${escapeHtml(r.model)}</td><td class="tx" title="${escapeHtml(r.customer)}">${escapeHtml(r.customer)}</td><td class="tx" title="${escapeHtml(r.internal)} / ${escapeHtml(r.sales)}">${escapeHtml(r.internal)} / ${escapeHtml(r.sales)}</td><td class="r">${fmtInt(r.qty)}</td><td class="r"><b>${fmtNum(r.kg, 0)}</b></td><td>${escapeHtml(r.tgl || '-')}</td><td>${escapeHtml(r.fit || '-')}</td><td class="r">${fmtNum(r.berat, 2)}</td><td class="r"><span class="status-badge sb-${AG[r.ag].k}">${r.um} bln</span></td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty-note">Tidak ada item.</div>';
 }
 
