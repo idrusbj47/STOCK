@@ -1907,14 +1907,17 @@ html:not([data-theme="light"]) .kic{background:#232c52}
 .item-grid .k{display:block;font-family:var(--font-body)}.item-card .k{padding:0;border:0;background:none;display:block}
 /* detail item: tabel ringkas (judul di atas, data di bawah) */
 .results:has(.dt-items){display:block}
-.dt-items{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:11.5px;min-width:780px}
-.dt-items th{position:sticky;top:0;z-index:2;background:var(--surface-2);color:var(--muted);font:600 10.5px var(--font-body);text-transform:none;letter-spacing:0;text-align:left;padding:7px 6px;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dt-items td{padding:5px 6px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle;overflow:hidden;text-overflow:ellipsis}
+.dt-items{width:100%;table-layout:auto;border-collapse:separate;border-spacing:0;font-size:12px}
+.dt-items th{position:sticky;top:0;z-index:2;background:var(--surface-2);color:var(--muted);font:600 10.5px var(--font-body);text-transform:none;letter-spacing:0;text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);white-space:nowrap;line-height:1.25}
+.dt-items td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.35}
 .dt-items tbody tr:hover td{background:var(--surface-2)}
 .dt-items .r{text-align:right;font-variant-numeric:tabular-nums}
-.dt-items .mono{font-family:var(--font-mono);font-size:10.5px;color:var(--muted)}
-.dt-items th:nth-child(1){width:92px}.dt-items th:nth-child(2){width:48px}.dt-items th:nth-child(5){width:108px}.dt-items th:nth-child(6){width:58px}.dt-items th:nth-child(7){width:62px}.dt-items th:nth-child(8){width:74px}.dt-items th:nth-child(9){width:34px}.dt-items th:nth-child(10){width:52px}.dt-items th:nth-child(11){width:62px}
-.dt-items .status-badge{padding:2px 8px;font-size:10px}
+.dt-items .nw{white-space:nowrap}
+.dt-items .wr{white-space:normal;overflow-wrap:anywhere;min-width:120px}
+.dt-items .md{font-weight:600}
+.dt-items .sub{display:block;font-size:11px;color:var(--muted);font-weight:500}
+.dt-items .mono{font-family:var(--font-mono);font-size:11px}
+.dt-items .status-badge{padding:2px 8px;font-size:10px;white-space:nowrap}
 /* pergerakan */
 .smg{flex:1;min-height:0;display:grid;grid-template-columns:60fr 40fr;grid-template-rows:1fr 1fr;gap:12px}.smg .big{grid-row:1/3}
 .chart-card{padding:12px 16px;display:flex;flex-direction:column;min-height:0;margin:0}.chart-card .chart-card-title{font:700 15px var(--font-display);text-transform:none;margin:0}.chart-card .chart-card-sub{font-size:11.5px;color:var(--muted);margin:2px 0 6px}
@@ -2604,8 +2607,8 @@ function renderItems(scope){
   list = list.slice().sort((a,b) => b.kg - a.kg);
   const cap = 300, shown = list.slice(0, cap);
   $('results-count').textContent = fmtInt(list.length) + ' mc' + (list.length > cap ? ` · ${cap} teratas` : '') + ' · ' + fmtTon(list.reduce((a,r) => a + r.kg, 0)) + ' kg';
-  $('results').innerHTML = shown.length ? `<table class="dt-items"><thead><tr><th>SO</th><th>MCS</th><th>Model</th><th>Customer</th><th>Internal / Sales</th><th class="r">Qty (pcs)</th><th class="r">Tonase (kg)</th><th>Masuk Gudang</th><th>Fit</th><th class="r">Berat (kg)</th><th class="r">Umur</th></tr></thead><tbody>` +
-    shown.map(r => `<tr><td class="mono">${escapeHtml(r.so)}</td><td class="mono">${escapeHtml(r.mcs || '-')}</td><td class="tx" title="${escapeHtml(r.model)}">${escapeHtml(r.model)}</td><td class="tx" title="${escapeHtml(r.customer)}">${escapeHtml(r.customer)}</td><td class="tx" title="${escapeHtml(r.internal)} / ${escapeHtml(r.sales)}">${escapeHtml(r.internal)} / ${escapeHtml(r.sales)}</td><td class="r">${fmtInt(r.qty)}</td><td class="r"><b>${fmtNum(r.kg, 0)}</b></td><td>${escapeHtml(r.tgl || '-')}</td><td>${escapeHtml(r.fit || '-')}</td><td class="r">${fmtNum(r.berat, 2)}</td><td class="r"><span class="status-badge sb-${AG[r.ag].k}">${r.um} bln</span></td></tr>`).join('') + '</tbody></table>'
+  $('results').innerHTML = shown.length ? `<table class="dt-items"><thead><tr><th>SO<br>MCS</th><th>Model</th><th>Customer</th><th>Internal<br>Sales</th><th class="r">Qty (pcs)<br>Berat (kg)</th><th class="r">Tonase (kg)</th><th>Masuk Gudang<br>Fit</th><th class="r">Umur</th></tr></thead><tbody>` +
+    shown.map(r => `<tr><td class="nw"><span class="mono">${escapeHtml(r.so)}</span><span class="sub mono">MCS ${escapeHtml(r.mcs || '-')}</span></td><td class="wr md">${escapeHtml(r.model)}</td><td class="wr">${escapeHtml(r.customer)}</td><td class="nw">${escapeHtml(r.internal)}<span class="sub">${escapeHtml(r.sales)}</span></td><td class="r nw">${fmtInt(r.qty)}<span class="sub">${fmtNum(r.berat, 2)} kg</span></td><td class="r nw"><b>${fmtNum(r.kg, 0)}</b></td><td class="nw">${escapeHtml(r.tgl || '-')}<span class="sub">Fit ${escapeHtml(r.fit || '-')}</span></td><td class="r nw"><span class="status-badge sb-${AG[r.ag].k}">${r.um} bln</span></td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty-note">Tidak ada item.</div>';
 }
 
