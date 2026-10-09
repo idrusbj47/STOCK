@@ -1854,6 +1854,7 @@ html:not([data-theme="light"]) .btn.pri,html:not([data-theme="light"]) .btn.ai{b
 .menu button,.menu a{all:unset;box-sizing:border-box;display:flex!important;align-items:center;gap:10px;width:100%;height:36px;padding:0 12px;border-radius:8px;font:600 13px var(--font-body);color:var(--text);cursor:pointer;background:none!important;box-shadow:none!important;position:static!important}
 .menu button:hover,.menu a:hover{background:var(--surface-2)!important}.menu svg{width:17px;height:17px;flex:none}
 .menu .sep{height:1px;background:var(--border);margin:4px 2px}
+.menu .ai.is-success{color:var(--st-lunas)}
 /* layout */
 .main{max-width:none;margin:0;padding:14px 22px 20px}
 .pg{display:flex;flex-direction:column;gap:12px;min-height:0}.pg.hidden{display:none!important}.pg:not(.hidden){animation:fade .22s ease-out}
@@ -1967,6 +1968,10 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
 .paper .pr-page{padding:0 0 18px;margin-bottom:18px;border-bottom:2px dashed #dcdfe6}.paper .pr-page:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
 .pr-table td.num,.pr-table th.num{text-align:right;font-variant-numeric:tabular-nums}
 .pr-table tfoot td{font-weight:700;background:#EEF0F3}
+.pr-table th.sk{cursor:pointer;user-select:none}.pr-table th.sk:hover{background:#E1E5EB}
+.pr-table th .si{display:inline-block;min-width:12px;margin-left:3px;color:#98A2B3;font-size:8px}.pr-table th.act .si{color:#1e2a5a}
+.pr-table td.mcl{font-family:'JetBrains Mono',monospace;font-size:9px;line-height:1.4;word-break:break-word;min-width:150px;max-width:300px}.pr-table td.mcl i{font-style:normal;color:#667085}
+#print-area .pr-table th .si{display:none}#print-area .pr-table th.sk{cursor:auto}
 .pr-note{font-size:10.5px;color:#475467;line-height:1.55;margin-top:8px}
 .pr-badge.baru{background:#E4F5EE;color:#12996B}.pr-badge.normal{background:#E3ECFD;color:#2563EB}.pr-badge.lama{background:#FEF3E2;color:#D97706}.pr-badge.mati{background:#FDE8E8;color:#DC2626}
 .rp-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:none}
@@ -2001,21 +2006,17 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
   </div>
   <nav class="view-tabs" id="view-tabs">
     <button data-view="overview" class="active">Overview</button>
-    <button data-view="detail">Rincian</button>
     <button data-view="move">Pergerakan</button>
+    <button data-view="detail">Detail</button>
     <button data-view="report">Laporan</button>
   </nav>
   <div class="ctl">
     <span id="cutoff-badge" class="cutoff-badge hidden"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Periode SOB: <b id="cutoff-value">—</b></span></span>
     <button class="btn" id="btn-pres" title="Mode presentasi (fullscreen)"><svg class="i" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><span class="tx">Presentasi</span></button>
-    <button class="btn ai" id="btn-ai" title="Salin data dashboard sebagai prompt analisa AI">
-      <svg class="i ai-icon-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
-      <svg class="i ai-icon-check hidden" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>
-      <span id="btn-ai-label" class="tx">Analisa AI</span>
-    </button>
     <div class="more" id="more">
       <button class="btn" id="btn-more" aria-label="Aksi lainnya"><svg class="i" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></button>
       <div class="menu fab-row">
+        <button id="btn-ai" class="ai" title="Salin data dashboard sebagai prompt analisa AI"><svg class="i ai-icon-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><svg class="i ai-icon-check hidden" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg><span id="btn-ai-label">Analisa AI</span></button>
         <button id="btn-screenshot" class="fab-ss"><svg class="i" viewBox="0 0 24 24"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>Screenshot</button>
         <button id="btn-print" class="fab-print"><svg class="i" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>Cetak Laporan</button>
         <button id="btn-download" class="fab-excel"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Export Excel</button>
@@ -2051,7 +2052,7 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
   <div id="dt-section" class="pg hidden">
     <div class="dh1">
       <div class="dim-switch" id="dim-switch"><button data-dim="internal" class="active">Internal</button><button data-dim="sales">Sales</button><button data-dim="customer">Customer</button></div>
-      <div class="search-panel"><input type="text" id="search-input" placeholder="Cari customer, model, SO, MCS, internal, sales..." /><button class="btn-clear" id="btn-clear-search">✕</button></div>
+      <div class="search-panel"><input type="text" id="search-input" placeholder="Cari customer, model, SO, MCS, umur (mis. 24 bln)..." /><button class="btn-clear" id="btn-clear-search">✕</button></div>
       <div class="selected-chip" id="selected-chip">Menampilkan: <b id="selected-chip-name"></b> <button id="btn-clear-selected" title="Hapus filter">✕</button></div>
       <button class="btn sm2" id="btn-reset-filter" style="margin-left:auto">Reset Filter</button>
     </div>
@@ -2088,7 +2089,7 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
     </div>
     <div id="mv-more" style="display:none;flex:0 0 42%;min-height:0;overflow:auto;flex-direction:column;gap:12px">
       <div class="section-title" style="margin:0">Ringkasan per Periode</div>
-      <div class="rank-table-wrap" style="overflow:auto"><table class="rank-table"><thead><tr><th>Periode</th><th>MC</th><th>Customer</th><th>Qty (pcs)</th><th>Tonase (kg)</th><th>Δ Tonase</th><th>Umur Rata-rata</th><th>&gt; 3 bln (kg)</th><th>% &gt; 3 bln</th><th>Kirim (kg)</th><th>% Kirim</th></tr></thead><tbody id="mv-tbody1"></tbody></table></div>
+      <div class="rank-table-wrap" style="overflow:auto"><table class="rank-table"><thead><tr><th>Periode</th><th title="Total MC">Σ MC</th><th>Customer</th><th>Qty (pcs)</th><th>Tonase (kg)</th><th>Δ Tonase</th><th>Umur Rata-rata</th><th>&gt; 3 bln (kg)</th><th>% &gt; 3 bln</th><th>Kirim (kg)</th><th>% Kirim</th></tr></thead><tbody id="mv-tbody1"></tbody></table></div>
       <div class="section-title" style="margin:0">Perubahan per Internal <small id="mv-cnt"></small></div>
       <div class="rank-table-wrap" style="overflow:auto"><table class="rank-table"><thead><tr><th>Internal</th><th>Tonase Awal (kg)</th><th>Tonase Akhir (kg)</th><th>Δ (kg)</th><th>Δ %</th><th>&gt; 3 bln Akhir (kg)</th></tr></thead><tbody id="mv-tbody2"></tbody></table></div>
     </div>
@@ -2454,7 +2455,7 @@ async function loadData(){
 }
 
 /* ================= NAV / RENDER ROUTER ================= */
-const PAGES = ['overview','detail','move','report'];
+const PAGES = ['overview','move','detail','report'];
 const PAGE_ID = { overview:'ov-section', detail:'dt-section', move:'mv-section', report:'rp-section' };
 function renderAll(){
   const P = cur(); if (!P) return;
@@ -2533,11 +2534,22 @@ function buildInsights(P, pv){
 
 /* ================= 2. RINCIAN ================= */
 const DIM_LABEL = { internal:'Internal', sales:'Sales', customer:'Customer' };
-function matches(r, q){
-  if (!q) return true; q = q.toLowerCase();
-  return (r.customer + ' ' + r.model + ' ' + r.so + ' ' + r.mcs + ' ' + r.internal + ' ' + r.sales).toLowerCase().indexOf(q) >= 0;
+/* Pencarian umur: "24 bln" / "24 bulan" / "umur 24" = umur tepat 24 bln; "4-6 bln" = rentang; ">6 bln", ">=4 bln", "<3 bln" = pembanding.
+   Bagian teks lain di kotak cari tetap dicari seperti biasa (customer, model, SO, MCS, internal, sales). */
+const AGE_RE = /(?:umur\s*(>=|<=|>|<)?\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?(?:\s*(?:bln|bulan)\b)?)|(?:(>=|<=|>|<)?\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?\s*(?:bln|bulan)\b)/i;
+function mkMatcher(q){
+  if (!q) return () => true;
+  q = q.toLowerCase(); let agePred = null;
+  const m = q.match(AGE_RE);
+  if (m){
+    const op = m[1] || m[4] || '', a = +(m[2] || m[5]), b = m[3] || m[6] ? +(m[3] || m[6]) : null;
+    agePred = b != null ? (u => u >= Math.min(a,b) && u <= Math.max(a,b)) : op === '>' ? (u => u > a) : op === '>=' ? (u => u >= a) : op === '<' ? (u => u < a) : op === '<=' ? (u => u <= a) : (u => u === a);
+    q = (q.slice(0, m.index) + ' ' + q.slice(m.index + m[0].length)).replace(/\s+/g, ' ').trim();
+  }
+  return r => (!agePred || agePred(r.um)) && (!q || (r.customer + ' ' + r.model + ' ' + r.so + ' ' + r.mcs + ' ' + r.internal + ' ' + r.sales).toLowerCase().indexOf(q) >= 0);
 }
-function dtScope(P){ return P.recs.filter(r => (state.ag == null || r.ag === state.ag) && matches(r, state.search)); }
+function matches(r, q){ return mkMatcher(q)(r); }
+function dtScope(P){ const mt = mkMatcher(state.search); return P.recs.filter(r => (state.ag == null || r.ag === state.ag) && mt(r)); }
 function renderDetail(){
   const P = cur(), prop = state.dim, scope = dtScope(P);
   document.querySelectorAll('#dim-switch button').forEach(b => b.classList.toggle('active', b.dataset.dim === prop));
@@ -2557,7 +2569,7 @@ function renderDetail(){
   $('rank-title').textContent = 'Stok per ' + DIM_LABEL[prop];
   $('rank-count').textContent = fmtInt(rows.length) + ' ' + DIM_LABEL[prop].toLowerCase();
   const th = (key, label, x) => `<th data-sort="${key}" class="${x || ''} ${sk === key ? (sd > 0 ? 'asc' : 'desc') : ''}">${label}</th>`;
-  $('rank-thead').innerHTML = '<tr>' + th('name', DIM_LABEL[prop]) + th('n','MC') + th('qty','Qty','cq') + th('kg','Tonase (kg)') +
+  $('rank-thead').innerHTML = '<tr>' + th('name', DIM_LABEL[prop]) + th('n','Σ MC') + th('qty','Qty','cq') + th('kg','Tonase (kg)') +
     AG.map((a,i) => `<th data-sort="g${i}" class="${sk === 'g'+i ? (sd > 0 ? 'asc' : 'desc') : ''}">${a.l}</th>`).join('') + th('slowPct','% &gt; 3 bln') + th('age','Umur Rata²','cq') + th('kirim','Kirim (kg)') + th('kPct','% Kirim') + '</tr>';
   const tb = $('rank-tbody');
   const mx = rows.reduce((a,o) => Math.max(a, o.kg), 0) || 1;
@@ -2642,9 +2654,25 @@ function internalDelta(A, B){
 
 /* ================= 4. LAPORAN (referensi laporan SOB) ================= */
 const PR_CLS = ['lunas','siap','kurang','kosong'];
-function repTable(head, rows, foot, numFrom){
-  const nf = numFrom == null ? 1 : numFrom;
-  return `<table class="pr-table"><thead><tr>${head.map((h,i) => `<th class="${i >= nf ? 'num' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c,i) => `<td class="${i >= nf ? 'num' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody>${foot ? `<tfoot><tr>${foot.map((c,i) => `<td class="${i >= nf ? 'num' : ''}">${c}</td>`).join('')}</tr></tfoot>` : ''}</table>`;
+/* sort A-Z / Z-A untuk tabel C–E laporan (klik judul kolom: urut naik, klik lagi: urut turun; # = urutan asli) */
+const RPS = {};
+function rpSortRows(id, items, keys){
+  const st = RPS[id]; if (!st || !keys[st.i]) return items; const k = keys[st.i];
+  return items.slice().sort((a,b) => { const x = k(a), y = k(b);
+    const c = (typeof x === 'string' || typeof y === 'string') ? String(x).localeCompare(String(y), 'id', { numeric:true, sensitivity:'base' }) : x - y;
+    return c * st.d; });
+}
+function rpSort(id, i){
+  const st = RPS[id]; RPS[id] = (st && st.i === i) ? { i, d: -st.d } : { i, d: 1 };
+  const sc = $('rp-section'), top = sc.scrollTop; renderReport(); sc.scrollTop = top;
+}
+/* opts: { sort:'C'|'D'|'E' (aktifkan sort), left:[indeks kolom rata kiri] } */
+function repTable(head, rows, foot, numFrom, opts){
+  const nf = numFrom == null ? 1 : numFrom, o = opts || {}, left = o.left || [], sid = o.sort;
+  const isNum = i => i >= nf && left.indexOf(i) < 0;
+  const hc = (h,i) => { const st = sid && RPS[sid], on = st && st.i === i, ttl = /^Σ MC/.test(h) ? 'Total MC' : '';
+    return `<th class="${isNum(i) ? 'num' : ''}${sid ? ' sk' : ''}${on ? ' act' : ''}"${sid ? ` onclick="rpSort('${sid}',${i})"` : ''}${sid || ttl ? ` title="${sid ? 'Klik untuk mengurutkan (A–Z / Z–A)' : ttl}"` : ''}>${h}${sid ? `<span class="si">${on ? (st.d > 0 ? '▲' : '▼') : '↕'}</span>` : ''}</th>`; };
+  return `<table class="pr-table"><thead><tr>${head.map(hc).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c,i) => `<td class="${isNum(i) ? 'num' : ''}${left.indexOf(i) >= 0 && o.mcCol === i ? ' mcl' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody>${foot ? `<tfoot><tr>${foot.map((c,i) => `<td class="${isNum(i) ? 'num' : ''}">${c}</td>`).join('')}</tr></tfoot>` : ''}</table>`;
 }
 function buildReportHTML(P){
   const pv = prevOf(P), C = P.c, V = pv && pv.c, now = new Date();
@@ -2656,20 +2684,21 @@ function buildReportHTML(P){
   const sumBar = `<div class="pr-tonase"><span>Total stok SOB <b>${fmtTon(C.kg)} kg</b> · ${fmtInt(C.n)} mc · ${fmtInt(C.cusN)} customer · ${fmtInt(C.qty)} pcs</span><span>Umur rata-rata <b>${fmtNum(C.age)} bln</b> · > 3 bln <b>${fmtPct(C.slowPct)}</b></span><span>Kirim <b>${fmtTon(P.kirimKg)} kg</b> (${fmtPct(pctOf(P.kirimKg, C.kg),0)})</span></div>`;
   /* A. referensi bulanan */
   const Ps = state.periods;
-  const A = repTable(['Periode','MC','Customer','Qty (pcs)','Tonase (kg)','Δ Tonase (kg)','Umur Rata² (bln)','> 3 bln (kg)','% > 3 bln','Dead > 6 bln (kg)','Kirim (kg)','% Kirim'],
+  const A = repTable(['Periode','Σ MC','Customer','Qty (pcs)','Tonase (kg)','Δ Tonase (kg)','Umur Rata² (bln)','> 3 bln (kg)','% > 3 bln','Dead > 6 bln (kg)','Kirim (kg)','% Kirim'],
     Ps.map((p,i) => { const d = i ? p.c.kg - Ps[i-1].c.kg : null;
       return [`<b>${escapeHtml(p.key)}</b>${p === P ? ' ◀' : ''}`, fmtInt(p.c.n), fmtInt(p.c.cusN), fmtInt(p.c.qty), fmtTon(p.c.kg), d == null ? '–' : sgn(d)+fmtTon(Math.abs(d)), fmtNum(p.c.age), fmtTon(p.c.slow), fmtPct(p.c.slowPct), fmtTon(p.c.g[3].kg), fmtTon(p.kirimKg), fmtPct(pctOf(p.kirimKg, p.c.kg))]; }));
   /* B. komposisi umur */
   const bk = [[0,0,'0 bulan'],[1,1,'1 bulan'],[2,2,'2 bulan'],[3,3,'3 bulan'],[4,6,'4–6 bulan'],[7,12,'7–12 bulan'],[13,24,'13–24 bulan'],[25,999,'> 24 bulan']];
   const B = bk.map(([lo,hi,l]) => { const rs = P.recs.filter(r => r.um >= lo && r.um <= hi), c = calc(rs);
     return [l, `<span class="pr-badge ${['baru','normal','lama','mati'][agIdx(lo)]}">${AG[agIdx(lo)].l}</span>`, fmtInt(c.n), fmtInt(c.qty), fmtTon(c.kg), fmtPct(pctOf(c.kg, C.kg))]; });
-  const Bt = repTable(['Umur Stok','Kelompok','MC','Qty (pcs)','Tonase (kg)','% Tonase'], B, ['Total','',fmtInt(C.n),fmtInt(C.qty),fmtTon(C.kg),'100%'], 2);
+  const Bt = repTable(['Umur Stok','Kelompok','Σ MC','Qty (pcs)','Tonase (kg)','% Tonase'], B, ['Total','',fmtInt(C.n),fmtInt(C.qty),fmtTon(C.kg),'100%'], 2);
   /* C. per internal (internal tidak lagi punya data kiriman sendiri — kiriman kini direkap per sales, lihat bagian G) */
   const gi = groupBy(P.recs, 'internal').sort((a,b) => b.kg - a.kg);
   const T = gi.reduce((t,o) => { t.n += o.n; t.qty += o.qty; t.kg += o.kg; o.g.forEach((v,i) => t.g[i] += v); return t; }, { n:0, qty:0, kg:0, g:[0,0,0,0] });
-  const Ci = repTable(['Internal','MC','Qty (pcs)','Tonase (kg)','Baru (kg)','Normal (kg)','Lama (kg)','Dead (kg)','% > 3 bln','Umur Rata²'],
-    gi.map(o => [escapeHtml(o.name), fmtInt(o.n), fmtInt(o.qty), fmtTon(o.kg), fmtTon(o.g[0]), fmtTon(o.g[1]), fmtTon(o.g[2]), fmtTon(o.g[3]), o.kg > 0 ? fmtPct(o.slowPct,0) : '–', o.kg > 0 ? fmtNum(o.age) : '–']),
-    ['Total', fmtInt(T.n), fmtInt(T.qty), fmtTon(T.kg), fmtTon(T.g[0]), fmtTon(T.g[1]), fmtTon(T.g[2]), fmtTon(T.g[3]), fmtPct(pctOf(T.g[2]+T.g[3], T.kg),0), fmtNum(C.age)]);
+  const giS = rpSortRows('C', gi, [o => o.name, o => o.n, o => o.qty, o => o.kg, o => o.g[0], o => o.g[1], o => o.g[2], o => o.g[3], o => o.kg > 0 ? o.slowPct : -1, o => o.kg > 0 ? o.age : -1]);
+  const Ci = repTable(['Internal','Σ MC','Qty (pcs)','Tonase (kg)','Baru (kg)','Normal (kg)','Lama (kg)','Dead (kg)','% > 3 bln','Umur Rata²'],
+    giS.map(o => [escapeHtml(o.name), fmtInt(o.n), fmtInt(o.qty), fmtTon(o.kg), fmtTon(o.g[0]), fmtTon(o.g[1]), fmtTon(o.g[2]), fmtTon(o.g[3]), o.kg > 0 ? fmtPct(o.slowPct,0) : '–', o.kg > 0 ? fmtNum(o.age) : '–']),
+    ['Total', fmtInt(T.n), fmtInt(T.qty), fmtTon(T.kg), fmtTon(T.g[0]), fmtTon(T.g[1]), fmtTon(T.g[2]), fmtTon(T.g[3]), fmtPct(pctOf(T.g[2]+T.g[3], T.kg),0), fmtNum(C.age)], 1, { sort:'C' });
   /* G. rekap kiriman per sales per bulan (tahun berjalan periode ini) */
   const salesMonthRows = buildSalesKirimRows(P);
   const Gt = repTable(['Sales'].concat(MONTH_ID, ['Total (kg)']),
@@ -2678,18 +2707,25 @@ function buildReportHTML(P){
   const GtTarget = repTable(['Target Kirim/Bulan (kg)'].concat(MONTH_ID),
     [['Target'].concat(MONTH_NUM_LIST.map(m => fmtTon((state.kirimData.target && state.kirimData.target[m]) || 0)))], null, 1);
   /* D. top customer & E. dead stock */
-  const gc = groupBy(P.recs, 'customer').sort((a,b) => b.kg - a.kg).slice(0, 15);
-  const D = repTable(['#','Customer','MC','Qty (pcs)','Tonase (kg)','% Total','Umur Rata²','> 3 bln (kg)','Dead (kg)'],
-    gc.map((o,i) => [i+1, escapeHtml(o.name), fmtInt(o.n), fmtInt(o.qty), fmtTon(o.kg), fmtPct(pctOf(o.kg, C.kg)), fmtNum(o.age), fmtTon(o.slow), fmtTon(o.g[3])]), null, 2);
-  const dead = groupBy(P.recs.filter(r => r.ag >= 2), 'customer').sort((a,b) => b.slow - a.slow).slice(0, 15);
-  const E = repTable(['#','Customer','MC (> 3 bln)','Lama 4–6 (kg)','Dead > 6 (kg)','Total > 3 bln (kg)','Umur Tertua (bln)'],
-    dead.map((o,i) => [i+1, escapeHtml(o.name), fmtInt(o.gn[2] + o.gn[3]), fmtTon(o.g[2]), fmtTon(o.g[3]), fmtTon(o.slow), fmtInt(o.max)]), null, 2);
-  const Ek = groupBy(P.recs.filter(r => r.ag === 3), 'model').sort((a,b) => b.kg - a.kg).slice(0, 10);
-  const F = repTable(['#','Model (Dead Stock > 6 bln)','MC','Qty (pcs)','Tonase (kg)','Umur Tertua (bln)'],
-    Ek.map((o,i) => [i+1, escapeHtml(o.name), fmtInt(o.n), fmtInt(o.qty), fmtTon(o.kg), fmtInt(o.max)]), null, 2);
-  const note = `<div class="pr-note"><b>Catatan:</b> Sumber data sheet "STOCK GUDANG - SOB" (blok SOB ${escapeHtml(P.key)}). Tonase dalam Kg. Umur = lama stok sejak tanggal masuk gudang, dibulatkan sesuai kolom Umur pada sheet; umur rata-rata dibobot tonase. Kelompok umur: Baru 0–1 bln, Normal 2–3 bln, Lama 4–6 bln, Dead Stock &gt; 6 bln. Kirim = data dari sheet kiriman tersendiri (periode ${escapeHtml(P.kirimLabel || '-')}), direkap per Sales pada bagian G; realisasi kirim dihitung terhadap target kirim bulan berjalan. ${P.zeroN ? fmtInt(P.zeroN) + ' mc bertonase/qty 0 dan ' : ''}${fmtInt(P.dupN)} baris berpotensi duplikat tetap dihitung apa adanya.</div>`;
+  const gc = groupBy(P.recs, 'customer').sort((a,b) => b.kg - a.kg).slice(0, 15).map((o,i) => ({ o, rank: i+1 }));
+  const gcS = rpSortRows('D', gc, [x => x.rank, x => x.o.name, x => x.o.n, x => x.o.qty, x => x.o.kg, x => x.o.kg, x => x.o.age, x => x.o.slow, x => x.o.g[3]]);
+  const D = repTable(['#','Customer','Σ MC','Qty (pcs)','Tonase (kg)','% Total','Umur Rata²','> 3 bln (kg)','Dead (kg)'],
+    gcS.map(({o,rank}) => [rank, escapeHtml(o.name), fmtInt(o.n), fmtInt(o.qty), fmtTon(o.kg), fmtPct(pctOf(o.kg, C.kg)), fmtNum(o.age), fmtTon(o.slow), fmtTon(o.g[3])]), null, 2, { sort:'D' });
+  const dead = groupBy(P.recs.filter(r => r.ag >= 2), 'customer').sort((a,b) => b.slow - a.slow).slice(0, 15).map((o,i) => ({ o, rank: i+1 }));
+  const deadS = rpSortRows('E', dead, [x => x.rank, x => x.o.name, x => x.o.gn[2] + x.o.gn[3], x => x.o.g[2], x => x.o.g[3], x => x.o.slow, x => x.o.max]);
+  const E = repTable(['#','Customer','Σ MC (> 3 bln)','Lama 4–6 (kg)','Dead > 6 (kg)','Total > 3 bln (kg)','Umur Tertua (bln)'],
+    deadS.map(({o,rank}) => [rank, escapeHtml(o.name), fmtInt(o.gn[2] + o.gn[3]), fmtTon(o.g[2]), fmtTon(o.g[3]), fmtTon(o.slow), fmtInt(o.max)]), null, 2, { sort:'E' });
+  /* F. model dead stock + nomor master card per model */
+  const deadRecs = P.recs.filter(r => r.ag === 3), mcByModel = {};
+  deadRecs.forEach(r => { const k = nrm(r.model) || '(KOSONG)'; const v = String(r.mcs || '').trim(); if (v) (mcByModel[k] = mcByModel[k] || new Set()).add(v); });
+  const mcTxt = key => { const arr = Array.from(mcByModel[key] || []).sort((a,b) => String(a).localeCompare(String(b), 'id', { numeric:true })); if (!arr.length) return '–';
+    const MAXM = 12, shown = arr.slice(0, MAXM).join(', ');
+    return `<span title="${escapeHtml(arr.join(', '))}">${escapeHtml(shown)}${arr.length > MAXM ? ` <i>+${arr.length - MAXM} lagi</i>` : ''}</span>`; };
+  const Ek = groupBy(deadRecs, 'model').sort((a,b) => b.kg - a.kg).slice(0, 10);
+  const F = repTable(['#','Model (Dead Stock > 6 bln)','No Master Card','Σ MC','Qty (pcs)','Tonase (kg)','Umur Tertua (bln)'],
+    Ek.map((o,i) => [i+1, escapeHtml(o.name), mcTxt(o.key), fmtInt(o.n), fmtInt(o.qty), fmtTon(o.kg), fmtInt(o.max)]), null, 2, { left:[2], mcCol:2 });
   return `<div class="pr-page">${hdr('Ringkasan stock opname bulanan di gudang')}<div class="pr-kpi-grid">${kpi}</div>${sumBar}
-      <div class="pr-section-title">A. Referensi Ringkasan Bulanan</div>${A}<div class="pr-section-title">B. Komposisi Umur Stok — ${escapeHtml(P.key)}</div>${Bt}${note}<div class="pr-footer">Ringkasan SOB · ${escapeHtml(P.key)} · hal. 1</div></div>
+      <div class="pr-section-title">A. Referensi Ringkasan Bulanan</div>${A}<div class="pr-section-title">B. Komposisi Umur Stok — ${escapeHtml(P.key)}</div>${Bt}<div class="pr-footer">Ringkasan SOB · ${escapeHtml(P.key)} · hal. 1</div></div>
     <div class="pr-page">${hdr('Rekap per internal')}<div class="pr-section-title">C. Rekap Stok per Internal — ${escapeHtml(P.key)}</div>${Ci}<div class="pr-footer">Ringkasan SOB · ${escapeHtml(P.key)} · hal. 2</div></div>
     <div class="pr-page">${hdr('Customer terbesar &amp; stok slow-moving')}<div class="pr-section-title">D. 15 Customer dengan Tonase Stok Terbesar</div>${D}<div class="pr-section-title">E. 15 Customer dengan Stok Umur &gt; 3 Bulan Terbesar</div>${E}<div class="pr-section-title">F. 10 Model Dead Stock (&gt; 6 bulan) Terbesar</div>${F}<div class="pr-footer">Ringkasan SOB · ${escapeHtml(P.key)} · hal. 3</div></div>
     <div class="pr-page">${hdr('Rekap kiriman per sales')}<div class="pr-section-title">G. Rekap Kiriman per Sales per Bulan — Tahun ${P.y}</div>${GtTarget}${Gt}<div class="pr-footer">Ringkasan SOB · ${escapeHtml(P.key)} · hal. 4</div></div>`;
@@ -2711,16 +2747,16 @@ function downloadExcel(){
   if (typeof XLSX === 'undefined'){ showToast('Komponen Excel belum termuat, cek koneksi'); return; }
   const wb = XLSX.utils.book_new(), C = P.c, t = kg => Math.round(kg);
   const add = (name, aoa, widths) => { const ws = XLSX.utils.aoa_to_sheet(aoa); if (widths) ws['!cols'] = widths.map(w => ({ wch: w })); XLSX.utils.book_append_sheet(wb, ws, name.slice(0,31)); };
-  add('Ringkasan Bulanan', [['Periode','MC','Customer','Qty (pcs)','Tonase (kg)','Umur Rata-rata (bln)','> 3 bln (kg)','% > 3 bln','Dead > 6 bln (kg)','Kirim (label)','Kirim (kg)','Target Kirim (kg)','% Kirim vs Target']]
+  add('Ringkasan Bulanan', [['Periode','Σ MC','Customer','Qty (pcs)','Tonase (kg)','Umur Rata-rata (bln)','> 3 bln (kg)','% > 3 bln','Dead > 6 bln (kg)','Kirim (label)','Kirim (kg)','Target Kirim (kg)','% Kirim vs Target']]
     .concat(state.periods.map(p => [p.key, p.c.n, p.c.cusN, p.c.qty, t(p.c.kg), +p.c.age.toFixed(2), t(p.c.slow), +p.c.slowPct.toFixed(2), t(p.c.g[3].kg), p.kirimLabel, t(p.kirimKg), t(p.kirimTarget), +pctOf(p.kirimKg, p.kirimTarget).toFixed(2)])), [10,8,10,12,13,18,13,10,17,12,12,15,16]);
-  add('Umur ' + P.key, [['Umur Stok','Kelompok','MC','Qty (pcs)','Tonase (kg)','% Tonase']].concat(
+  add('Umur ' + P.key, [['Umur Stok','Kelompok','Σ MC','Qty (pcs)','Tonase (kg)','% Tonase']].concat(
     [[0,0,'0 bulan'],[1,1,'1 bulan'],[2,2,'2 bulan'],[3,3,'3 bulan'],[4,6,'4-6 bulan'],[7,12,'7-12 bulan'],[13,24,'13-24 bulan'],[25,999,'> 24 bulan']].map(([lo,hi,l]) => { const c = calc(P.recs.filter(r => r.um >= lo && r.um <= hi)); return [l, AG[agIdx(lo)].l, c.n, c.qty, t(c.kg), +pctOf(c.kg, C.kg).toFixed(2)]; })), [14,12,8,12,13,10]);
   /* Internal tidak lagi punya data kiriman sendiri (kiriman kini dari sheet terpisah, direkap per Sales). */
-  add('Per Internal ' + P.key, [['Internal','MC','Qty (pcs)','Tonase (kg)','Baru (kg)','Normal (kg)','Lama (kg)','Dead (kg)','% > 3 bln','Umur Rata-rata (bln)']].concat(
+  add('Per Internal ' + P.key, [['Internal','Σ MC','Qty (pcs)','Tonase (kg)','Baru (kg)','Normal (kg)','Lama (kg)','Dead (kg)','% > 3 bln','Umur Rata-rata (bln)']].concat(
     groupBy(P.recs, 'internal').sort((a,b) => b.kg - a.kg).map(o => [o.name, o.n, o.qty, t(o.kg), t(o.g[0]), t(o.g[1]), t(o.g[2]), t(o.g[3]), +o.slowPct.toFixed(2), +o.age.toFixed(2)])), [34,8,12,13,11,12,11,11,10,18]);
   [['sales','Sales'],['customer','Customer']].forEach(([prop, lbl]) => {
     const g = groupBy(P.recs, prop, P.kirim).sort((a,b) => b.kg - a.kg);
-    add('Per ' + lbl + ' ' + P.key, [[lbl,'MC','Qty (pcs)','Tonase (kg)','Baru (kg)','Normal (kg)','Lama (kg)','Dead (kg)','% > 3 bln','Umur Rata-rata (bln)','Kirim (kg)','% Kirim']].concat(
+    add('Per ' + lbl + ' ' + P.key, [[lbl,'Σ MC','Qty (pcs)','Tonase (kg)','Baru (kg)','Normal (kg)','Lama (kg)','Dead (kg)','% > 3 bln','Umur Rata-rata (bln)','Kirim (kg)','% Kirim']].concat(
       g.map(o => [o.name, o.n, o.qty, t(o.kg), t(o.g[0]), t(o.g[1]), t(o.g[2]), t(o.g[3]), +o.slowPct.toFixed(2), +o.age.toFixed(2), t(o.kirim), +o.kPct.toFixed(2)])), [34,8,12,13,11,12,11,11,10,18,11,9]);
   });
   /* Rekap kiriman per sales per bulan, dari sheet kiriman terpisah (tahun berjalan periode ini). */
