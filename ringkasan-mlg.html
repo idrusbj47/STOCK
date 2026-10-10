@@ -1959,6 +1959,25 @@ body.pres #sm-more,body.pres .sum-filter-info,body.pres #btn-sm-table{display:no
 .dhb .rank-table th,.dhb .rank-table td{padding:8px 7px}.dhb:has(#results-section:not(.hidden)) .rank-cell small{display:none}
 .dhb:has(#results-section:not(.hidden)) .bar-track{width:36px}
 .smg{grid-template-columns:60fr 40fr}@media(max-width:999px){.smg .chart-card{grid-column:auto!important;grid-row:auto!important}}
+
+/* tombol basis jam (pivot) dipertegas */
+.metric-seg{background:var(--surface);border:1.5px solid var(--border);padding:3px;gap:3px}
+.metric-seg button{color:var(--text);font-weight:700;opacity:.78;border:1.5px solid transparent}
+.metric-seg button:hover{opacity:1;background:var(--surface-2)}
+.metric-seg button.on,html[data-theme="light"] .metric-seg button.on{opacity:1;background:var(--navy);color:#fff;box-shadow:0 2px 6px rgba(30,42,90,.35)}
+html[data-theme="dark"] .metric-seg button.on{background:var(--primary);color:#0f1428;box-shadow:0 2px 8px rgba(139,125,240,.4)}
+/* insight bisa diklik */
+.it{cursor:pointer;border-radius:10px;transition:background .15s}.it:hover{background:var(--surface-2)}
+.it .go{margin-left:auto;align-self:center;color:var(--muted);font-size:18px;padding-right:4px}
+.dtl-table{width:100%;border-collapse:collapse;font-size:13px}.dtl-table th{text-align:left;font-size:11px;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg)}
+.dtl-table td{padding:8px;border-bottom:1px solid var(--grid)}.dtl-table .r{text-align:right}.dtl-table small{display:block;font:10.5px var(--font-mono);color:var(--muted)}
+
+/* titik pulse pada tombol terpilih */
+.seg button.on,.dim-switch button.active,.sf-seg button.on,.date-tab.active,.view-tabs button.active{display:inline-flex;align-items:center;gap:7px}
+.seg button.on::before,.dim-switch button.active::before,.sf-seg button.on::before,.date-tab.active::before,.view-tabs button.active::before{
+  content:"";flex:none;width:7px;height:7px;border-radius:50%;background:#22c55e;animation:selPulse 1.8s ease-out infinite}
+@keyframes selPulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55);opacity:1}70%{box-shadow:0 0 0 7px rgba(34,197,94,0);opacity:.9}100%{box-shadow:0 0 0 0 rgba(34,197,94,0);opacity:1}}
+@media (prefers-reduced-motion:reduce){.seg button.on::before,.dim-switch button.active::before,.sf-seg button.on::before,.date-tab.active::before,.view-tabs button.active::before{animation:none}}
 </style>
 <style>
 /* ===== RINGKASAN SOB: tambahan skin ===== */
@@ -2044,7 +2063,7 @@ body.pres #sm-more,body.pres .sum-filter-info,body.pres #btn-sm-table{display:no
 </header>
 
 <main class="main">
-  <div class="pbar" id="pbar"><span class="lbl">PERIODE LEMBUR</span><div class="date-tabs" id="period-tabs"></div><div class="seg metric-seg" id="metric-seg" title="Basis jam yang dipakai di seluruh halaman"><button data-m="mult" class="on" title="Kolom Overtime Multiplier">Jam Hitung</button><button data-m="dur" title="Kolom Overtime Duration">Durasi</button><button data-m="pay" title="Kolom Overtime Payment">Jam Bayar</button></div><span class="src" id="src-info"></span></div>
+  <div class="pbar" id="pbar"><span class="lbl">PERIODE LEMBUR</span><div class="date-tabs" id="period-tabs"></div><div class="seg metric-seg" id="metric-seg" title="Basis jam yang dipakai di seluruh halaman"><button data-m="mult" class="on" title="Kolom Overtime Multiplier">Jam Hitung</button><button data-m="dur" title="Kolom Overtime Duration">Durasi</button><button data-m="pay" title="Kolom Overtime Payment">Jam Bayar</button></div></div>
 
   <!-- 1 OVERVIEW -->
   <section id="ov-section" class="pg">
@@ -2123,6 +2142,9 @@ body.pres #sm-more,body.pres .sum-filter-info,body.pres #btn-sm-table{display:no
 <div id="pn"><button id="pn-prev" aria-label="Sebelumnya">‹</button><span id="pn-c">1 / 4</span><button id="pn-next" aria-label="Berikutnya">›</button></div>
 <div id="print-area"></div>
 
+<div id="ins-overlay" class="sheet-overlay"><div class="sheet" role="dialog" aria-modal="true"><div class="sheet-handle"></div>
+<div class="sheet-header"><div><div class="sheet-eyebrow" id="ins-eyebrow">INSIGHT</div><h2 class="sheet-title" id="ins-title"></h2></div><button class="icon-btn" id="btn-close-ins">✕</button></div>
+<div class="sheet-body" id="ins-body"></div></div></div>
 <div id="settings-overlay" class="sheet-overlay">
   <div class="sheet" role="dialog" aria-modal="true">
     <div class="sheet-handle"></div>
@@ -2412,7 +2434,6 @@ const PAGE_ID = { overview:'ov-section', detail:'dt-section', move:'mv-section',
 function renderAll(){
   const P = cur(); if (!P) return;
   $('cutoff-value').textContent = P.name; $('cutoff-badge').classList.remove('hidden');
-  $('src-info').textContent = (state.source === 'live' ? 'Live · ' : state.source === 'cache' ? 'Cache · ' : 'Snapshot · ') + (state.loadedAt ? state.loadedAt.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '');
   renderPeriodTabs(); syncMetricSeg(); killCharts();
   if (state.view === 'overview') renderOverview();
   else if (state.view === 'detail') renderDetail();
@@ -2460,7 +2481,8 @@ function renderOverview(){
     <div class="lgd">${state.areas.map((a,i) => `<span><i style="background:${areaVar(i)}"></i>${escapeHtml(a)}</span>`).join('')}<span style="margin-left:auto">Total ${fmtH(v)} jam</span></div>`;
   $('ov-comp').querySelectorAll('.barx div[data-ag]').forEach(c => c.addEventListener('click', () => { state.ag = +c.dataset.ag; state.selected = null; setView('detail'); }));
   drawDistChart(P, pv);
-  $('ov-ins').innerHTML = buildInsights(P, pv).map(([i,c,t,b,dd]) => `<div class="it"><div class="kic ${c}">${SV(IC[i])}</div><div><div class="t">${t}</div><div class="b">${b}</div><div class="d">${dd}</div></div></div>`).join('');
+  $('ov-ins').innerHTML = buildInsights(P, pv).map(([i,c,t,b,dd]) => `<div class="it" data-t="${escapeHtml(t)}"><div class="kic ${c}">${SV(IC[i])}</div><div><div class="t">${t}</div><div class="b">${b}</div><div class="d">${dd}</div></div><span class="go">›</span></div>`).join('');
+  $('ov-ins').querySelectorAll('.it').forEach(el => el.addEventListener('click', () => openInsight(el.dataset.t)));
 }
 function drawDistChart(P, pv){
   const c = colors(), cu = bucketDist(P), pr = pv ? bucketDist(pv) : null;
@@ -2487,9 +2509,6 @@ function buildInsights(P, pv){
   out.push(['warn','am','LEMBUR PANJANG (≥ 8 JAM)', `${fmtInt(C.long)} kejadian`, `${fmtInt(lg)} karyawan · ${fmtNum(pctOf(C.long, C.n),0)}% dari seluruh kejadian lembur`]);
   const noOt = tot - C.emp;
   out.push(['users','out','TANPA CATATAN LEMBUR', `${fmtInt(noOt)} karyawan`, `dari ${fmtInt(tot)} karyawan terdaftar tidak ada di laporan ${P.key} (cocok NIK)`]);
-  const notes = [P.outN ? `${fmtInt(P.outN)} baris bertanggal di luar ${P.name} dikeluarkan` : '', `cocok NIK: ${fmtInt(C.n)} dari ${fmtInt(P.rowsAll)} baris laporan (${fmtInt(C.emp)} karyawan gudang); ${fmtInt(P.unmIds.size)} NIK lain di luar daftar diabaikan`];
-  if (C.unk > 0) notes.push(`${fmtInt(C.unk)} baris bertanggal tak terbaca (###### — lebarkan kolom tanggal di sheet), total per karyawan tetap akurat`);
-  out.push(['doc', C.unk > 0 ? 'am' : 'bl', 'PENCOCOKAN DATA', C.unk > 0 ? 'Perlu dicek' : 'Sesuai', notes.filter(Boolean).join(' · ')]);
   return out;
 }
 
@@ -2551,6 +2570,39 @@ function renderItems(list){
     shown.map(r => `<tr><td class="nw"><span class="mono">${r.tgl ? escapeHtml(r.tgl) : '<span class="muted" title="Tanggal tampil ###### di sheet">tak terbaca</span>'}</span></td><td class="wr md">${escapeHtml(r.nama)}<span class="sub mono">${escapeHtml(r.nik)}</span></td><td class="wr">${escapeHtml(r.jabatan || '–')}<span class="sub">${escapeHtml(r.area)}</span></td><td class="r nw">${fmtH(r.dur)}</td><td class="r nw">${fmtH(r.pay)}</td><td class="r nw"><b>${fmtH(r.mult)}</b></td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty-note">Tidak ada data lembur.</div>';
 }
+
+
+/* ================= DETAIL INSIGHT (klik kartu) ================= */
+function openInsight(t){
+  const P = cur(); if (!P) return; const C = P.c, m = state.metric, M = MET(), emps = state.emps;
+  const info = e => emps.find(x => x.nik === e.nik) || {};
+  const nm = (n, nik) => `${escapeHtml(n)}<small>NIK ${escapeHtml(nik)}</small>`;
+  const table = (heads, rows) => rows.length ? `<table class="dtl-table"><thead><tr>${heads.map((h,i) => `<th class="${i >= heads.length - (heads.nr || 0) ? 'r' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c,i) => `<td class="${i >= heads.length - (heads.nr || 0) ? 'r' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '<div class="empty-note">Tidak ada data.</div>';
+  const perRows = list => list.map(e => { const x = info(e); return [nm(e.nama, x.nikRaw || e.nik), escapeHtml(x.area || '–'), fmtInt(e.n), '<b>' + fmtH(e[m]) + '</b>']; });
+  const perHead = ['Karyawan', 'Area', 'Kali', M.l + ' (jam)']; perHead.nr = 2;
+  const all = Array.from(C.per.values()).sort((a,b) => b[m] - a[m]);
+  let title = t, body = '', eb = P.name;
+  if (/^TOTAL/.test(t)){ title = 'Karyawan Lembur'; body = table(perHead, perRows(all)); }
+  else if (/^REALISASI/.test(t)){ title = 'Realisasi Target Jam'; body = `<p class="muted" style="margin:0 0 10px">Total ${fmtH(C[m])} jam dari target ${fmtH(P.target)} jam. Kontribusi per karyawan:</p>` + table(perHead, perRows(all)); }
+  else if (/^LEMBUR TERBANYAK/.test(t)){ title = '10 Lembur Terbanyak'; body = table(perHead, perRows(all.slice(0, 10))); }
+  else if (/^AREA TERBESAR/.test(t)){
+    const g = groupBy(P.recs, 'area', emps).sort((a,b) => val(b) - val(a))[0]; title = 'Area ' + (g ? g.name : '');
+    body = table(perHead, perRows(all.filter(e => info(e).area === (g && g.key))));
+  }
+  else if (/^LEMBUR PANJANG/.test(t)){
+    title = 'Lembur ≥ 8 Jam'; const hd = ['Tanggal', 'Karyawan', 'Area', 'Durasi (jam)']; hd.nr = 1;
+    body = table(hd, P.recs.filter(r => r.dur >= 8).sort((a,b) => b.dur - a.dur).map(r => [r.tgl ? escapeHtml(r.tgl) : '<span class="muted">tak terbaca</span>', nm(r.nama, r.nikRaw || r.nik), escapeHtml(r.area), '<b>' + fmtH(r.dur) + '</b>']));
+  }
+  else if (/^TANPA CATATAN/.test(t)){
+    const none = emps.filter(e => !C.per.has(e.nik)); title = 'Tanpa Catatan Lembur (' + fmtInt(none.length) + ')';
+    body = table(['Karyawan', 'Jabatan', 'Area'], none.map(e => [nm(e.nama, e.nikRaw), escapeHtml(e.jabatan || '–'), escapeHtml(e.area)]));
+  }
+  $('ins-eyebrow').textContent = 'INSIGHT · ' + eb.toUpperCase(); $('ins-title').textContent = title; $('ins-body').innerHTML = body;
+  showOverlay($('ins-overlay'));
+}
+$('btn-close-ins').addEventListener('click', () => hideOverlay($('ins-overlay')));
+$('ins-overlay').addEventListener('click', e => { if (e.target === $('ins-overlay')) hideOverlay($('ins-overlay')); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideOverlay($('ins-overlay')); });
 
 /* ================= 3. PERGERAKAN ================= */
 function renderMove(){
@@ -2655,17 +2707,12 @@ function buildReportHTML(P){
   const E = repTable(['No','NIK','Nama','Jabatan','Area'].concat(Ps.map(p => escapeHtml(p.key) + ' (jam)'), ['Total (jam)','Kali Lembur']),
     eS.map(x => [x.no, escapeHtml(x.e.nikRaw), escapeHtml(x.e.nama), escapeHtml(x.e.jabatan || '–'), escapeHtml(x.e.area)].concat(x.per.map(p => p ? fmtH(p[m]) : '–'), [x.tot ? fmtH(x.tot) : '–', x.kali ? fmtInt(x.kali) : '–'])), Ef, 5, { sort:'E' });
   const none = state.emps.filter(e => !C.per.has(e.nik));
-  const notes = [];
-  if (C.unk > 0) notes.push(`${fmtInt(C.unk)} dari ${fmtInt(C.n)} baris ${escapeHtml(P.key)} bertanggal tidak terbaca (tampil ###### di sheet karena kolom tanggal terlalu sempit). Total jam per karyawan tidak terpengaruh.`);
-  if (P.unmN > 0) notes.push(`Laporan ${escapeHtml(P.key)} memuat ${fmtInt(P.rowsAll)} baris; ${fmtInt(C.n)} baris cocok dengan daftar karyawan gudang, ${fmtInt(P.unmN)} baris (${fmtInt(P.unmIds.size)} NIK lain) di luar daftar tidak dihitung.`);
-  if (P.outN > 0) notes.push(`${fmtInt(P.outN)} baris bertanggal di luar bulan ${escapeHtml(P.name)} dikeluarkan dari perhitungan.`);
-  notes.push(`Pencocokan data dilakukan berdasarkan NIK (Employee ID di laporan = NIK di daftar karyawan). Basis jam: ${escapeHtml(M.tip)}.`);
   return `<div class="pr-page">${hdr('Ringkasan lembur karyawan gudang')}<div class="pr-kpi-grid">${kpi}</div>${sumBar}
       <div class="pr-section-title">A. Referensi Ringkasan Bulanan</div>${A}<div class="pr-section-title">B. Rekap Lembur per Area — ${escapeHtml(P.key)}</div>${B}<div class="pr-footer">Ringkasan Lembur · ${escapeHtml(P.key)} · hal. 1</div></div>
     <div class="pr-page">${hdr('Rekap per jabatan &amp; karyawan terbanyak')}<div class="pr-section-title">C. Rekap Lembur per Jabatan — ${escapeHtml(P.key)}</div>${Cj}<div class="pr-section-title">D. 15 Karyawan dengan Lembur Terbanyak — ${escapeHtml(P.key)}</div>${D}<div class="pr-footer">Ringkasan Lembur · ${escapeHtml(P.key)} · hal. 2</div></div>
     <div class="pr-page">${hdr('Rekap lembur per karyawan (cocok NIK)')}<div class="pr-section-title">E. Rekap Lembur per Karyawan per Bulan</div>${E}
       <div class="pr-note"><b>Tanpa catatan lembur ${escapeHtml(P.key)} (${fmtInt(none.length)} karyawan):</b> ${none.length ? none.map(e => escapeHtml(e.nama)).join(', ') : '–'}</div>
-      <div class="pr-note"><b>Catatan data:</b> ${notes.join(' ')}</div><div class="pr-footer">Ringkasan Lembur · ${escapeHtml(P.key)} · hal. 3</div></div>`;
+      <div class="pr-footer">Ringkasan Lembur · ${escapeHtml(P.key)} · hal. 3</div></div>`;
 }
 function renderReport(){
   const P = cur();
