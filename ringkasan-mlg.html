@@ -2565,7 +2565,7 @@ function renderDetail(){
 }
 function renderItems(list){
   const cap = 300, shown = list.slice(0, cap);
-  $('results-count').textContent = fmtInt(list.length) + ' kejadian' + (list.length > cap ? ` · ${cap} pertama` : '') + ' · ' + fmtH(list.reduce((a,r) => a + val(r), 0)) + ' jam' + (cur() && cur().outN ? ` · ${fmtInt(cur().outN)} baris bertanggal di luar ${cur().name} tidak dihitung` : '');
+  $('results-count').textContent = fmtInt(list.length) + ' kejadian' + (list.length > cap ? ` · ${cap} pertama` : '') + ' · ' + fmtH(list.reduce((a,r) => a + val(r), 0)) + ' jam';
   $('results').innerHTML = shown.length ? `<table class="dt-items"><thead><tr><th>Tanggal</th><th>Karyawan<br>NIK</th><th>Jabatan<br>Area</th><th class="r">Durasi (jam)</th><th class="r">Jam Bayar</th><th class="r">Jam Hitung</th></tr></thead><tbody>` +
     shown.map(r => `<tr><td class="nw"><span class="mono">${r.tgl ? escapeHtml(r.tgl) : '<span class="muted" title="Tanggal tampil ###### di sheet">tak terbaca</span>'}</span></td><td class="wr md">${escapeHtml(r.nama)}<span class="sub mono">${escapeHtml(r.nik)}</span></td><td class="wr">${escapeHtml(r.jabatan || '–')}<span class="sub">${escapeHtml(r.area)}</span></td><td class="r nw">${fmtH(r.dur)}</td><td class="r nw">${fmtH(r.pay)}</td><td class="r nw"><b>${fmtH(r.mult)}</b></td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty-note">Tidak ada data lembur.</div>';
