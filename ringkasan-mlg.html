@@ -1997,6 +1997,12 @@ table.dy td.v{background:rgba(34,197,94,.10);font-weight:700;color:var(--text)}
 table.dy tr.tot td{position:sticky;bottom:0;z-index:2;font-weight:800;background:var(--surface-2);border-top:1.5px solid var(--border)}
 table.dy tr.tot td.c1,table.dy tr.tot td.c2,table.dy tr.tot td.c3,table.dy tr.tot td.c4{z-index:5}
 table.dy td.z{color:var(--muted)}
+
+.shot-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:background .15s,border-color .15s}
+.shot-btn:hover{background:var(--surface-2);border-color:#22c55e}.shot-btn .i{width:18px;height:18px}
+.dy-shot{position:fixed;left:-100000px;top:0;padding:18px;background:var(--surface);color:var(--text);font-family:var(--font-body);width:max-content}
+.dy-shot .st{font:800 18px var(--font-body);margin-bottom:2px}.dy-shot .ss{font:500 12px var(--font-body);color:var(--muted);margin-bottom:12px}
+.dy-shot table.dy .c1,.dy-shot table.dy .c2,.dy-shot table.dy .c3,.dy-shot table.dy .c4,.dy-shot table.dy thead th,.dy-shot table.dy tr.tot td{position:static!important;box-shadow:none!important}
 </style>
 <style>
 /* ===== RINGKASAN SOB: tambahan skin ===== */
@@ -2133,7 +2139,7 @@ table.dy td.z{color:var(--muted)}
     </div>
     <div class="mk" id="dy-kpi"></div>
     <div class="card">
-      <div class="section-title"><span>Lembur Harian</span> <small id="dy-count"></small></div>
+      <div class="section-title"><span id="dy-title">Lembur Harian</span> <span style="margin-left:auto;display:inline-flex;align-items:center;gap:10px"><small id="dy-count"></small><button class="shot-btn" id="btn-dy-shot" title="Screenshot seluruh tabel (siap kirim ke WhatsApp)" aria-label="Screenshot tabel"><svg class="i" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button></span></div>
       <div class="scr dy-wrap" id="dy-wrap"></div>
     </div>
   </div>
@@ -2669,6 +2675,7 @@ function renderDaily(){
     kc('bl','users','Karyawan Lembur', fmtInt(nEmp), 'orang', 'sesuai filter yang dipilih') +
     kc('am','layers','Hari Ada Lembur', fmtInt(D.days.length), 'hari', D.unk ? 'ada tanggal tak terbaca' : 'dalam ' + P.name) +
     kc('in','bolt','Hari Tersibuk', peak != null ? 'Tgl ' + peak : '–', '', peak != null ? fmtH(D.grand.d[peak]) + ' jam' : '');
+  $('dy-title').textContent = 'Lembur Harian · ' + P.name;
   $('dy-count').textContent = `${fmtInt(D.days.length)} hari · ${M.l}`;
   const dow = d => { if (!P.m || !P.y) return null; return new Date(P.y, P.m - 1, d).getDay(); };
   const cell = v => v ? `<td class="v">${fmtH(v)}</td>` : '<td></td>';
@@ -2689,6 +2696,27 @@ let dyT = null;
 $('dy-search').addEventListener('input', e => { clearTimeout(dyT); dyT = setTimeout(() => { state.dsearch = e.target.value.trim(); renderAll(); }, 180); });
 $('btn-dy-clear').addEventListener('click', () => { $('dy-search').value = ''; state.dsearch = ''; renderAll(); });
 $('dy-all').addEventListener('change', e => { state.dall = e.target.checked; renderAll(); });
+
+
+$('btn-dy-shot').addEventListener('click', async () => {
+  const P = cur(), tb = $('dy-wrap').querySelector('table.dy'); if (!P || !tb) return;
+  const box = document.createElement('div'); box.className = 'dy-shot';
+  const area = state.ag != null ? ' · Area ' + state.areas[state.ag] : '';
+  box.innerHTML = `<div class="st">Lembur Harian · ${escapeHtml(P.name)}</div><div class="ss">Ringkasan Lembur MLG · ${escapeHtml(MET().l)}${escapeHtml(area)}</div>`;
+  box.appendChild(tb.cloneNode(true)); document.body.appendChild(box);
+  showToast('Menyiapkan screenshot…');
+  try{
+    if (document.fonts && document.fonts.ready) await document.fonts.ready.catch(() => {});
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const bg = getComputedStyle(document.body).backgroundColor === 'rgba(0, 0, 0, 0)' ? '#ffffff' : getComputedStyle(box).backgroundColor, scale = 2; let url = null, err = null;
+    if (typeof html2canvas !== 'undefined'){ try{ url = (await html2canvas(box, { backgroundColor:bg, useCORS:true, scale, scrollX:0, scrollY:0, windowWidth: box.scrollWidth + 40 })).toDataURL('image/png'); }catch(e){ err = e; } }
+    if ((!url || url.length < 5000) && typeof htmlToImage !== 'undefined'){ try{ url = await htmlToImage.toPng(box, { backgroundColor:bg, pixelRatio:scale, cacheBust:true }); }catch(e){ err = e; } }
+    if (!url) throw err || new Error('Komponen screenshot gagal dimuat');
+    const a = document.createElement('a'); a.download = 'Lembur_Harian_' + P.key + '_' + new Date().toISOString().slice(0,10) + '.png'; a.href = url; a.click();
+    showToast('Screenshot tabel berhasil diunduh');
+  }catch(e){ console.error(e); showToast('Gagal membuat screenshot: ' + (e && e.message ? e.message : 'coba lagi')); }
+  finally{ box.remove(); }
+});
 
 /* ================= 3. PERGERAKAN ================= */
 function renderMove(){
