@@ -1978,6 +1978,25 @@ html[data-theme="dark"] .metric-seg button.on{background:var(--primary);color:#0
   content:"";flex:none;width:7px;height:7px;border-radius:50%;background:#22c55e;animation:selPulse 1.8s ease-out infinite}
 @keyframes selPulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55);opacity:1}70%{box-shadow:0 0 0 7px rgba(34,197,94,0);opacity:.9}100%{box-shadow:0 0 0 0 rgba(34,197,94,0);opacity:1}}
 @media (prefers-reduced-motion:reduce){.seg button.on::before,.dim-switch button.active::before,.sf-seg button.on::before,.date-tab.active::before,.view-tabs button.active::before{animation:none}}
+
+.dy-all{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--font-body);color:var(--muted);cursor:pointer;margin-left:auto}
+.dy-wrap{overflow:auto;max-height:calc(100vh - 380px);min-height:280px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+table.dy{border-collapse:separate;border-spacing:0;font-size:12.5px;min-width:100%}
+table.dy th,table.dy td{padding:7px 8px;border-bottom:1px solid var(--grid);border-right:1px solid var(--grid);white-space:nowrap;text-align:center;background:var(--surface)}
+table.dy thead th{position:sticky;top:0;z-index:3;background:var(--surface-2);font-size:11.5px;color:var(--muted);border-bottom:1.5px solid var(--border)}
+table.dy th.sun{background:#dc2626;color:#fff}
+table.dy th.dw{display:table-cell;line-height:1.15}table.dy th.dw small{display:block;font-weight:600;font-size:9.5px;opacity:.85}
+table.dy .c1,table.dy .c2,table.dy .c3,table.dy .c4{position:sticky;z-index:2}
+table.dy thead .c1,table.dy thead .c2,table.dy thead .c3,table.dy thead .c4{z-index:4}
+table.dy .c1{left:0;min-width:38px}table.dy .c2{left:38px;min-width:76px;font-family:var(--font-mono);font-size:11.5px}
+table.dy .c3{left:114px;min-width:190px;text-align:left}table.dy .c4{left:304px;min-width:64px;font-weight:800;box-shadow:2px 0 4px -2px rgba(20,26,48,.18)}
+table.dy tr.grp td{background:#d9f2c7;color:#1f4d12;font-weight:800;text-align:center;border-bottom:1px solid #b9e0a0}
+table.dy tr.grp td.c3{text-align:center;letter-spacing:.04em}
+html[data-theme="dark"] table.dy tr.grp td{background:#1f3a22;color:#a7f3b4;border-color:#2d5a33}
+table.dy td.v{background:rgba(34,197,94,.10);font-weight:700;color:var(--text)}
+table.dy tr.tot td{position:sticky;bottom:0;z-index:2;font-weight:800;background:var(--surface-2);border-top:1.5px solid var(--border)}
+table.dy tr.tot td.c1,table.dy tr.tot td.c2,table.dy tr.tot td.c3,table.dy tr.tot td.c4{z-index:5}
+table.dy td.z{color:var(--muted)}
 </style>
 <style>
 /* ===== RINGKASAN SOB: tambahan skin ===== */
@@ -2040,6 +2059,7 @@ html[data-theme="dark"] .metric-seg button.on{background:var(--primary);color:#0
     <button data-view="overview" class="active">Overview</button>
     <button data-view="move">Pergerakan</button>
     <button data-view="detail">Detail</button>
+    <button data-view="daily">Harian</button>
     <button data-view="report">Laporan</button>
   </nav>
   <div class="ctl">
@@ -2105,6 +2125,18 @@ html[data-theme="dark"] .metric-seg button.on{background:var(--primary);color:#0
   </div>
 
   <!-- 3 PERGERAKAN -->
+  <div id="dy-section" class="pg hidden">
+    <div class="dh1">
+      <div class="sf-seg" id="dy-ag"></div>
+      <div class="search-panel"><input type="text" id="dy-search" placeholder="Cari nama, NIK, jabatan..." /><button class="btn-clear" id="btn-dy-clear">✕</button></div>
+      <label class="dy-all"><input type="checkbox" id="dy-all"> Tampilkan semua karyawan</label>
+    </div>
+    <div class="mk" id="dy-kpi"></div>
+    <div class="card">
+      <div class="section-title"><span>Lembur Harian</span> <small id="dy-count"></small></div>
+      <div class="scr dy-wrap" id="dy-wrap"></div>
+    </div>
+  </div>
   <div id="mv-section" class="pg hidden">
     <div class="sum-filter">
       <label class="qview-field">Periode awal<select id="mv-from"></select></label>
@@ -2139,7 +2171,7 @@ html[data-theme="dark"] .metric-seg button.on{background:var(--primary);color:#0
   </div>
 </main>
 
-<div id="pn"><button id="pn-prev" aria-label="Sebelumnya">‹</button><span id="pn-c">1 / 4</span><button id="pn-next" aria-label="Berikutnya">›</button></div>
+<div id="pn"><button id="pn-prev" aria-label="Sebelumnya">‹</button><span id="pn-c">1 / 5</span><button id="pn-next" aria-label="Berikutnya">›</button></div>
 <div id="print-area"></div>
 
 <div id="ins-overlay" class="sheet-overlay"><div class="sheet" role="dialog" aria-modal="true"><div class="sheet-handle"></div>
@@ -2314,7 +2346,7 @@ function bucketDist(P){
 /* ================= STATE & FORMAT ================= */
 const $ = id => document.getElementById(id);
 const state = {
-  view:'overview', settings: loadSettings(), periods:[], emps:[], areas:[], pi:-1, dim:'nik', ag:null, search:'', selected:null,
+  view:'overview', settings: loadSettings(), periods:[], emps:[], areas:[], pi:-1, dsearch:'', dall:false, dim:'nik', ag:null, search:'', selected:null,
   sortKey:'v', sortDir:-1, source:'', loadedAt:null, metric:'mult', mvA:-1, mvB:-1, csvText:''
 };
 const charts = {};
@@ -2429,8 +2461,8 @@ async function loadData(){
 }
 
 /* ================= NAV / RENDER ROUTER ================= */
-const PAGES = ['overview','move','detail','report'];
-const PAGE_ID = { overview:'ov-section', detail:'dt-section', move:'mv-section', report:'rp-section' };
+const PAGES = ['overview','move','detail','daily','report'];
+const PAGE_ID = { overview:'ov-section', detail:'dt-section', daily:'dy-section', move:'mv-section', report:'rp-section' };
 function renderAll(){
   const P = cur(); if (!P) return;
   $('cutoff-value').textContent = P.name; $('cutoff-badge').classList.remove('hidden');
@@ -2438,6 +2470,7 @@ function renderAll(){
   if (state.view === 'overview') renderOverview();
   else if (state.view === 'detail') renderDetail();
   else if (state.view === 'move') renderMove();
+  else if (state.view === 'daily') renderDaily();
   else renderReport();
   setTimeout(uiResize, 60);
 }
@@ -2604,6 +2637,59 @@ $('btn-close-ins').addEventListener('click', () => hideOverlay($('ins-overlay'))
 $('ins-overlay').addEventListener('click', e => { if (e.target === $('ins-overlay')) hideOverlay($('ins-overlay')); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') hideOverlay($('ins-overlay')); });
 
+
+/* ================= 2b. HARIAN ================= */
+const DOW = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+function buildDaily(P){
+  const m = state.metric, area = state.ag != null ? state.areas[state.ag] : null, mt = mkMatcher(state.dsearch);
+  const dset = new Set(); let unk = false;
+  P.recs.forEach(r => { if (r.day == null) unk = true; else dset.add(r.day); });
+  const days = Array.from(dset).sort((a,b) => a - b);
+  const byEmp = new Map();
+  P.recs.forEach(r => { let o = byEmp.get(r.nik); if (!o){ o = { tot:0, d:{} }; byEmp.set(r.nik, o); } const k = r.day == null ? '?' : r.day; o.d[k] = (o.d[k] || 0) + (r[m] || 0); o.tot += r[m] || 0; });
+  const grand = { tot:0, d:{} };
+  const groups = state.areas.filter(a => area == null || a === area).map(a => {
+    const rows = state.emps.filter(e => e.area === a && mt(e)).map(e => ({ e, o: byEmp.get(e.nik) || { tot:0, d:{} } })).filter(x => state.dall || x.o.tot > 0);
+    const g = { area:a, rows, tot:0, d:{} };
+    rows.forEach(x => { g.tot += x.o.tot; Object.keys(x.o.d).forEach(k => { g.d[k] = (g.d[k] || 0) + x.o.d[k]; }); });
+    grand.tot += g.tot; Object.keys(g.d).forEach(k => { grand.d[k] = (grand.d[k] || 0) + g.d[k]; });
+    return g;
+  }).filter(g => g.rows.length || (area != null));
+  return { days, unk, groups, grand };
+}
+function renderDaily(){
+  const P = cur(), D = buildDaily(P), M = MET();
+  $('dy-ag').innerHTML = `<button data-s="all" class="${state.ag == null ? 'on' : ''}">Semua Area</button>` + state.areas.map((a,i) => `<button data-s="${i}" class="${state.ag === i ? 'on' : ''}">${escapeHtml(a)}</button>`).join('');
+  $('dy-all').checked = state.dall;
+  const cols = D.days.map(d => d).concat(D.unk ? ['?'] : []);
+  const nEmp = D.groups.reduce((a,g) => a + g.rows.filter(x => x.o.tot > 0).length, 0);
+  let peak = null; D.days.forEach(d => { if (!peak || (D.grand.d[d] || 0) > (D.grand.d[peak] || 0)) peak = d; });
+  $('dy-kpi').innerHTML =
+    kc('out','clock','Total ' + M.l, fmtH(D.grand.tot), 'jam', P.name) +
+    kc('bl','users','Karyawan Lembur', fmtInt(nEmp), 'orang', 'sesuai filter yang dipilih') +
+    kc('am','layers','Hari Ada Lembur', fmtInt(D.days.length), 'hari', D.unk ? 'ada tanggal tak terbaca' : 'dalam ' + P.name) +
+    kc('in','bolt','Hari Tersibuk', peak != null ? 'Tgl ' + peak : '–', '', peak != null ? fmtH(D.grand.d[peak]) + ' jam' : '');
+  $('dy-count').textContent = `${fmtInt(D.days.length)} hari · ${M.l}`;
+  const dow = d => { if (!P.m || !P.y) return null; return new Date(P.y, P.m - 1, d).getDay(); };
+  const cell = v => v ? `<td class="v">${fmtH(v)}</td>` : '<td></td>';
+  let h = '<table class="dy"><thead><tr><th class="c1">No</th><th class="c2">NIK</th><th class="c3">Nama</th><th class="c4">T.Jam</th>' +
+    cols.map(d => { if (d === '?') return '<th title="Tanggal tak terbaca di sheet">?</th>'; const w = dow(d); return `<th class="dw ${w === 0 ? 'sun' : ''}">${d}${w == null ? '' : `<small>${DOW[w]}</small>`}</th>`; }).join('') + '</tr></thead><tbody>';
+  if (!D.groups.length) h += `<tr><td colspan="${4 + cols.length}" class="empty-note">Tidak ada data untuk filter ini.</td></tr>`;
+  D.groups.forEach(g => {
+    h += `<tr class="grp"><td class="c1"></td><td class="c2"></td><td class="c3">AREA ${escapeHtml(g.area)}</td><td class="c4">${fmtH(g.tot)}</td>${cols.map(d => `<td>${g.d[d] ? fmtH(g.d[d]) : ''}</td>`).join('')}</tr>`;
+    g.rows.forEach((x,i) => {
+      h += `<tr><td class="c1">${i + 1}</td><td class="c2">${escapeHtml(x.e.nikRaw)}</td><td class="c3">${escapeHtml(x.e.nama)}</td><td class="c4 ${x.o.tot ? '' : 'z'}">${x.o.tot ? fmtH(x.o.tot) : '-'}</td>${cols.map(d => cell(x.o.d[d])).join('')}</tr>`;
+    });
+  });
+  h += `<tr class="tot"><td class="c1"></td><td class="c2"></td><td class="c3">TOTAL</td><td class="c4">${fmtH(D.grand.tot)}</td>${cols.map(d => `<td>${D.grand.d[d] ? fmtH(D.grand.d[d]) : ''}</td>`).join('')}</tr></tbody></table>`;
+  $('dy-wrap').innerHTML = h;
+}
+$('dy-ag').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.ag = b.dataset.s === 'all' ? null : +b.dataset.s; renderAll(); });
+let dyT = null;
+$('dy-search').addEventListener('input', e => { clearTimeout(dyT); dyT = setTimeout(() => { state.dsearch = e.target.value.trim(); renderAll(); }, 180); });
+$('btn-dy-clear').addEventListener('click', () => { $('dy-search').value = ''; state.dsearch = ''; renderAll(); });
+$('dy-all').addEventListener('change', e => { state.dall = e.target.checked; renderAll(); });
+
 /* ================= 3. PERGERAKAN ================= */
 function renderMove(){
   const Ps = state.periods; if (!Ps.length) return;
@@ -2743,6 +2829,13 @@ function downloadExcel(){
     [5,12,32,22,11,14].concat(Ps.map(() => 16), [10,12]));
   add('Detail ' + P.key, [['NIK','Nama','Jabatan','Area','Kelompok','Tanggal','Durasi (jam)','Jam Bayar','Jam Hitung']].concat(
     P.recs.map(r => [r.nik, r.nama, r.jabatan, r.area, r.status, r.tgl || '(tak terbaca)', r.dur, r.pay, r.mult])), [12,32,22,11,14,13,12,10,11]);
+  { const saveDsr = state.dsearch, saveAg = state.ag, saveAll = state.dall; state.dsearch = ''; state.ag = null; state.dall = false;
+    const D = buildDaily(P); state.dsearch = saveDsr; state.ag = saveAg; state.dall = saveAll;
+    const cols = D.days.concat(D.unk ? ['?'] : []), aoa = [['Area','No','NIK','Nama','T.Jam (' + MET().l + ')'].concat(cols.map(d => d === '?' ? 'Tgl tak terbaca' : d))];
+    D.groups.forEach(g => { aoa.push(['AREA ' + g.area, '', '', '', r1(g.tot)].concat(cols.map(d => g.d[d] ? r1(g.d[d]) : '')));
+      g.rows.forEach((x,i) => aoa.push([g.area, i + 1, x.e.nikRaw, x.e.nama, r1(x.o.tot)].concat(cols.map(d => x.o.d[d] ? r1(x.o.d[d]) : '')))); });
+    aoa.push(['TOTAL', '', '', '', r1(D.grand.tot)].concat(cols.map(d => D.grand.d[d] ? r1(D.grand.d[d]) : '')));
+    add('Harian ' + P.key, aoa, [14,5,12,30,12].concat(cols.map(() => 6))); }
   XLSX.writeFile(wb, 'Ringkasan_Lembur_MLG_' + P.key + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
   showToast('Excel berhasil diunduh');
 }
