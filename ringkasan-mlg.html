@@ -1994,8 +1994,10 @@ table.dy tr.grp td{background:#d9f2c7;color:#1f4d12;font-weight:800;text-align:c
 table.dy tr.grp td.c3{text-align:center;letter-spacing:.04em}
 html[data-theme="dark"] table.dy tr.grp td{background:#1f3a22;color:#a7f3b4;border-color:#2d5a33}
 table.dy td.v{background:rgba(34,197,94,.10);font-weight:700;color:var(--text)}
-table.dy tr.tot td{position:sticky;bottom:0;z-index:2;font-weight:800;background:var(--surface-2);border-top:1.5px solid var(--border)}
-table.dy tr.tot td.c1,table.dy tr.tot td.c2,table.dy tr.tot td.c3,table.dy tr.tot td.c4{z-index:5}
+table.dy tr.tot td{font-weight:800;background:var(--surface-2);border-top:1.5px solid var(--border)}
+table.dy tr.tgt td{font-weight:800;background:var(--surface-2)}table.dy tr.tgt td.c3 small{font-weight:600;color:var(--muted)}
+table.dy tr.tgt td.tl{text-align:left;padding-left:14px;font-weight:600;color:var(--muted)}
+.pgb{display:inline-block;vertical-align:middle;width:min(360px,40vw);height:9px;border-radius:99px;background:var(--grid);overflow:hidden;margin-right:12px}.pgb i{display:block;height:100%;border-radius:99px}
 table.dy td.z{color:var(--muted)}
 
 .shot-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:background .15s,border-color .15s}
@@ -2663,6 +2665,14 @@ function buildDaily(P){
   }).filter(g => g.rows.length || (area != null));
   return { days, unk, groups, grand };
 }
+
+function dailyTargetRows(P, nc){
+  if (!(P.target > 0)) return '';
+  const tot = P.c[state.metric], pc = pctOf(tot, P.target), col = pc > 100 ? 'var(--st-kosong)' : pc >= 90 ? 'var(--st-kurang)' : 'var(--st-lunas)';
+  const filt = state.ag != null || state.dsearch ? ' <small>(total seluruh area)</small>' : '';
+  return `<tr class="tgt"><td class="c1"></td><td class="c2"></td><td class="c3">TARGET JAM</td><td class="c4">${fmtH(P.target)}</td><td colspan="${nc}" class="tl">${tot > P.target ? 'Melebihi target ' + fmtH(tot - P.target) + ' jam' : 'Sisa target ' + fmtH(P.target - tot) + ' jam'}</td></tr>` +
+    `<tr class="tgt"><td class="c1"></td><td class="c2"></td><td class="c3">% TERPENUHI${filt}</td><td class="c4" style="color:${col}">${fmtNum(pc, 1)}%</td><td colspan="${nc}" class="tl"><span class="pgb"><i style="width:${Math.min(pc,100)}%;background:${col}"></i></span><b style="color:${col}">${fmtH(tot)} / ${fmtH(P.target)} jam</b></td></tr>`;
+}
 function renderDaily(){
   const P = cur(), D = buildDaily(P), M = MET();
   $('dy-ag').innerHTML = `<button data-s="all" class="${state.ag == null ? 'on' : ''}">Semua Area</button>` + state.areas.map((a,i) => `<button data-s="${i}" class="${state.ag === i ? 'on' : ''}">${escapeHtml(a)}</button>`).join('');
@@ -2688,7 +2698,7 @@ function renderDaily(){
       h += `<tr><td class="c1">${i + 1}</td><td class="c2">${escapeHtml(x.e.nikRaw)}</td><td class="c3">${escapeHtml(x.e.nama)}</td><td class="c4 ${x.o.tot ? '' : 'z'}">${x.o.tot ? fmtH(x.o.tot) : '-'}</td>${cols.map(d => cell(x.o.d[d])).join('')}</tr>`;
     });
   });
-  h += `<tr class="tot"><td class="c1"></td><td class="c2"></td><td class="c3">TOTAL</td><td class="c4">${fmtH(D.grand.tot)}</td>${cols.map(d => `<td>${D.grand.d[d] ? fmtH(D.grand.d[d]) : ''}</td>`).join('')}</tr></tbody></table>`;
+  h += `<tr class="tot"><td class="c1"></td><td class="c2"></td><td class="c3">TOTAL</td><td class="c4">${fmtH(D.grand.tot)}</td>${cols.map(d => `<td>${D.grand.d[d] ? fmtH(D.grand.d[d]) : ''}</td>`).join('')}</tr>` + dailyTargetRows(P, cols.length) + '</tbody></table>';
   $('dy-wrap').innerHTML = h;
 }
 $('dy-ag').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.ag = b.dataset.s === 'all' ? null : +b.dataset.s; renderAll(); });
@@ -2702,7 +2712,7 @@ $('btn-dy-shot').addEventListener('click', async () => {
   const P = cur(), tb = $('dy-wrap').querySelector('table.dy'); if (!P || !tb) return;
   const box = document.createElement('div'); box.className = 'dy-shot';
   const area = state.ag != null ? ' · Area ' + state.areas[state.ag] : '';
-  box.innerHTML = `<div class="st">Lembur Harian · ${escapeHtml(P.name)}</div><div class="ss">Ringkasan Lembur MLG · ${escapeHtml(MET().l)}${escapeHtml(area)}</div>`;
+  box.innerHTML = `<div class="st">Lembur Harian · ${escapeHtml(P.name)}</div><div class="ss">Ringkasan Lembur MLG · ${escapeHtml(MET().l)}${escapeHtml(area)}${P.target > 0 ? ' · Target ' + fmtH(P.target) + ' jam · Terpenuhi ' + fmtNum(pctOf(P.c[state.metric], P.target), 1) + '%' : ''}</div>`;
   box.appendChild(tb.cloneNode(true)); document.body.appendChild(box);
   showToast('Menyiapkan screenshot…');
   try{
