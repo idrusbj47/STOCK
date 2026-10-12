@@ -28,13 +28,22 @@ body.is-fullscreen header.topbar{display:none}body.is-fullscreen nav.tabs{paddin
 .icon-btn.is-on{background:var(--red);border-color:var(--red);color:#fff}
 #pointer-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:20;display:none;touch-action:none;cursor:crosshair;-webkit-user-select:none;user-select:none}body.pointer-on #pointer-canvas{display:block}
 #pointer-canvas.hold{cursor:none}
+#pen-bar{position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;display:none;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);box-shadow:0 4px 18px rgba(0,0,0,.25)}body.mode-pen #pen-bar{display:flex}
+#pen-bar .sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+#pen-bar button{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;background:transparent}
+#pen-bar button.sw span{width:16px;height:16px;border-radius:50%;display:block}#pen-bar button.sel{border-color:var(--text)}
+#pen-bar button.wd span{display:block;border-radius:50%;background:var(--text)}
+.timer{position:absolute;left:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:30;display:none;align-items:center;gap:6px;padding:6px 8px 6px 14px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);box-shadow:0 4px 18px rgba(0,0,0,.25);font-family:var(--font-mono);color:var(--text)}.timer.show{display:flex}
+.timer .tt{font-size:20px;font-weight:600;letter-spacing:.04em;min-width:68px}.timer.run .tt{color:var(--green)}
+.timer button{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:13px;line-height:1;padding:0}.timer button:active{transform:scale(.92)}.timer .tx:hover{border-color:var(--red);color:var(--red)}
+body.mode-spot #pointer-canvas{cursor:none}
 </style>
 </head>
 <body>
 <header class="topbar">
 <a href="index.html" class="icon-btn" aria-label="Kembali ke menu utama" title="Menu utama"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></a>
 <div class="brand"><span class="brand-eyebrow">Meeting bulanan</span><h1 class="brand-title">Presen<span class="accent">tasi</span></h1></div>
-<div class="actions"><button id="btn-pointer" class="icon-btn" aria-label="Pointer laser" title="Pointer (P / L): tahan &amp; geser untuk menggambar, garis hilang otomatis"><svg viewBox="0 0 24 24" width="19" height="19"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20l3.5-1L19 7.5a2.1 2.1 0 00-3-3L4.5 16 4 20zM14 6.5l3.5 3.5"/></svg></button><button id="btn-reload-all" class="icon-btn" aria-label="Muat ulang semua tab" title="Muat ulang semua tab (siapkan sebelum presentasi)"><svg viewBox="0 0 24 24" width="19" height="19"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/></svg></button><button id="btn-fullscreen" class="icon-btn" aria-label="Layar penuh" title="Layar penuh (F)"><svg id="fs-enter" viewBox="0 0 24 24" width="19" height="19"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg id="fs-exit" viewBox="0 0 24 24" width="19" height="19" style="display:none"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
+<div class="actions"><button id="btn-timer" class="icon-btn" aria-label="Timer" title="Timer / stopwatch (T)"><svg viewBox="0 0 24 24" width="19" height="19"><circle cx="12" cy="13" r="7.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 9v4.5l3 1.8M9.5 2.5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button id="btn-spot" class="icon-btn" aria-label="Sorot area" title="Sorot area: layar digelapkan kecuali sekitar kursor (S)"><svg viewBox="0 0 24 24" width="19" height="19"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/></svg></button><button id="btn-pointer" class="icon-btn" aria-label="Pointer laser" title="Pointer (P / L): tahan &amp; geser untuk menggambar, garis hilang otomatis"><svg viewBox="0 0 24 24" width="19" height="19"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20l3.5-1L19 7.5a2.1 2.1 0 00-3-3L4.5 16 4 20zM14 6.5l3.5 3.5"/></svg></button><button id="btn-reload-all" class="icon-btn" aria-label="Muat ulang semua tab" title="Muat ulang semua tab (siapkan sebelum presentasi)"><svg viewBox="0 0 24 24" width="19" height="19"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/></svg></button><button id="btn-fullscreen" class="icon-btn" aria-label="Layar penuh" title="Layar penuh (F)"><svg id="fs-enter" viewBox="0 0 24 24" width="19" height="19"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg id="fs-exit" viewBox="0 0 24 24" width="19" height="19" style="display:none"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
 <button id="btn-theme-toggle" class="icon-btn" aria-label="Ganti tema" title="Ganti tema"><svg id="theme-icon-moon" viewBox="0 0 24 24" width="19" height="19"><path fill="currentColor" d="M12.3 2a9.5 9.5 0 108.7 13.6A8 8 0 0112.3 2z"/></svg><svg id="theme-icon-sun" viewBox="0 0 24 24" width="19" height="19" style="display:none"><path fill="currentColor" d="M12 7a5 5 0 100 10 5 5 0 000-10zm0-5a1 1 0 011 1v2a1 1 0 11-2 0V3a1 1 0 011-1zm0 17a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1zM3.51 4.93a1 1 0 011.41 0l1.41 1.41A1 1 0 114.93 7.76L3.51 6.34a1 1 0 010-1.41zm14.16 14.16a1 1 0 011.41 0l1.41 1.41a1 1 0 11-1.41 1.41l-1.41-1.41a1 1 0 010-1.41zM2 12a1 1 0 011-1h2a1 1 0 110 2H3a1 1 0 01-1-1zm17 0a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zM4.93 19.07a1 1 0 010-1.41l1.41-1.41a1 1 0 111.41 1.41l-1.41 1.41a1 1 0 01-1.41 0zM18.09 6.34l1.41-1.41a1 1 0 111.41 1.41l-1.41 1.42a1 1 0 11-1.41-1.42z"/></svg></button></div>
 </header>
 <nav class="tabs" role="tablist" aria-label="Materi presentasi">
@@ -43,7 +52,7 @@ body.is-fullscreen header.topbar{display:none}body.is-fullscreen nav.tabs{paddin
 <button class="tab" role="tab" id="tab-sob" data-tab="sob" aria-controls="pane-sob" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4zM4 10h16M10 10v10M8 7h3m3 0h3m-4 7h4m-4 3h4"/></svg>Ringkasan SOB</button>
 <button class="tab" role="tab" id="tab-slg" data-tab="slg" aria-controls="pane-slg" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 19V5m0 14h16M8 15l4-5 3 2 5-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Ringkasan SLG</button>
 <button class="tab" role="tab" id="tab-mlg" data-tab="mlg" aria-controls="pane-mlg" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 19V5m0 14h16M7 16l4-4 3 2 5-7M17 7h2v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Ringkasan MLG</button>
-<span class="tab-hint"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> <kbd>5</kbd> pindah tab &nbsp;·&nbsp; <kbd>F</kbd> layar penuh &nbsp;·&nbsp; <kbd>P</kbd> pointer</span>
+<span class="tab-hint"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> <kbd>5</kbd> pindah tab &nbsp;·&nbsp; <kbd>F</kbd> layar penuh &nbsp;·&nbsp; <kbd>P</kbd> pointer &nbsp;·&nbsp; <kbd>S</kbd> sorot &nbsp;·&nbsp; <kbd>T</kbd> timer</span>
 </nav>
 <main class="stage">
 <section class="pane active" id="pane-palet" role="tabpanel" aria-labelledby="tab-palet"><div class="pane-loading"><div class="spinner"></div><span class="retry-note">Belum termuat. Tekan tombol muat ulang (⟳) di atas saat sudah ada sinyal.</span>Memuat ringkasan palet…</div><iframe data-src="ringkasan-palet.html" title="Ringkasan Palet" loading="eager"></iframe><a class="pane-fallback" href="ringkasan-palet.html" target="_blank" rel="noopener">Buka di tab baru</a></section>
@@ -51,6 +60,8 @@ body.is-fullscreen header.topbar{display:none}body.is-fullscreen nav.tabs{paddin
 <section class="pane" id="pane-sob" role="tabpanel" aria-labelledby="tab-sob"><div class="pane-loading"><div class="spinner"></div><span class="retry-note">Belum termuat. Tekan tombol muat ulang (⟳) di atas saat sudah ada sinyal.</span>Memuat ringkasan SOB…</div><iframe data-src="ringkasan-sob.html" title="Ringkasan SOB" loading="eager"></iframe><a class="pane-fallback" href="ringkasan-sob.html" target="_blank" rel="noopener">Buka di tab baru</a></section>
 <section class="pane" id="pane-slg" role="tabpanel" aria-labelledby="tab-slg"><div class="pane-loading"><div class="spinner"></div><span class="retry-note">Belum termuat. Tekan tombol muat ulang (⟳) di atas saat sudah ada sinyal.</span>Memuat ringkasan SLG…</div><iframe data-src="ringkasan-slg.html" title="Ringkasan SLG" loading="eager"></iframe><a class="pane-fallback" href="ringkasan-slg.html" target="_blank" rel="noopener">Buka di tab baru</a></section>
 <section class="pane" id="pane-mlg" role="tabpanel" aria-labelledby="tab-mlg"><div class="pane-loading"><div class="spinner"></div><span class="retry-note">Belum termuat. Tekan tombol muat ulang (⟳) di atas saat sudah ada sinyal.</span>Memuat ringkasan MLG…</div><iframe data-src="ringkasan-mlg.html" title="Ringkasan MLG" loading="eager"></iframe><a class="pane-fallback" href="ringkasan-mlg.html" target="_blank" rel="noopener">Buka di tab baru</a></section>
+<div id="pen-bar" role="toolbar" aria-label="Pengaturan pointer"><button class="sw" data-c="#F45B69" title="Merah (C)"><span style="background:#F45B69"></span></button><button class="sw" data-c="#FFD23F" title="Kuning"><span style="background:#FFD23F"></span></button><button class="sw" data-c="#34D399" title="Hijau"><span style="background:#34D399"></span></button><button class="sw" data-c="#4DA3FF" title="Biru"><span style="background:#4DA3FF"></span></button><i class="sep"></i><button class="wd" data-w="3" title="Tipis (W)"><span style="width:5px;height:5px"></span></button><button class="wd" data-w="5" title="Sedang"><span style="width:9px;height:9px"></span></button><button class="wd" data-w="9" title="Tebal"><span style="width:14px;height:14px"></span></button></div>
+<div id="timer" class="timer" role="timer"><span class="tt" id="tm-text">00:00</span><button id="tm-toggle" title="Mulai / jeda">▶</button><button id="tm-reset" title="Reset ke 00:00">⟲</button><button id="tm-close" class="tx" title="Matikan &amp; sembunyikan timer (T)">✕</button></div>
 <canvas id="pointer-canvas"></canvas></main>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
@@ -86,31 +97,68 @@ if('serviceWorker'in navigator){window.addEventListener('load',function(){naviga
 })();
 
 (function(){
-var cv=document.getElementById('pointer-canvas'),ctx=cv.getContext('2d'),btn=document.getElementById('btn-pointer'),stage=document.querySelector('main.stage');
-var FADE=2600,strokes=[],cur=null,dot=null,raf=null,on=false,dpr=1;
+var cv=document.getElementById('pointer-canvas'),ctx=cv.getContext('2d'),stage=document.querySelector('main.stage');
+var btnPen=document.getElementById('btn-pointer'),btnSpot=document.getElementById('btn-spot'),btnTimer=document.getElementById('btn-timer');
+var penBar=document.getElementById('pen-bar'),toastEl=document.getElementById('toast');
+var FADE=2600,strokes=[],cur=null,dot=null,raf=null,mode='off',dpr=1,radius=140;
+var COLORS=['#F45B69','#FFD23F','#34D399','#4DA3FF'],WIDTHS=[3,5,9],color=COLORS[0],width=5;
+try{var sc=localStorage.getItem('presentasi.pen.color'),sw=parseInt(localStorage.getItem('presentasi.pen.width'),10);if(COLORS.indexOf(sc)>-1)color=sc;if(WIDTHS.indexOf(sw)>-1)width=sw}catch(e){}
+function say(m){toastEl.textContent=m;toastEl.className='toast show';clearTimeout(say.t);say.t=setTimeout(function(){toastEl.classList.remove('show')},1800)}
+function syncBar(){Array.prototype.forEach.call(penBar.querySelectorAll('.sw'),function(b){b.classList.toggle('sel',b.dataset.c===color)});Array.prototype.forEach.call(penBar.querySelectorAll('.wd'),function(b){b.classList.toggle('sel',parseInt(b.dataset.w,10)===width)})}
+function save(){try{localStorage.setItem('presentasi.pen.color',color);localStorage.setItem('presentasi.pen.width',String(width))}catch(e){}}
+function setColor(c){color=c;save();syncBar()}function setWidth(w){width=w;save();syncBar()}
+penBar.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.dataset.c)setColor(b.dataset.c);else if(b.dataset.w)setWidth(parseInt(b.dataset.w,10))});
 function resize(){dpr=window.devicePixelRatio||1;var r=stage.getBoundingClientRect();cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr)}
 function pos(e){var r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
-function draw(){var now=performance.now();ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,cv.width,cv.height);ctx.lineCap='round';ctx.lineJoin='round';
-strokes=strokes.filter(function(st){return st===cur||now-st.end<FADE});
-strokes.forEach(function(st){var a=st===cur?1:1-(now-st.end)/FADE;a=Math.max(0,a);var pts=st.pts;if(!pts.length)return;
-ctx.globalAlpha=a;ctx.strokeStyle='#F45B69';ctx.shadowColor='#F45B69';ctx.shadowBlur=14;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);if(pts.length===1)ctx.lineTo(pts[0].x+.1,pts[0].y);ctx.stroke();
-ctx.shadowBlur=0;ctx.strokeStyle='#FFE3E6';ctx.lineWidth=2;ctx.stroke()});
-if(dot){ctx.globalAlpha=1;ctx.shadowColor='#F45B69';ctx.shadowBlur=18;ctx.fillStyle='#F45B69';ctx.beginPath();ctx.arc(dot.x,dot.y,7,0,6.283);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(dot.x,dot.y,2.5,0,6.283);ctx.fill()}
+function clear(){ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);ctx.setTransform(dpr,0,0,dpr,0,0)}
+function draw(){var now=performance.now();clear();ctx.lineCap='round';ctx.lineJoin='round';
+if(mode==='spot'){if(dot){var w=cv.width/dpr,h=cv.height/dpr;ctx.globalAlpha=1;ctx.fillStyle='rgba(0,0,0,.72)';ctx.fillRect(0,0,w,h);ctx.globalCompositeOperation='destination-out';var g=ctx.createRadialGradient(dot.x,dot.y,radius*.82,dot.x,dot.y,radius);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(dot.x,dot.y,radius,0,6.283);ctx.fill();ctx.globalCompositeOperation='source-over'}}
+else{strokes=strokes.filter(function(st){return st===cur||now-st.end<FADE});
+strokes.forEach(function(st){var a=st===cur?1:Math.max(0,1-(now-st.end)/FADE),pts=st.pts;if(!pts.length)return;
+ctx.globalAlpha=a;ctx.strokeStyle=st.color;ctx.shadowColor=st.color;ctx.shadowBlur=14;ctx.lineWidth=st.w;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);if(pts.length===1)ctx.lineTo(pts[0].x+.1,pts[0].y);ctx.stroke();
+ctx.shadowBlur=0;ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=Math.max(1.5,st.w*.38);ctx.stroke()});
+if(dot&&mode==='pen'){ctx.globalAlpha=1;ctx.shadowColor=color;ctx.shadowBlur=18;ctx.fillStyle=color;ctx.beginPath();ctx.arc(dot.x,dot.y,width+3,0,6.283);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(dot.x,dot.y,2.5,0,6.283);ctx.fill()}}
 ctx.globalAlpha=1;
-if(on||strokes.length)raf=requestAnimationFrame(draw);else{raf=null;ctx.clearRect(0,0,cv.width,cv.height)}}
+if(mode!=='off'||strokes.length)raf=requestAnimationFrame(draw);else{raf=null;clear()}}
 function kick(){if(!raf)raf=requestAnimationFrame(draw)}
-function setOn(v){on=v;document.body.classList.toggle('pointer-on',on);btn.classList.toggle('is-on',on);btn.setAttribute('aria-pressed',on?'true':'false');if(on){resize()}else{cur=null;dot=null;strokes=[]}kick()}
-btn.addEventListener('click',function(){setOn(!on)});
-cv.addEventListener('pointerdown',function(e){e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(x){}var p=pos(e);cur={pts:[p],end:0};strokes.push(cur);dot=p;cv.classList.add('hold');kick()});
+function setMode(m){if(m===mode)m='off';mode=m;document.body.classList.toggle('pointer-on',mode!=='off');document.body.classList.toggle('mode-pen',mode==='pen');document.body.classList.toggle('mode-spot',mode==='spot');
+btnPen.classList.toggle('is-on',mode==='pen');btnSpot.classList.toggle('is-on',mode==='spot');btnPen.setAttribute('aria-pressed',mode==='pen');btnSpot.setAttribute('aria-pressed',mode==='spot');
+if(mode!=='off')resize();cur=null;dot=null;strokes=[];syncBar();
+say(mode==='pen'?'Pointer AKTIF · P/Esc untuk mati':mode==='spot'?'Sorot AKTIF · roda mouse = ukuran · S/Esc untuk mati':'Pointer & sorot dimatikan');kick()}
+btnPen.addEventListener('click',function(){setMode('pen')});btnSpot.addEventListener('click',function(){setMode('spot')});
+cv.addEventListener('pointerdown',function(e){e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(x){}var p=pos(e);dot=p;if(mode==='pen'){cur={pts:[p],end:0,color:color,w:width};strokes.push(cur)}kick()});
 cv.addEventListener('pointermove',function(e){var p=pos(e);dot=p;if(cur){var l=cur.pts[cur.pts.length-1];if(Math.abs(p.x-l.x)+Math.abs(p.y-l.y)>1.5)cur.pts.push(p)}kick()});
-function up(){if(cur){cur.end=performance.now();cur=null}cv.classList.remove('hold')}
+function up(){if(cur){cur.end=performance.now();cur=null}}
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
-cv.addEventListener('pointerleave',function(){if(!cur)dot=null});
+cv.addEventListener('pointerleave',function(){if(!cur)dot=null;kick()});
+cv.addEventListener('wheel',function(e){if(mode!=='spot')return;e.preventDefault();radius=Math.max(60,Math.min(420,radius+(e.deltaY<0?20:-20)));kick()},{passive:false});
 cv.addEventListener('contextmenu',function(e){e.preventDefault()});
-window.addEventListener('resize',function(){if(on)resize()});document.addEventListener('fullscreenchange',function(){setTimeout(function(){if(on)resize()},150)});document.addEventListener('webkitfullscreenchange',function(){setTimeout(function(){if(on)resize()},150)});
-function key(e){if(e.ctrlKey||e.metaKey||e.altKey)return;var t=(e.target&&e.target.tagName||'').toLowerCase();if(t==='input'||t==='textarea'||t==='select'||(e.target&&e.target.isContentEditable))return;if(e.key==='p'||e.key==='P'||e.key==='l'||e.key==='L')setOn(!on);else if(e.key==='Escape'&&on)setOn(false)}
+window.addEventListener('resize',function(){if(mode!=='off')resize()});
+['fullscreenchange','webkitfullscreenchange'].forEach(function(ev){document.addEventListener(ev,function(){setTimeout(function(){if(mode!=='off')resize()},150)})});
+
+/* ===== Timer / stopwatch ===== */
+var tmEl=document.getElementById('timer'),tmText=document.getElementById('tm-text'),tmToggle=document.getElementById('tm-toggle'),tmReset=document.getElementById('tm-reset'),tmClose=document.getElementById('tm-close');
+var tmAcc=0,tmStart=0,tmRun=false,tmInt=null;
+function tmMs(){return tmAcc+(tmRun?Date.now()-tmStart:0)}
+function tmFmt(ms){var t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor(t%3600/60),sc=t%60,z=function(n){return(n<10?'0':'')+n};return(h?h+':'+z(m):z(m))+':'+z(sc)}
+function tmPaint(){tmText.textContent=tmFmt(tmMs());tmToggle.textContent=tmRun?'⏸':'▶';tmEl.classList.toggle('run',tmRun)}
+function tmPlay(){if(tmRun)return;tmRun=true;tmStart=Date.now();tmInt=setInterval(tmPaint,250);tmPaint()}
+function tmPause(){if(!tmRun)return;tmAcc+=Date.now()-tmStart;tmRun=false;clearInterval(tmInt);tmPaint()}
+function tmZero(){tmPause();tmAcc=0;tmPaint()}
+function tmShow(v){if(v){tmEl.classList.add('show');btnTimer.classList.add('is-on');tmPaint()}else{tmZero();tmEl.classList.remove('show');btnTimer.classList.remove('is-on')}}
+function tmFlip(){var showing=tmEl.classList.contains('show');tmShow(!showing);say(showing?'Timer dimatikan':'Timer tampil · tekan ▶ untuk mulai')}
+tmToggle.addEventListener('click',function(){tmRun?tmPause():tmPlay()});tmReset.addEventListener('click',tmZero);tmClose.addEventListener('click',function(){tmShow(false);say('Timer dimatikan')});btnTimer.addEventListener('click',tmFlip);
+
+/* ===== Shortcut ===== */
+function key(e){if(e.ctrlKey||e.metaKey||e.altKey)return;var t=(e.target&&e.target.tagName||'').toLowerCase();if(t==='input'||t==='textarea'||t==='select'||(e.target&&e.target.isContentEditable))return;var k=e.key;
+if(k==='p'||k==='P')setMode('pen');else if(k==='s'||k==='S')setMode('spot');else if(k==='t'||k==='T')tmFlip();
+else if(k==='Escape'&&mode!=='off')setMode(mode);
+else if((k==='c'||k==='C')&&mode==='pen'){setColor(COLORS[(COLORS.indexOf(color)+1)%COLORS.length])}
+else if((k==='w'||k==='W')&&mode==='pen'){setWidth(WIDTHS[(WIDTHS.indexOf(width)+1)%WIDTHS.length])}
+else if(k===']'&&mode==='spot'){radius=Math.min(420,radius+20);kick()}else if(k==='['&&mode==='spot'){radius=Math.max(60,radius-20);kick()}}
 document.addEventListener('keydown',key);
 document.querySelectorAll('iframe').forEach(function(f){f.addEventListener('load',function(){try{f.contentDocument.addEventListener('keydown',key)}catch(e){}})});
+syncBar();
 })();
 </script>
 </body>
