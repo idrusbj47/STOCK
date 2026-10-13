@@ -120,7 +120,7 @@ input#q{height:36px;border:1px solid var(--bd);border-radius:10px;padding:0 12px
 .mh:before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
 .mh.g{color:var(--in)}.mh.a{color:var(--am)}.mh.n{color:#7d8498}.mh.r{color:var(--rd)}
 .lg{font-size:11px;color:var(--ink2);margin-top:8px;flex:none;max-height:42px;overflow:auto}
-.card.fsx{position:fixed;inset:8px;z-index:60;border-radius:12px}
+.card.fsx{position:fixed;inset:8px;z-index:60;border-radius:12px;box-shadow:0 0 0 100vmax rgba(20,26,48,.45)}.card.fsx .tw{max-height:none}.fsb{width:36px;padding:0!important;justify-content:center;flex:none}.md .bx.big{width:100%;height:100%;max-height:100%}.md .hd .grp2{display:flex;gap:6px}
 .cnt{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex:none}
 .cnt .card .v{font-size:30px;font-weight:800}.cnt .l{font-size:12px;color:var(--ink2)}
 footer{font-size:11px;color:var(--ink3);padding:0 22px 8px;flex:none}
@@ -184,7 +184,7 @@ th.sk .si{display:inline-block;min-width:14px;margin-left:3px;color:var(--ink3);
 body.printimg canvas{display:none!important}body.printimg .pimg{display:block}
 @media print{@page{size:A4 landscape;margin:10mm}body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 body.printing{display:block;height:auto;overflow:visible;width:1000px;margin:0 auto;background:#fff;font-size:12px}
-.printing .tabs,.printing .ctl,.printing .more,.printing #pn,.printing .bar .grp,.printing #bfs,.printing .seg,.printing .go,.printing .pop{display:none!important}
+.printing .tabs,.printing .ctl,.printing .more,.printing #pn,.printing .bar .grp,.printing #bfs,.printing .seg,.printing .go,.printing .pop,.printing .fsb{display:none!important}
 .printing .top{position:static;border:0;padding:0 0 8px}
 .printing main{display:block;padding:0;overflow:visible;height:auto}
 /* block (bukan flex) agar halaman cetak tidak terpotong oleh pemecahan halaman Chrome/Edge */
@@ -271,7 +271,7 @@ body.printing{display:block;height:auto;overflow:visible;width:1000px;margin:0 a
       </div>
       <div class="bar">
         <div class="grp"><input id="q" placeholder="Cari customer…" oninput="renderMatrix()"><button class="btn sm2" onclick="q.value='';renderMatrix()">Reset Search</button></div>
-        <button class="btn sm2" id="bfs" onclick="toggleFS()">Fullscreen Table</button>
+        <button class="btn sm2" id="bfs" onclick="toggleFS()"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>Fullscreen Table</span></button>
       </div>
       <div class="tw"><table class="mx" id="mx"></table></div>
       <div class="lg" id="mxl"></div>
@@ -290,7 +290,7 @@ body.printing{display:block;height:auto;overflow:visible;width:1000px;margin:0 a
   </section>
 </main>
 <footer id="ft"></footer>
-<div class="md" id="md" onclick="if(event.target===this)closeMd()"><div class="bx"><div class="hd"><div><h3 id="mdt"></h3><small id="mds"></small></div><button class="btn sm2" onclick="closeMd()" aria-label="Tutup"><svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div><div class="tw"><table id="mdb"></table></div></div></div>
+<div class="md" id="md" onclick="if(event.target===this)closeMd()"><div class="bx"><div class="hd"><div><h3 id="mdt"></h3><small id="mds"></small></div><div class="grp2"><button class="btn sm2 fsb" onclick="this.closest('.bx').classList.toggle('big')" aria-label="Layar penuh" title="Layar penuh"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button><button class="btn sm2" onclick="closeMd()" aria-label="Tutup"><svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div></div><div class="tw"><table id="mdb"></table></div></div></div>
 <div id="pn"><button onclick="go(PG-1)" aria-label="Sebelumnya">‹</button><span id="pc"></span><button onclick="go(PG+1)" aria-label="Berikutnya">›</button><button id="pth" onclick="toggleTheme()" aria-label="Ganti tema" title="Dark / Light">☾</button></div>
 
 <script>
@@ -311,6 +311,18 @@ function setTheme(t,save=true){
   if(ST){ draw(); if(!BM) drawBk(); }
 }
 function toggleTheme(){ setTheme(TH()?'light':'dark'); }
+
+/* ===== Tombol layar penuh untuk setiap tabel ===== */
+const FS_IN='<svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>', FS_OUT='<svg class="i" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+function tfsToggle(card){ const on=card.classList.toggle('fsx'); const b=card.querySelector('.fsb'); if(b){b.innerHTML=on?FS_OUT:FS_IN; b.title=on?'Tutup layar penuh':'Layar penuh';} }
+document.querySelectorAll('.card').forEach(card=>{
+  if(card.id==='pvc'||!card.querySelector(':scope > .tw')) return;
+  card.classList.add('tfs');
+  const btn=document.createElement('button'); btn.type='button'; btn.className='btn sm2 fsb'; btn.innerHTML=FS_IN; btn.title='Layar penuh'; btn.setAttribute('aria-label','Layar penuh'); btn.onclick=()=>tfsToggle(card);
+  const h=card.querySelector(':scope > h2');
+  if(h){ const bar=document.createElement('div'); bar.className='bar'; bar.style.marginBottom='8px'; card.insertBefore(bar,h); h.style.margin='0'; bar.appendChild(h); bar.appendChild(btn); }
+  else card.insertBefore(btn,card.firstChild);
+});
 function toggleMore(ev){ ev.stopPropagation(); $('more').classList.toggle('open'); }
 document.addEventListener('click',e=>{ if(!e.target.closest('#pop,#btn-per')) $('pop').classList.remove('on'); if(!e.target.closest('#more')||e.target.closest('.menu button,.menu a')) $('more').classList.remove('open'); });
 /* ===== HELPER ===== */
@@ -516,7 +528,7 @@ function sv(x){
   if(/^[+-]?\d+(\.\d+)?$/.test(m)) return {n:+m};
   return {t};
 }
-function openMd(k){ MDK=k; MDS=null; renderMd(); $('md').classList.add('on'); }
+function openMd(k){ MDK=k; MDS=null; $('md').querySelector('.bx').classList.remove('big'); renderMd(); $('md').classList.add('on'); }
 function mdSort(i){ MDS=(MDS&&MDS.i===i)?{i,d:-MDS.d}:{i,d:1}; renderMd(); }
 function renderMd(){
   const d=DET[MDK], rows=d[7].slice();
@@ -616,7 +628,7 @@ function go(i){
   PGS.forEach((p,k)=>p.classList.toggle('on',k===PG));
   document.querySelectorAll('.tab').forEach((t,k)=>t.classList.toggle('on',k===PG));
   $('pc').textContent=`${PG+1} / ${PGS.length}`;
-  $('pvc').classList.remove('fsx');
+  $('pvc').classList.remove('fsx'); document.querySelectorAll('.card.tfs.fsx').forEach(c=>tfsToggle(c));
   requestAnimationFrame(()=>Object.values(CH).forEach(c=>c.resize()));
 }
 const pvSeg=$('pvc').querySelector('.seg');
@@ -632,7 +644,7 @@ document.querySelectorAll('.lseg').forEach(g=>g.addEventListener('click',ev=>{
   const b=ev.target.closest('button'); if(!b) return; LF=b.dataset.f==='1'; syncLF();
   ['c1','c1b'].forEach(id=>{const c=CH[id]; if(!c) return; c.data.datasets.forEach(d=>d.order=d.type==='line'?(LF?0:2):1); c.update();});
 }));
-function toggleFS(){ const on=$('pvc').classList.toggle('fsx'); $('bfs').textContent=on?'Tutup Fullscreen':'Fullscreen Table'; }
+function toggleFS(){ const on=$('pvc').classList.toggle('fsx'); $('bfs').lastChild.textContent=on?'Tutup Fullscreen':'Fullscreen Table'; }
 
 /* ===== PRESENTATION ===== */
 function togglePres(){
@@ -649,7 +661,7 @@ function exitPres(){
 document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement) document.body.classList.remove('pres'); setTimeout(()=>Object.values(CH).forEach(c=>c.resize()),250); });
 document.addEventListener('keydown',ev=>{
   const typing=/INPUT|SELECT|TEXTAREA/.test((ev.target.tagName||''));
-  if(ev.key==='Escape'){ if($('pop').classList.contains('on')){$('pop').classList.remove('on');return;} if($('more').classList.contains('open')){$('more').classList.remove('open');return;} if($('md').classList.contains('on')){closeMd();return;} if($('pvc').classList.contains('fsx')) toggleFS(); else if(document.body.classList.contains('pres')) exitPres(); return; }
+  if(ev.key==='Escape'){ if($('pop').classList.contains('on')){$('pop').classList.remove('on');return;} if($('more').classList.contains('open')){$('more').classList.remove('open');return;} if($('md').classList.contains('on')){closeMd();return;} {const tf=document.querySelector('.card.tfs.fsx'); if(tf){tfsToggle(tf);return;}} if($('pvc').classList.contains('fsx')) toggleFS(); else if(document.body.classList.contains('pres')) exitPres(); return; }
   if(typing||!ST) return;
   if(ev.key==='ArrowRight') go(PG+1); else if(ev.key==='ArrowLeft') go(PG-1);
 });
