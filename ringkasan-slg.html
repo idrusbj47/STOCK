@@ -1959,6 +1959,18 @@ body.pres #sm-more,body.pres .sum-filter-info,body.pres #btn-sm-table{display:no
 .dhb .rank-table th,.dhb .rank-table td{padding:8px 7px}.dhb:has(#results-section:not(.hidden)) .rank-cell small{display:none}
 .dhb:has(#results-section:not(.hidden)) .bar-track{width:36px}
 .smg{grid-template-columns:60fr 40fr}@media(max-width:999px){.smg .chart-card{grid-column:auto!important;grid-row:auto!important}}
+
+.dt-items th[data-isort]{cursor:pointer;user-select:none}.dt-items th[data-isort]:hover{color:var(--text)}.dt-items th.asc::after{content:" ▲";font-size:9px}.dt-items th.desc::after{content:" ▼";font-size:9px}
+.fsb{width:34px;height:34px;padding:0!important;justify-content:center;flex:none;margin-left:auto}.fsb svg{width:16px;height:16px}
+.fs-on{position:fixed!important;inset:8px!important;z-index:250!important;background:var(--surface)!important;border-radius:12px;padding:14px 18px;overflow:auto;display:flex!important;flex-direction:column;box-shadow:0 0 0 100vmax rgba(10,14,30,.5)!important;max-height:none!important;flex:none!important}
+.fs-on .scr,.fs-on .results{flex:1;min-height:0;overflow:auto}
+.ins .it.clk{cursor:pointer;border-radius:8px;transition:background .15s}.ins .it.clk:hover{background:var(--surface-2)}.ins .it .go{margin-left:auto;align-self:center;color:var(--muted);font-size:18px;padding-left:6px}
+.ins-ov{position:fixed;inset:0;background:rgba(10,14,30,.5);z-index:300;display:none;align-items:center;justify-content:center;padding:16px}.ins-ov.on{display:flex}
+.ins-bx{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:14px;width:min(980px,100%);max-height:88vh;display:flex;flex-direction:column;padding:16px 20px;box-shadow:0 16px 48px rgba(0,0,0,.3)}.ins-bx.big{width:100%;height:100%;max-height:100%}
+.ins-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}.ins-hd h3{font:700 16px var(--font-display);margin:0}.ins-hd small{color:var(--muted);font-size:12px}.ins-act{display:flex;gap:6px;flex:none}.ins-act .fsb{margin:0}
+.ins-body{flex:1;min-height:0;overflow:auto;border:1px solid var(--border);border-radius:10px}.ins-body .dt-items{font-size:12.5px}.ins-body tr.lk{cursor:pointer}.ins-body .r{text-align:right}.ins-sec{font:700 12px var(--font-body);color:var(--muted);margin:12px 4px 6px;text-transform:uppercase;letter-spacing:.04em}
+.ins-hint{font-size:11.5px;color:var(--muted);margin:8px 2px 0}
+@media print{.fsb,.ins-ov{display:none!important}}
 </style>
 <style>
 /* ===== RINGKASAN SOB: tambahan skin ===== */
@@ -2068,7 +2080,7 @@ body.pres #sm-more,body.pres .sum-filter-info,body.pres #btn-sm-table{display:no
 
   <!-- 1 OVERVIEW -->
   <section id="ov-section" class="pg">
-    <div class="ptitle"><b>EXECUTIVE OVERVIEW · STOCK LAMA GUDANG (SLG)</b><span id="ov-per"></span></div>
+    <div class="ptitle"><b>OVERVIEW · STOCK LAMA GUDANG (SLG)</b><span id="ov-per"></span></div>
     <div class="kp" id="ov-kpi"></div>
     <div class="stc" id="ov-status"></div>
     <div class="hero">
@@ -2179,6 +2191,7 @@ body.pres #sm-more,body.pres .sum-filter-info,body.pres #btn-sm-table{display:no
     </div>
   </div>
 </div>
+<div class="ins-ov" id="ins-ov"><div class="ins-bx" id="ins-bx" role="dialog" aria-modal="true"><div class="ins-hd"><div><h3 id="ins-t"></h3><small id="ins-s"></small></div><div class="ins-act"><button type="button" class="btn sm2 fsb" id="ins-fs" title="Layar penuh" aria-label="Layar penuh"></button><button type="button" class="btn sm2" id="ins-x" aria-label="Tutup">✕</button></div></div><div class="ins-body" id="ins-body"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -2475,7 +2488,7 @@ const PAGE_ID = { overview:'ov-section', detail:'dt-section', move:'mv-section',
 function renderAll(){
   const P = cur(); if (!P) return;
   $('cutoff-value').textContent = P.name; $('cutoff-badge').classList.remove('hidden');
-  $('src-info').textContent = (state.source === 'live' ? 'Live · ' : state.source === 'cache' ? 'Cache · ' : 'Snapshot · ') + (state.loadedAt ? state.loadedAt.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '');
+  $('src-info').textContent = '';
   renderPeriodTabs(); killCharts();
   if (state.view === 'overview') renderOverview();
   else if (state.view === 'detail') renderDetail();
@@ -2489,6 +2502,7 @@ function renderPeriodTabs(){
   $('pbar').classList.toggle('hidden', state.view === 'move');
 }
 function setView(v){
+  closeAllFS();
   state.view = v;
   PAGES.forEach(p => $(PAGE_ID[p]).classList.toggle('hidden', p !== v));
   document.querySelectorAll('#view-tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
@@ -2500,7 +2514,7 @@ function gotoDetail(ag, kt){ state.ag = ag; state.kt = kt == null ? null : kt; s
 /* ================= 1. OVERVIEW ================= */
 function renderOverview(){
   const P = cur(), pv = prevOf(P), C = P.c, V = pv && pv.c;
-  $('ov-per').textContent = `SLG ${P.key} · ${fmtInt(C.n)} mc` + (pv ? ` · dibanding ${pv.key}` : '');
+  $('ov-per').textContent = '';
   const dKg = V ? C.kg - V.kg : 0, dN = V ? C.n - V.n : 0, dAge = V ? C.age - V.age : 0, dDes = V ? C.dKg - V.dKg : 0;
   $('ov-kpi').innerHTML =
     kc('out','box','Total Stok Lama (Tonase SLG)', fmtTon(C.kg), 'kg', V ? `${dTag(dKg, sgn(dKg)+fmtTon(Math.abs(dKg))+' kg ('+sgn(dKg)+fmtNum(Math.abs(pctOf(dKg, V.kg)))+'%)', null)} vs ${pv.key}` : fmtInt(C.qty) + ' pcs') +
@@ -2518,7 +2532,7 @@ function renderOverview(){
     <div class="lgd">${AG.map((a,i) => `<span><i style="background:var(--st-${['lunas','siap','kurang','kosong'][i]})"></i>${a.l} (${a.r})</span>`).join('')}<span style="margin-left:auto">Total ${kg ? fmtTon(C.kg) + ' kg' : fmtInt(C.n) + ' mc'}</span></div>`;
   $('ov-comp').querySelectorAll('.barx div').forEach(c => c.addEventListener('click', () => gotoDetail(+c.dataset.ag, null)));
   drawAgeChart(P, pv);
-  $('ov-ins').innerHTML = buildInsights(P, pv).map(([i,c,t,b,d]) => `<div class="it"><div class="kic ${c}">${SV(IC[i])}</div><div><div class="t">${t}</div><div class="b">${b}</div><div class="d">${d}</div></div></div>`).join('');
+  $('ov-ins').innerHTML = buildInsights(P, pv).map(([i,c,t,b,d]) => `<div class="it clk" tabindex="0" role="button" data-k="${insKind(t)}" title="Klik untuk lihat detail"><div class="kic ${c}">${SV(IC[i])}</div><div><div class="t">${t}</div><div class="b">${b}</div><div class="d">${d}</div></div><span class="go">›</span></div>`).join('');
 }
 function drawAgeChart(P, pv){
   const c = colors(), kg = state.ovMode === 'kg';
@@ -2569,7 +2583,7 @@ function mkMatcher(q){
 function matches(r, q){ return mkMatcher(q)(r); }
 function dtScope(P){ const mt = mkMatcher(state.search); return P.recs.filter(r => (state.ag == null || r.ag === state.ag) && (state.kt == null || r.kk === state.kt) && mt(r)); }
 const ketBadge = r => r.ket ? `<span class="ket kt-${r.kk}">${escapeHtml(r.ket)}</span>` : '';
-const sortVal = (o, k) => /^g\d$/.test(k) ? o.g[+k[1]] : o[k];
+const sortVal = (o, k) => +(/^g\d$/.test(k) ? o.g[+k[1]] : o[k]) || 0;
 function renderDetail(){
   const P = cur(), prop = state.dim, scope = dtScope(P);
   document.querySelectorAll('#dim-switch button').forEach(b => b.classList.toggle('active', b.dataset.dim === prop));
@@ -2577,7 +2591,7 @@ function renderDetail(){
   document.querySelectorAll('#kt-seg button').forEach(b => b.classList.toggle('on', (b.dataset.k === 'all' ? null : b.dataset.k) === state.kt));
   const rows = groupBy(scope, prop).filter(o => o.n > 0);
   const sk = state.sortKey, sd = state.sortDir;
-  rows.sort((a,b) => { const x = sk === 'name' ? a.name.localeCompare(b.name) : (sortVal(a, sk) - sortVal(b, sk)); return (x === 0 || isNaN(x) ? b.kg - a.kg : x) * (sk === 'name' ? -sd : sd); });
+  rows.sort((a,b) => { const x = sk === 'name' ? a.name.localeCompare(b.name, 'id', { numeric:true, sensitivity:'base' }) : (sortVal(a, sk) - sortVal(b, sk)); return x === 0 ? (b.kg - a.kg) || a.name.localeCompare(b.name, 'id') : x * sd; });
   const selScope = state.selected ? scope.filter(r => nrm(r[state.selected.dim]) === state.selected.key) : scope;
   const C = calc(selScope);
   $('dt-mini').innerHTML =
@@ -2609,9 +2623,13 @@ function renderDetail(){
   renderItems(scope);
 }
 /* Tabel item barang (dipakai di Detail & SDG) */
-function itemsTable(list, cap){
+function itemsTable(list, cap, id){
+  if (id){ (state.itemSrc || (state.itemSrc = {}))[id] = { list:list, cap:cap }; }
+  const IS = state.itemSort || (state.itemSort = { k:'kg', d:-1 });
+  const ikey = { so:r => r.so, model:r => r.model, customer:r => r.customer + ' ' + r.internal + ' ' + r.sales, qty:r => r.qty, kg:r => r.kg, tgl:r => -r.um, um:r => r.um }[IS.k] || (r => r.kg);
+  list = list.slice().sort((a,b) => { const x = ikey(a), y = ikey(b); const c = typeof x === 'string' ? x.localeCompare(y, 'id', { numeric:true, sensitivity:'base' }) : (x - y); return c === 0 ? (b.kg - a.kg) : c * IS.d; });
   const shown = list.slice(0, cap);
-  return shown.length ? `<table class="dt-items"><thead><tr><th>SO<br>WO</th><th>Nama Barang</th><th>Customer<br>Internal · Sales</th><th class="r">Qty (pcs)<br>MC</th><th class="r">Tonase (kg)</th><th class="cq">Masuk Gudang<br>Fit · STS</th><th class="r">Umur<br>Ket.</th></tr></thead><tbody>` +
+  return shown.length ? `<table class="dt-items"><thead><tr><th data-isort="so" class=" ${IS.k === 'so' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">SO<br>WO</th><th data-isort="model" class=" ${IS.k === 'model' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">Nama Barang</th><th data-isort="customer" class=" ${IS.k === 'customer' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">Customer<br>Internal · Sales</th><th data-isort="qty" class="r ${IS.k === 'qty' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">Qty (pcs)<br>MC</th><th data-isort="kg" class="r ${IS.k === 'kg' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">Tonase (kg)</th><th data-isort="tgl" class="cq ${IS.k === 'tgl' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">Masuk Gudang<br>Fit · STS</th><th data-isort="um" class="r ${IS.k === 'um' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">Umur<br>Ket.</th></tr></thead><tbody>` +
     shown.map(r => `<tr><td class="nw"><span class="mono">${escapeHtml(r.so)}</span><span class="sub mono">WO ${escapeHtml(r.wo || '-')}</span></td><td class="wr md">${escapeHtml(r.model)}</td><td class="wr">${escapeHtml(r.customer)}<span class="sub">${escapeHtml(r.internal)} · ${escapeHtml(r.sales)}</span></td><td class="r nw">${fmtInt(r.qty)}<span class="sub">MC ${escapeHtml(r.mcs || '-')}</span></td><td class="r nw"><b>${fmtNum(r.kg, 0)}</b></td><td class="nw cq">${escapeHtml(r.tgl || '-')}<span class="sub">Fit ${escapeHtml(r.fit || '-')} · ${escapeHtml(r.sts || '-')}</span></td><td class="r nw"><span class="status-badge sb-${AG[r.ag].k}">${r.um} bln</span>${r.ket ? `<span class="sub">${ketBadge(r)}</span>` : ''}</td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty-note">Tidak ada item.</div>';
 }
@@ -2621,7 +2639,7 @@ function renderItems(scope){
   list = list.slice().sort((a,b) => b.kg - a.kg);
   const cap = 300;
   $('results-count').textContent = fmtInt(list.length) + ' mc' + (list.length > cap ? ` · ${cap} teratas` : '') + ' · ' + fmtTon(list.reduce((a,r) => a + r.kg, 0)) + ' kg';
-  $('results').innerHTML = itemsTable(list, cap);
+  $('results').innerHTML = itemsTable(list, cap, 'results');
 }
 
 /* ================= 3. PERGERAKAN ================= */
@@ -2697,7 +2715,7 @@ function renderSdg(){
   document.querySelectorAll('#sd-mode button').forEach(b => b.classList.toggle('on', (b.dataset.m === 'all') === state.sdAll));
   let rows = groupBy(P.recs, dim); if (!state.sdAll) rows = rows.filter(o => o.dn > 0);
   const sk = state.sdSort, sd = state.sdDir;
-  rows.sort((a,b) => { const x = sk === 'name' ? a.name.localeCompare(b.name) : (a[sk] - b[sk]); return (x === 0 || isNaN(x) ? b.dkg - a.dkg || b.kg - a.kg : x) * (sk === 'name' ? -sd : sd); });
+  rows.sort((a,b) => { const x = sk === 'name' ? a.name.localeCompare(b.name, 'id', { numeric:true, sensitivity:'base' }) : (sortVal(a, sk) - sortVal(b, sk)); return x === 0 ? (b.dkg - a.dkg) || (b.kg - a.kg) || a.name.localeCompare(b.name, 'id') : x * sd; });
   $('sd-rank-title').textContent = 'Destroy per ' + DIM_LABEL[dim];
   $('sd-rank-count').textContent = fmtInt(rows.length) + ' ' + DIM_LABEL[dim].toLowerCase();
   const th = (key, label, x) => `<th data-sort="${key}" class="${x || ''} ${sk === key ? (sd > 0 ? 'asc' : 'desc') : ''}">${label}</th>`;
@@ -2719,7 +2737,7 @@ function renderSdg(){
   list = list.slice().sort((a,b) => b.kg - a.kg);
   const cap = 300;
   $('sd-results-count').textContent = fmtInt(list.length) + ' mc' + (list.length > cap ? ` · ${cap} teratas` : '') + ' · ' + fmtTon(list.reduce((a,r) => a + r.kg, 0)) + ' kg';
-  $('sd-results').innerHTML = itemsTable(list, cap);
+  $('sd-results').innerHTML = itemsTable(list, cap, 'sd-results');
 }
 
 /* ================= 5. LAPORAN (referensi laporan SLG & SDG) ================= */
@@ -2944,6 +2962,7 @@ $('period-tabs').addEventListener('click', e => { const b = e.target.closest('bu
 $('ov-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.ovMode = b.dataset.m; $('ov-seg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderAll(); });
 $('dim-switch').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.dim = b.dataset.dim; state.selected = null; state.sortKey = 'kg'; state.sortDir = -1; renderAll(); });
 $('ag-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.ag = b.dataset.s === 'all' ? null : AG.findIndex(a => a.k === b.dataset.s); state.selected = null; renderAll(); });
+['results','sd-results'].forEach(id => $(id).addEventListener('click', e => { const th = e.target.closest('th[data-isort]'); if (!th) return; const k = th.dataset.isort, IS = state.itemSort || (state.itemSort = { k:'kg', d:-1 }); if (IS.k === k) IS.d *= -1; else { IS.k = k; IS.d = (k === 'kg' || k === 'qty' || k === 'um') ? -1 : 1; } const src = state.itemSrc && state.itemSrc[id]; if (src) $(id).innerHTML = itemsTable(src.list, src.cap, id); }));
 $('rank-thead').addEventListener('click', e => { const th = e.target.closest('th[data-sort]'); if (!th) return; const k = th.dataset.sort; if (state.sortKey === k) state.sortDir *= -1; else { state.sortKey = k; state.sortDir = k === 'name' ? 1 : -1; } renderAll(); });
 $('kt-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.kt = b.dataset.k === 'all' ? null : b.dataset.k; state.selected = null; renderAll(); });
 $('sd-dim').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.sdDim = b.dataset.dim; state.sdSel = null; state.sdSort = 'dkg'; state.sdDir = -1; renderAll(); });
@@ -2978,6 +2997,101 @@ document.addEventListener('keydown', e => {
 $('btn-more').addEventListener('click', e => { e.stopPropagation(); $('more').classList.toggle('open'); });
 document.addEventListener('click', e => { if (!e.target.closest('#more') || e.target.closest('.menu button,.menu a')) $('more').classList.remove('open'); });
 window.addEventListener('resize', () => setTimeout(uiResize, 120));
+
+/* ===== Layar penuh untuk tabel/panel yang bisa di-scroll ===== */
+const FS_IN = '<svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>', FS_OUT = '<svg class="i" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+function fsToggle(target, btn){ const on = target.classList.toggle('fs-on'); if (btn){ btn.innerHTML = on ? FS_OUT : FS_IN; btn.title = on ? 'Tutup layar penuh' : 'Layar penuh'; } }
+function closeAllFS(){ document.querySelectorAll('.fs-on').forEach(el => { el.classList.remove('fs-on'); }); document.querySelectorAll('.fsb[data-fs]').forEach(b => { b.innerHTML = FS_IN; b.title = 'Layar penuh'; }); }
+function addFS(host, target){
+  if (!host || !target) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm2 fsb'; b.dataset.fs = '1'; b.innerHTML = FS_IN; b.title = 'Layar penuh'; b.setAttribute('aria-label', 'Layar penuh');
+  b.addEventListener('click', e => { e.stopPropagation(); fsToggle(target, b); }); host.appendChild(b);
+}
+document.querySelectorAll('.dhb > .card').forEach(card => addFS(card.querySelector('.section-title'), card));
+(function(){ const c = $('ov-ins') && $('ov-ins').closest('.card'); if (c){ const h = c.querySelector('h2'); if (h){ h.style.display = 'flex'; h.style.alignItems = 'center'; addFS(h, c); } } })();
+document.querySelectorAll('#mv-more .section-title').forEach(t => { const w = t.nextElementSibling; if (w && w.classList.contains('rank-table-wrap')){ t.style.display = 'flex'; t.style.alignItems = 'center'; addFS(t, w); } });
+$('ins-fs').innerHTML = FS_IN;
+$('ins-fs').addEventListener('click', () => { const bx = $('ins-bx'), on = bx.classList.toggle('big'); $('ins-fs').innerHTML = on ? FS_OUT : FS_IN; });
+
+/* ===== Insight: klik untuk jendela detail ===== */
+function insKind(t){ t = String(t); return t.indexOf('TOTAL STOK') === 0 ? 'total' : t.indexOf('STOCK DESTROY') === 0 ? 'destroy' : t.indexOf('CUSTOMER TERBESAR') === 0 ? 'cus' : t.indexOf('SLOW') === 0 ? 'slow' : t.indexOf('DEAD') === 0 ? 'dead' : t.indexOf('INTERNAL') === 0 ? 'int' : t.indexOf('STATUS PO') === 0 ? 'po' : ''; }
+function insTbl(head, rows, dim){
+  return '<table class="dt-items"><thead><tr>' + head.map(h => `<th class="${h[1] ? 'r' : ''}">${h[0]}</th>`).join('') + '</tr></thead><tbody>' +
+    rows.map(r => `<tr${r.key != null ? ` class="lk" data-dim="${dim}" data-key="${escapeHtml(r.key)}" data-name="${escapeHtml(r.name)}" title="Klik untuk buka di Rincian"` : ''}>${r.t.map((c,i) => `<td class="${head[i] && head[i][1] ? 'r nw' : ''}">${c}</td>`).join('')}</tr>`).join('') + '</tbody></table>';
+}
+function insSec(t){ return `<div class="ins-sec">${t}</div>`; }
+function openIns(kind){
+  const P = cur(), pv = prevOf(P), C = P.c; if (!P || !kind) return;
+  let title = '', sub = '', html = '', ag = null, kt = null;
+  const rowsOf = (arr, fn) => arr.map((o,i) => ({ key:o.key, name:o.name, t:fn(o,i) }));
+  const dsg = d => (d > 0 ? '+' : d < 0 ? '−' : '') + fmtTon(Math.abs(d));
+  if (kind === 'total'){
+    title = 'Total Stok Lama'; sub = `${fmtTon(C.kg)} kg · ${fmtInt(C.n)} mc · ${fmtInt(C.cusN)} customer · ${fmtInt(C.qty)} pcs`;
+    const pm = new Map(); if (pv) groupBy(pv.recs, 'internal').forEach(o => pm.set(o.key, o.kg));
+    const gi = groupBy(P.recs, 'internal').sort((a,b) => b.kg - a.kg);
+    html = insSec('Per Internal') + insTbl([['Internal'],['Σ MC',1],['Qty (pcs)',1],['Tonase (kg)',1],['% Total',1]].concat(pv ? [['Δ vs ' + pv.key + ' (kg)',1]] : []),
+      rowsOf(gi, o => [escapeHtml(o.name), fmtInt(o.n), fmtInt(o.qty), '<b>' + fmtTon(o.kg) + '</b>', fmtPct(pctOf(o.kg, C.kg))].concat(pv ? [dsg(o.kg - (pm.get(o.key) || 0))] : [])), 'internal') +
+      insSec('Per Kelompok Umur') + insTbl([['Kelompok'],['Σ MC',1],['Tonase (kg)',1],['% Tonase',1]], AG.map((a,i) => ({ t:[a.l + ' (' + a.r + ')', fmtInt(C.g[i].n), fmtTon(C.g[i].kg), fmtPct(pctOf(C.g[i].kg, C.kg))] })));
+  } else if (kind === 'destroy'){
+    title = 'Stock Destroy (SDG)'; sub = `${fmtTon(C.dKg)} kg · ${fmtInt(C.dN)} mc · ${fmtPct(C.dPct)} dari stok lama`; kt = 'destroy';
+    const gi = groupBy(P.recs, 'internal').filter(o => o.dn > 0).sort((a,b) => b.dkg - a.dkg);
+    const gc = groupBy(P.recs, 'customer').filter(o => o.dn > 0).sort((a,b) => b.dkg - a.dkg).slice(0, 10);
+    const items = (P.dr || []).slice().sort((a,b) => b.kg - a.kg).slice(0, 15);
+    html = insSec('Per Internal') + insTbl([['Internal'],['Σ MC Destroy',1],['Destroy (kg)',1],['% dari stok',1],['Sisa (kg)',1]], rowsOf(gi, o => [escapeHtml(o.name), fmtInt(o.dn), '<b>' + fmtTon(o.dkg) + '</b>', fmtPct(o.dPct, 0), fmtTon(o.sisa)]), 'internal') +
+      insSec('10 Customer dengan destroy terbesar') + insTbl([['Customer'],['Σ MC Destroy',1],['Destroy (kg)',1],['% dari stok',1]], rowsOf(gc, o => [escapeHtml(o.name), fmtInt(o.dn), '<b>' + fmtTon(o.dkg) + '</b>', fmtPct(o.dPct, 0)]), 'customer') +
+      insSec('15 item destroy terbesar') + insTbl([['SO'],['Nama Barang'],['Customer'],['Tonase (kg)',1],['Umur',1]], items.map(r => ({ t:[escapeHtml(r.so), escapeHtml(r.model), escapeHtml(r.customer), '<b>' + fmtNum(r.kg, 0) + '</b>', r.um + ' bln'] })));
+    if (!gi.length) html = '<div class="empty-note" style="padding:16px">Belum ada barang berketerangan DESTROY pada periode ini.</div>';
+  } else if (kind === 'cus'){
+    title = 'Customer Terbesar'; sub = '15 customer dengan tonase stok terbesar · klik baris untuk membuka di Rincian';
+    const g = groupBy(P.recs, 'customer').sort((a,b) => b.kg - a.kg).slice(0, 15);
+    html = insTbl([['#',1],['Customer'],['Σ MC',1],['Tonase (kg)',1],['% Total',1],['Umur Rata²',1],['> 3 bln (kg)',1],['Dead (kg)',1]], rowsOf(g, (o,i) => [i+1, escapeHtml(o.name), fmtInt(o.n), '<b>' + fmtTon(o.kg) + '</b>', fmtPct(pctOf(o.kg, C.kg)), fmtNum(o.age), fmtTon(o.slow), fmtTon(o.g[3])]), 'customer');
+  } else if (kind === 'slow'){
+    title = 'Slow Moving (> 3 Bulan)'; sub = `${fmtTon(C.slow)} kg · ${fmtInt(C.slowN)} mc · ${fmtPct(C.slowPct)} dari total stok`;
+    const gc = groupBy(P.recs, 'customer').filter(o => o.slow > 0).sort((a,b) => b.slow - a.slow).slice(0, 15);
+    const gi = groupBy(P.recs, 'internal').filter(o => o.slow > 0).sort((a,b) => b.slow - a.slow).slice(0, 10);
+    html = insSec('Customer dengan stok > 3 bln terbesar') + insTbl([['#',1],['Customer'],['Σ MC > 3 bln',1],['Lama 4–6 (kg)',1],['Dead > 6 (kg)',1],['Total > 3 bln (kg)',1],['% dari stok customer',1],['Tertua (bln)',1]], rowsOf(gc, (o,i) => [i+1, escapeHtml(o.name), fmtInt(o.gn[2] + o.gn[3]), fmtTon(o.g[2]), fmtTon(o.g[3]), '<b>' + fmtTon(o.slow) + '</b>', fmtPct(o.slowPct, 0), fmtInt(o.max)]), 'customer') +
+      insSec('Internal dengan stok > 3 bln terbesar') + insTbl([['Internal'],['Σ MC > 3 bln',1],['Total > 3 bln (kg)',1],['% dari stok internal',1]], rowsOf(gi, o => [escapeHtml(o.name), fmtInt(o.gn[2] + o.gn[3]), '<b>' + fmtTon(o.slow) + '</b>', fmtPct(o.slowPct, 0)]), 'internal');
+  } else if (kind === 'dead'){
+    title = 'Dead Stock (> 6 Bulan)'; sub = `${fmtTon(C.g[3].kg)} kg · ${fmtInt(C.g[3].n)} mc · tertua ${fmtInt(C.max)} bulan`; ag = 3;
+    const dc = groupBy(P.recs.filter(r => r.ag === 3), 'customer').sort((a,b) => b.kg - a.kg).slice(0, 15);
+    const items = P.recs.filter(r => r.ag === 3).sort((a,b) => b.kg - a.kg).slice(0, 20);
+    html = insSec('Customer dengan dead stock terbesar') + insTbl([['#',1],['Customer'],['Σ MC',1],['Tonase (kg)',1],['Tertua (bln)',1]], rowsOf(dc, (o,i) => [i+1, escapeHtml(o.name), fmtInt(o.n), '<b>' + fmtTon(o.kg) + '</b>', fmtInt(o.max)]), 'customer') +
+      insSec('20 item dead stock terbesar') + insTbl([['SO'],['Nama Barang'],['Customer'],['Tonase (kg)',1],['Umur',1]], items.map(r => ({ t:[escapeHtml(r.so), escapeHtml(r.model), escapeHtml(r.customer), '<b>' + fmtNum(r.kg, 0) + '</b>', r.um + ' bln'] })));
+  } else if (kind === 'int'){
+    title = 'Internal Perlu Perhatian'; sub = 'Internal diurutkan berdasarkan tonase umur > 3 bulan · klik baris untuk membuka di Rincian';
+    const gi = groupBy(P.recs, 'internal').filter(o => o.slow > 0).sort((a,b) => b.slow - a.slow).slice(0, 15);
+    html = insTbl([['#',1],['Internal'],['Stok (kg)',1],['> 3 bln (kg)',1],['% > 3 bln',1],['Dead (kg)',1],['Umur Rata²',1]], rowsOf(gi, (o,i) => [i+1, escapeHtml(o.name), fmtTon(o.kg), '<b>' + fmtTon(o.slow) + '</b>', fmtPct(o.slowPct, 0), fmtTon(o.g[3]), fmtNum(o.age)]), 'internal');
+  } else if (kind === 'po'){
+    const ka = ketAgg(P.recs), kT = ka.find(x => x.k === 'tunggu'), kA = ka.find(x => x.k === 'ada');
+    title = 'Status PO Barang Lama'; sub = `Tunggu PO ${fmtTon(kT.kg)} kg (${fmtInt(kT.n)} mc) · Ada PO ${fmtTon(kA.kg)} kg (${fmtInt(kA.n)} mc)`;
+    const po = P.recs.filter(r => r.kk === 'tunggu' || r.kk === 'ada');
+    const tm = new Map(groupBy(po.filter(r => r.kk === 'tunggu'), 'customer').map(o => [o.key, o]));
+    const am = new Map(groupBy(po.filter(r => r.kk === 'ada'), 'customer').map(o => [o.key, o]));
+    const gc = groupBy(po, 'customer').sort((a,b) => b.kg - a.kg).slice(0, 15);
+    html = insSec('Ringkasan keterangan') + insTbl([['Status'],['Σ MC',1],['Qty (pcs)',1],['Tonase (kg)',1],['% Stok lama',1]], ka.map(x => ({ t:[x.l, fmtInt(x.n), fmtInt(x.qty), '<b>' + fmtTon(x.kg) + '</b>', fmtPct(pctOf(x.kg, C.kg))] }))) +
+      insSec('Customer dengan barang Tunggu PO / Ada PO terbesar') + insTbl([['#',1],['Customer'],['Tunggu PO (kg)',1],['Ada PO (kg)',1],['Total (kg)',1],['Σ MC',1]], rowsOf(gc, (o,i) => [i+1, escapeHtml(o.name), fmtTon((tm.get(o.key) || {}).kg), fmtTon((am.get(o.key) || {}).kg), '<b>' + fmtTon(o.kg) + '</b>', fmtInt(o.n)]), 'customer');
+  } else return;
+  $('ins-t').textContent = title; $('ins-s').textContent = sub;
+  $('ins-body').innerHTML = html; $('ins-body').dataset.ag = ag == null ? '' : ag; $('ins-body').dataset.kt = kt == null ? '' : kt;
+  $('ins-bx').classList.remove('big'); $('ins-fs').innerHTML = FS_IN; $('ins-body').scrollTop = 0;
+  $('ins-ov').classList.add('on');
+}
+function closeIns(){ $('ins-ov').classList.remove('on'); }
+$('ov-ins').addEventListener('click', e => { const it = e.target.closest('.it[data-k]'); if (it) openIns(it.dataset.k); });
+$('ov-ins').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const it = e.target.closest('.it[data-k]'); if (it){ e.preventDefault(); openIns(it.dataset.k); } });
+$('ins-x').addEventListener('click', closeIns);
+$('ins-ov').addEventListener('click', e => { if (e.target === $('ins-ov')) closeIns(); });
+$('ins-body').addEventListener('click', e => {
+  const tr = e.target.closest('tr.lk'); if (!tr) return;
+  const dim = tr.dataset.dim, bd = $('ins-body').dataset;
+  state.dim = dim; state.selected = { key: tr.dataset.key, name: tr.dataset.name, dim: dim }; state.ag = bd.ag === '' ? null : +bd.ag; state.kt = bd.kt === '' ? null : bd.kt; state.search = ''; $('search-input').value = '';
+  closeIns(); setView('detail');
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if ($('ins-ov').classList.contains('on')){ closeIns(); return; }
+  if (document.querySelector('.fs-on')){ closeAllFS(); }
+}, true);
 
 function hideSplash(){ const s = $('app-splash'); if (!s) return; s.classList.add('hide'); setTimeout(() => { if (s.parentNode) s.parentNode.removeChild(s); }, 500); }
 if (typeof Chart !== 'undefined'){ Chart.defaults.font.family = "'Inter','Segoe UI',system-ui,sans-serif"; if (Chart.defaults.plugins) Chart.defaults.plugins.datalabels = { display:false }; }
