@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stock-opname-shell-v139';
+const CACHE_NAME = 'stock-opname-shell-v140';
 const SHELL_FILES = [
   './',
   './index.html',
