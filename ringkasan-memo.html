@@ -1953,6 +1953,14 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
 .view-tabs button.active::before,.date-tab.active::before,.sum-filter-btn.active::before,.qv-filter-chip.active::before,.seg button.on::before,.dim-switch button.active::before,.sf-seg button.on::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.55);animation:dotpulse 1.6s ease-out infinite}
 @keyframes dotpulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
 @media(prefers-reduced-motion:reduce){.view-tabs button.active::before,.date-tab.active::before,.sum-filter-btn.active::before,.qv-filter-chip.active::before,.seg button.on::before,.dim-switch button.active::before,.sf-seg button.on::before{animation:none}}
+
+.rank-table th[data-sort]{cursor:pointer;user-select:none}.rank-table th[data-sort]:hover{color:var(--text)}.rank-table th.asc::after{content:" ▲";font-size:9px}.rank-table th.desc::after{content:" ▼";font-size:9px}
+.fsb{width:34px;height:34px;padding:0!important;justify-content:center;flex:none;margin-left:auto}.fsb svg{width:16px;height:16px}.section-title select+.fsb{margin-left:8px}.sheet-header .fsb{margin:0;display:inline-flex;align-items:center}
+.fs-on{position:fixed!important;inset:8px!important;z-index:2500!important;background:var(--surface)!important;border-radius:12px;padding:14px 18px;overflow:auto;display:flex!important;flex-direction:column;box-shadow:0 0 0 100vmax rgba(10,14,30,.5)!important;max-height:none!important;flex:none!important}
+.fs-on .scr,.fs-on .results{flex:1;min-height:0;overflow:auto}
+.ins .it.clk{cursor:pointer;border-radius:8px;transition:background .15s}.ins .it.clk:hover{background:var(--surface-2)}.ins .it .go{margin-left:auto;align-self:center;color:var(--muted);font-size:18px;padding-left:6px}
+.sheet.big{max-width:none;width:100%;height:100%;max-height:100%;border-radius:0}
+@media print{.fsb{display:none!important}}
 </style>
 </head>
 <body>
@@ -2001,7 +2009,7 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
 
   <!-- 1 OVERVIEW -->
   <section id="ov-section" class="pg">
-    <div class="ptitle"><b>EXECUTIVE OVERVIEW</b><span id="ov-per"></span></div>
+    <div class="ptitle"><b>OVERVIEW</b><span id="ov-per"></span></div>
     <div class="kp" id="ov-kpi"></div>
     <div class="stc" id="ov-status"></div>
     <div class="hero">
@@ -2067,7 +2075,7 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
         <div class="scr rank-table-wrap"><table class="rank-table"><thead><tr><th>Nama</th><th>Total Line</th><th>Lunas</th><th>Kurang</th><th>Siap</th><th>Kosong</th><th>% Lunas</th><th>Outstanding</th></tr></thead><tbody id="rank-tbody"></tbody></table></div>
       </div>
       <div class="card" id="results-section">
-        <div class="section-title">Detail Item <small id="results-count"></small></div>
+        <div class="section-title">Detail Item <small id="results-count"></small><select id="res-sort" title="Urutkan daftar item" style="margin-left:auto;height:32px"><option value="">Urut: Bawaan</option><option value="cus:1">Customer A–Z</option><option value="cus:-1">Customer Z–A</option><option value="mdl:1">Model A–Z</option><option value="mdl:-1">Model Z–A</option><option value="ton:-1">Tonase terbesar</option><option value="ton:1">Tonase terkecil</option><option value="sisa:-1">Sisa terbesar</option></select></div>
         <section id="results" class="results scr"></section>
       </div>
     </div>
@@ -2143,6 +2151,7 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
         <button class="icon-btn" id="btn-print-detail" aria-label="Cetak tampilan ini" title="Cetak tampilan ini">
           <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
         </button>
+        <button class="icon-btn fsb" id="btn-fs-detail" title="Layar penuh" aria-label="Layar penuh"></button>
         <button class="icon-btn" id="btn-close-detail">✕</button>
       </div>
     </div>
@@ -2905,6 +2914,7 @@ function renderKPI(){
   document.getElementById('kpi-kosong-tonase-sisa').textContent = 'Tonase Sisa: ' + fmtNum(tonase.kosong - tonaseDo.kosong);
 }
 
+const RK_KEYS = ['name','total','lunas','kurang','siap','kosong','pl','out']; const RK = { k:'total', d:-1 };
 function renderRankTable(){
   const dimKey = dimProp();
   el.rankTitle.textContent = 'Performa ' + (state.dim==='int' ? 'Internal' : 'Sales');
@@ -2917,7 +2927,9 @@ function renderRankTable(){
     groups[name].out += (r.tonase - r.tonaseDO);
     groups[name].total++;
   });
-  const list = Object.values(groups).sort((a,b) => b.total - a.total);
+  const rkv = (g,k) => k === 'name' ? g.name : k === 'pl' ? (g.total ? g.lunas / g.total : 0) : (g[k] || 0);
+  const list = Object.values(groups).sort((a,b) => { const x = rkv(a, RK.k), y = rkv(b, RK.k); const c = typeof x === 'string' ? x.localeCompare(y, 'id', { numeric:true, sensitivity:'base' }) : (x - y); return c === 0 ? (b.total - a.total) || a.name.localeCompare(b.name, 'id') : c * RK.d; });
+  Array.prototype.forEach.call(el.rankTbody.closest('table').tHead.rows[0].cells, (th, i) => { th.dataset.sort = RK_KEYS[i]; th.classList.toggle('asc', RK.k === RK_KEYS[i] && RK.d > 0); th.classList.toggle('desc', RK.k === RK_KEYS[i] && RK.d < 0); });
   el.rankCount.textContent = list.length + ' ' + (state.dim==='int' ? 'internal' : 'sales');
   el.rankTbody.innerHTML = '';
   if (!list.length){
@@ -2983,7 +2995,10 @@ function renderResults(){
     return;
   }
   const frag = document.createDocumentFragment();
-  scope.slice(0, 300).forEach(r => frag.appendChild(buildItemCard(r)));
+  let arr = scope; const RS = document.getElementById('res-sort').value;
+  if (RS){ const kf = { cus:r => r.customer || '', mdl:r => r.compModel || '', ton:r => r.tonase || 0, sisa:r => r.sisa || 0 }, pr = RS.split(':'), f = kf[pr[0]], dd = +pr[1];
+    arr = scope.slice().sort((a,b) => { const x = f(a), y = f(b); const c = typeof x === 'string' ? x.localeCompare(y, 'id', { numeric:true, sensitivity:'base' }) : (x - y); return c * dd; }); }
+  arr.slice(0, 300).forEach(r => frag.appendChild(buildItemCard(r)));
   el.results.appendChild(frag);
 }
 
@@ -3029,6 +3044,7 @@ function openDetail(status, groupName){
   }
   el.detailSearch.value = '';
   renderDetailBody('');
+  el.detailOverlay.querySelector('.sheet').classList.remove('big'); document.getElementById('btn-fs-detail').innerHTML = FS_IN;
   showOverlay(el.detailOverlay);
 }
 function renderDetailBody(q){
@@ -4750,7 +4766,17 @@ function ovRender(){
   const g = {}; all.forEach(r=>{ if(r.status==='lunas') return; const k=r.internal||'(Kosong)'; (g[k]=g[k]||{n:0,kurang:0,siap:0,kosong:0}); g[k].n++; g[k][r.status]++; });
   const top = Object.entries(g).sort((a,b)=>b[1].n-a[1].n)[0];
   if(top) ins.push(['users','out','INTERNAL PERLU PERHATIAN',escapeHtml(top[0]),`Rata-rata per hari: ${fmtInt(top[1].n/nD)} line belum lunas (Kurang ${fmtInt(top[1].kurang/nD)} · Siap ${fmtInt(top[1].siap/nD)} · Kosong ${fmtInt(top[1].kosong/nD)})`]);
-  UI_ID('ov-ins').innerHTML = ins.map(([i,c,t,b,d])=>`<div class="it"><div class="kic ${c}">${UI_SV(UI_IC[i])}</div><div><div class="t">${t}</div><div class="b">${b}</div><div class="d">${d}</div></div></div>`).join('');
+  UI_ID('ov-ins').innerHTML = ins.map(([i,c,t,b,d])=>`<div class="it clk" tabindex="0" role="button" title="Klik untuk lihat detail"><div class="kic ${c}">${UI_SV(UI_IC[i])}</div><div><div class="t">${t}</div><div class="b">${b}</div><div class="d">${d}</div></div><span class="go">›</span></div>`).join('');
+  UI_ID('ov-ins').querySelectorAll('.it').forEach((n,ix)=>{ const t = ins[ix][2];
+    const go = () => {
+      if (t === 'FULFILLMENT'){ openDetail(null, null); el.detailEyebrow.textContent = 'Insight · Semua Status'; el.detailTitle.textContent = 'Fulfillment DO'; }
+      else if (t === 'BOTTLENECK TERBESAR') openDetail(bn, null);
+      else if (t === 'QUICK WIN') openDetail('siap', null);
+      else if (t === 'RISIKO') openDetail('kosong', null);
+      else if (top){ openDetail(null, top[0]); detailCtx.dim = 'internal'; el.detailEyebrow.textContent = 'Internal · Rekap Lengkap'; renderDetailBody(''); }
+    };
+    n.addEventListener('click', go); n.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(); } });
+  });
 }
 UI_ID('ov-seg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; OV_MODE=b.dataset.m; UI_ID('ov-seg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); ovRender(); });
 
@@ -4836,6 +4862,26 @@ window.addEventListener('resize',()=>setTimeout(uiResize,120));
   await loadData(false);
   setTimeout(hideSplash, 350);
 })();
+/* ===== Layar penuh untuk tabel/panel yang bisa di-scroll ===== */
+const FS_IN = '<svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>', FS_OUT = '<svg class="i" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+function fsToggle(target, btn){ const on = target.classList.toggle('fs-on'); if (btn){ btn.innerHTML = on ? FS_OUT : FS_IN; btn.title = on ? 'Tutup layar penuh' : 'Layar penuh'; } }
+function closeAllFS(){ document.querySelectorAll('.fs-on').forEach(el => { el.classList.remove('fs-on'); }); document.querySelectorAll('.fsb[data-fs]').forEach(b => { b.innerHTML = FS_IN; b.title = 'Layar penuh'; }); }
+function addFS(host, target){
+  if (!host || !target) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm2 fsb'; b.dataset.fs = '1'; b.innerHTML = FS_IN; b.title = 'Layar penuh'; b.setAttribute('aria-label', 'Layar penuh');
+  b.addEventListener('click', e => { e.stopPropagation(); fsToggle(target, b); }); host.appendChild(b);
+}
+document.querySelectorAll('.dhb > .card').forEach(card => addFS(card.querySelector('.section-title'), card));
+(function(){ const c = UI_ID('ov-ins') && UI_ID('ov-ins').closest('.card'); if (c){ const h = c.querySelector('h2'); if (h){ h.style.display = 'flex'; h.style.alignItems = 'center'; addFS(h, c); } } })();
+document.querySelectorAll('#sm-more .section-title').forEach(t => { const w = t.nextElementSibling; if (w && w.classList.contains('rank-table-wrap')){ t.style.display = 'flex'; t.style.alignItems = 'center'; addFS(t, w); } });
+(function(){ const c = document.querySelector('#qv-body > .card:nth-child(2)'); if (c){ const h = c.querySelector('h2'); if (h){ h.style.display = 'flex'; h.style.alignItems = 'center'; addFS(h, c); } } })();
+document.getElementById('btn-fs-detail').innerHTML = FS_IN;
+document.getElementById('btn-fs-detail').addEventListener('click', () => { const sh = el.detailOverlay.querySelector('.sheet'), on = sh.classList.toggle('big'); document.getElementById('btn-fs-detail').innerHTML = on ? FS_OUT : FS_IN; });
+document.getElementById('view-tabs').addEventListener('click', closeAllFS);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('.fs-on')) closeAllFS(); }, true);
+document.getElementById('res-sort').addEventListener('change', () => renderResults());
+el.rankTbody.closest('table').tHead.addEventListener('click', e => { const th = e.target.closest('th[data-sort]'); if (!th) return; const k = th.dataset.sort; if (RK.k === k) RK.d *= -1; else { RK.k = k; RK.d = k === 'name' ? 1 : -1; } renderRankTable(); });
+
 </script>
 </body>
 </html>
