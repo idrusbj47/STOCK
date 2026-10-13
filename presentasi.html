@@ -42,6 +42,7 @@ body.mode-spot #pointer-canvas{cursor:none}
 .modal-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}.modal-head h2{margin:0;flex:1;font-family:var(--font-display);font-size:24px;letter-spacing:.02em}
 .modal-sub{margin:0 0 10px;font-size:12.5px;color:var(--muted);line-height:1.5}
 .srow{display:flex;align-items:center;gap:8px;padding:8px 10px;margin:6px 0;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)}
+.srow{position:relative;border-left:5px solid var(--rc,var(--border));background:color-mix(in srgb,var(--rc,transparent) 20%,var(--surface-2));will-change:transform}.srow.moving{transition:transform .38s cubic-bezier(.22,.8,.3,1),box-shadow .38s;}.srow.pulse{animation:srpulse .6s ease;z-index:2}@keyframes srpulse{0%{box-shadow:0 0 0 0 var(--rc)}40%{box-shadow:0 6px 18px -2px var(--rc),0 0 0 2px var(--rc)}100%{box-shadow:0 0 0 0 transparent}}@media (prefers-reduced-motion:reduce){.srow.moving{transition:none}.srow.pulse{animation:none}}
 .srow .sl{flex:1;font-family:var(--font-display);font-weight:700;font-size:18px;letter-spacing:.02em}.srow.off .sl{opacity:.45;text-decoration:line-through}
 .srow .num{min-width:26px;text-align:center;font-family:var(--font-mono);font-size:11px;color:var(--muted)}
 .srow button{width:34px;height:34px;flex:0 0 auto;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-size:16px;line-height:1}.srow button:active{transform:scale(.93)}
@@ -118,14 +119,18 @@ var EYE='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="cur
 var EYEOFF='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" opacity=".45"/><circle cx="12" cy="12" r="3" opacity=".45"/><path d="M3 3l18 18"/></svg>';
 var setList=document.getElementById('settings-list');
 function afterChange(){saveCfg();applyCfg();renderSettings();var c=currentKey();if(!c||!isVisible(c))showTab(visible()[0])}
-function renderSettings(){setList.innerHTML='';var vis=visible();cfg.forEach(function(r,i){var row=document.createElement('div');row.className='srow'+(r.show?'':' off');
+var ROWHUES=[265,160,32,205,340,90,290,15,185,55];var movedKey=null;
+function renderSettings(){var oldTop={};Array.prototype.forEach.call(setList.children,function(el){oldTop[el.dataset.key]=el.getBoundingClientRect().top});setList.innerHTML='';var vis=visible();cfg.forEach(function(r,i){var row=document.createElement('div');row.dataset.key=r.key;var hi=order.indexOf(r.key);row.style.setProperty('--rc','hsl('+ROWHUES[(hi<0?i:hi)%ROWHUES.length]+' 70% 52%)');row.className='srow'+(r.show?'':' off');
 var eye=document.createElement('button');eye.className='eye '+(r.show?'on':'offc');eye.innerHTML=r.show?EYE:EYEOFF;eye.title=r.show?'Tampil · klik untuk sembunyikan':'Disembunyikan · klik untuk tampilkan';eye.setAttribute('aria-label',eye.title);
 eye.addEventListener('click',function(){if(r.show&&vis.length<=1){toast('Minimal 1 tab harus tampil','err');return}r.show=!r.show;afterChange()});
 var lb=document.createElement('span');lb.className='sl';lb.textContent=labels[r.key];
 var nm=document.createElement('span');nm.className='num';var pos=vis.indexOf(r.key);nm.textContent=pos>-1&&pos<9?'['+(pos+1)+']':'—';
-var up=document.createElement('button');up.className='mv';up.textContent='↑';up.title='Naikkan';up.disabled=i===0;up.addEventListener('click',function(){var t=cfg[i-1];cfg[i-1]=cfg[i];cfg[i]=t;afterChange()});
-var dn=document.createElement('button');dn.className='mv';dn.textContent='↓';dn.title='Turunkan';dn.disabled=i===cfg.length-1;dn.addEventListener('click',function(){var t=cfg[i+1];cfg[i+1]=cfg[i];cfg[i]=t;afterChange()});
-row.appendChild(eye);row.appendChild(lb);row.appendChild(nm);row.appendChild(up);row.appendChild(dn);setList.appendChild(row)})}
+var up=document.createElement('button');up.className='mv';up.textContent='↑';up.title='Naikkan';up.disabled=i===0;up.addEventListener('click',function(){movedKey=r.key;var t=cfg[i-1];cfg[i-1]=cfg[i];cfg[i]=t;afterChange()});
+var dn=document.createElement('button');dn.className='mv';dn.textContent='↓';dn.title='Turunkan';dn.disabled=i===cfg.length-1;dn.addEventListener('click',function(){movedKey=r.key;var t=cfg[i+1];cfg[i+1]=cfg[i];cfg[i]=t;afterChange()});
+row.appendChild(eye);row.appendChild(lb);row.appendChild(nm);row.appendChild(up);row.appendChild(dn);setList.appendChild(row)});
+var rows=Array.prototype.slice.call(setList.children);var moved=[];rows.forEach(function(el){var o=oldTop[el.dataset.key];if(o===undefined)return;var d=o-el.getBoundingClientRect().top;if(d){el.style.transform='translateY('+d+'px)';moved.push(el)}});
+if(moved.length){void setList.offsetHeight;moved.forEach(function(el){el.classList.add('moving');el.style.transform='';el.addEventListener('transitionend',function f(e){if(e.propertyName!=='transform')return;el.classList.remove('moving');el.removeEventListener('transitionend',f)})})}
+if(movedKey){var mr=rows.filter(function(el){return el.dataset.key===movedKey})[0];if(mr){mr.classList.add('pulse');setTimeout(function(){mr.classList.remove('pulse')},650)}movedKey=null}}
 var setBox=document.getElementById('settings');
 function openSettings(){renderSettings();document.body.classList.add('settings-open')}
 function closeSettings(){document.body.classList.remove('settings-open')}
