@@ -2005,6 +2005,13 @@ table.dy td.z{color:var(--muted)}
 .dy-shot{position:fixed;left:-100000px;top:0;padding:18px;background:var(--surface);color:var(--text);font-family:var(--font-body);width:max-content}
 .dy-shot .st{font:800 18px var(--font-body);margin-bottom:2px}.dy-shot .ss{font:500 12px var(--font-body);color:var(--muted);margin-bottom:12px}
 .dy-shot table.dy .c1,.dy-shot table.dy .c2,.dy-shot table.dy .c3,.dy-shot table.dy .c4,.dy-shot table.dy thead th,.dy-shot table.dy tr.tot td{position:static!important;box-shadow:none!important}
+
+.dt-items th[data-isort]{cursor:pointer;user-select:none}.dt-items th[data-isort]:hover{color:var(--text)}.dt-items th.asc::after{content:" ▲";font-size:9px}.dt-items th.desc::after{content:" ▼";font-size:9px}
+.fsb{width:34px;height:34px;padding:0!important;justify-content:center;flex:none;margin-left:auto}.fsb svg{width:16px;height:16px}.sheet-header .fsb{margin:0;display:inline-flex;align-items:center}
+.fs-on{position:fixed!important;inset:8px!important;z-index:2500!important;background:var(--surface)!important;border-radius:12px;padding:14px 18px;overflow:auto;display:flex!important;flex-direction:column;box-shadow:0 0 0 100vmax rgba(10,14,30,.5)!important;max-height:none!important;flex:none!important}
+.fs-on .scr,.fs-on .results{flex:1;min-height:0;overflow:auto}.fs-on .dy-wrap{max-height:none!important}
+.sheet.big{max-width:none;width:100%;height:100%;max-height:100%;border-radius:0}
+@media print{.fsb{display:none!important}}
 </style>
 <style>
 /* ===== RINGKASAN SOB: tambahan skin ===== */
@@ -2095,7 +2102,7 @@ table.dy td.z{color:var(--muted)}
 
   <!-- 1 OVERVIEW -->
   <section id="ov-section" class="pg">
-    <div class="ptitle"><b>EXECUTIVE OVERVIEW · LEMBUR KARYAWAN GUDANG</b><span id="ov-per"></span></div>
+    <div class="ptitle"><b>OVERVIEW · LEMBUR KARYAWAN GUDANG</b><span id="ov-per"></span></div>
     <div class="kp" id="ov-kpi"></div>
     <div class="stc" id="ov-status"></div>
     <div class="hero">
@@ -2183,7 +2190,7 @@ table.dy td.z{color:var(--muted)}
 <div id="print-area"></div>
 
 <div id="ins-overlay" class="sheet-overlay"><div class="sheet" role="dialog" aria-modal="true"><div class="sheet-handle"></div>
-<div class="sheet-header"><div><div class="sheet-eyebrow" id="ins-eyebrow">INSIGHT</div><h2 class="sheet-title" id="ins-title"></h2></div><button class="icon-btn" id="btn-close-ins">✕</button></div>
+<div class="sheet-header"><div><div class="sheet-eyebrow" id="ins-eyebrow">INSIGHT</div><h2 class="sheet-title" id="ins-title"></h2></div><span style="display:flex;gap:6px"><button class="icon-btn fsb" id="btn-fs-ins" title="Layar penuh" aria-label="Layar penuh"></button><button class="icon-btn" id="btn-close-ins">✕</button></span></div>
 <div class="sheet-body" id="ins-body"></div></div></div>
 <div id="settings-overlay" class="sheet-overlay">
   <div class="sheet" role="dialog" aria-modal="true">
@@ -2396,7 +2403,7 @@ function mkChart(id, cfg){
 function killCharts(){ Object.keys(charts).forEach(k => { try{ charts[k].destroy(); }catch(e){} delete charts[k]; }); }
 function uiResize(){ Object.values(charts).forEach(c => c && c.resize && c.resize()); }
 function showToast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(showToast._t); showToast._t = setTimeout(() => t.classList.remove('show'), 2600); }
-function showOverlay(o){ o.classList.add('show'); document.body.classList.add('overlay-open'); }
+function showOverlay(o){ if (o.id === 'ins-overlay'){ const sh = o.querySelector('.sheet'); sh.classList.remove('big'); $('btn-fs-ins').innerHTML = FS_IN; } o.classList.add('show'); document.body.classList.add('overlay-open'); }
 function hideOverlay(o){ o.classList.remove('show'); document.body.classList.remove('overlay-open'); }
 
 /* ---------- pengaturan & tema ---------- */
@@ -2488,6 +2495,7 @@ function renderPeriodTabs(){
 }
 function syncMetricSeg(){ document.querySelectorAll('.metric-seg button').forEach(b => b.classList.toggle('on', b.dataset.m === state.metric)); }
 function setView(v){
+  closeAllFS();
   state.view = v;
   PAGES.forEach(p => $(PAGE_ID[p]).classList.toggle('hidden', p !== v));
   document.querySelectorAll('#view-tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
@@ -2500,7 +2508,7 @@ function topEmp(C){ let best = null; C.per.forEach(e => { if (!best || val(e) > 
 function renderOverview(){
   const P = cur(), pv = prevOf(P), C = P.c, V = pv && pv.c, M = MET(), m = state.metric;
   const tot = state.emps.length, v = C[m], pvv = V ? V[m] : 0, d = V ? v - pvv : 0;
-  $('ov-per').textContent = `Lembur ${P.key} · ${fmtInt(C.emp)} dari ${fmtInt(tot)} karyawan` + (pv ? ` · dibanding ${pv.key}` : '');
+  $('ov-per').textContent = '';
   const avg = C.emp ? v / C.emp : 0, pavg = V && V.emp ? pvv / V.emp : 0, top = topEmp(C);
   const tp = pctOf(v, P.target), over = P.target > 0 && tp > 100;
   $('ov-kpi').innerHTML =
@@ -2574,7 +2582,7 @@ function renderDetail(){
   const pm = new Map((pv ? groupBy(pv.recs, prop, []) : []).map(g => [g.key, g])), tv = rows.reduce((a,o) => a + val(o), 0);
   rows.forEach(o => { o.v = val(o); o.share = pctOf(o.v, tv); o.avg = o.emp ? o.v / o.emp : 0; const pg = pm.get(o.key); o.dv = pv ? o.v - (pg ? val(pg) : 0) : 0; });
   const sk = state.sortKey, sd = state.sortDir, strKeys = ['name','jabatan','area'];
-  rows.sort((a,b) => { const x = strKeys.indexOf(sk) >= 0 ? String(a[sk]).localeCompare(String(b[sk]), 'id') : ((a[sk] || 0) - (b[sk] || 0)); return (x === 0 ? b.v - a.v : x) * (strKeys.indexOf(sk) >= 0 ? -sd : sd); });
+  rows.sort((a,b) => { const x = strKeys.indexOf(sk) >= 0 ? String(a[sk]).localeCompare(String(b[sk]), 'id', { numeric:true, sensitivity:'base' }) : ((a[sk] || 0) - (b[sk] || 0)); return x === 0 ? (b.v - a.v) || String(a.name).localeCompare(String(b.name), 'id') : x * sd; });
   const sel = state.selected ? (o => groupKey(o, state.selected.dim) === state.selected.key) : (() => true);
   const C = calc(sc.recs.filter(sel)), hc = sc.emps.filter(sel).length, vv = C[state.metric];
   $('dt-mini').innerHTML =
@@ -2605,9 +2613,13 @@ function renderDetail(){
   renderItems(sc.recs.filter(sel));
 }
 function renderItems(list){
+  state.itemSrc = list;
+  const IS = state.itemSort || (state.itemSort = { k:'tgl', d:1 });
+  const ikey = { tgl:r => (r.day == null ? 1e9 : r.day), nama:r => r.nama, jab:r => (r.jabatan || '') + ' ' + r.area, dur:r => r.dur, pay:r => r.pay, mult:r => r.mult }[IS.k] || (r => r.dur);
+  list = list.slice().sort((a,b) => { const x = ikey(a), y = ikey(b); const c = typeof x === 'string' ? x.localeCompare(y, 'id', { numeric:true, sensitivity:'base' }) : (x - y); return c === 0 ? (String(a.nama).localeCompare(String(b.nama), 'id')) : c * IS.d; });
   const cap = 300, shown = list.slice(0, cap);
   $('results-count').textContent = fmtInt(list.length) + ' kejadian' + (list.length > cap ? ` · ${cap} pertama` : '') + ' · ' + fmtH(list.reduce((a,r) => a + val(r), 0)) + ' jam';
-  $('results').innerHTML = shown.length ? `<table class="dt-items"><thead><tr><th>Tanggal</th><th>Karyawan<br>NIK</th><th>Jabatan<br>Area</th><th class="r">Durasi (jam)</th><th class="r">Jam Bayar</th><th class="r">Jam Hitung</th></tr></thead><tbody>` +
+  $('results').innerHTML = shown.length ? `<table class="dt-items"><thead><tr><th data-isort="tgl" class=" ${IS.k === 'tgl' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">Tanggal</th><th data-isort="nama" class=" ${IS.k === 'nama' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">Karyawan<br>NIK</th><th data-isort="jab" class=" ${IS.k === 'jab' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">Jabatan<br>Area</th><th data-isort="dur" class="r ${IS.k === 'dur' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">Durasi (jam)</th><th data-isort="pay" class="r ${IS.k === 'pay' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">Jam Bayar</th><th data-isort="mult" class="r ${IS.k === 'mult' ? (IS.d > 0 ? 'asc' : 'desc') : ''}" title="Klik untuk urutkan A–Z / Z–A">Jam Hitung</th></tr></thead><tbody>` +
     shown.map(r => `<tr><td class="nw"><span class="mono">${r.tgl ? escapeHtml(r.tgl) : '<span class="muted" title="Tanggal tampil ###### di sheet">tak terbaca</span>'}</span></td><td class="wr md">${escapeHtml(r.nama)}<span class="sub mono">${escapeHtml(r.nik)}</span></td><td class="wr">${escapeHtml(r.jabatan || '–')}<span class="sub">${escapeHtml(r.area)}</span></td><td class="r nw">${fmtH(r.dur)}</td><td class="r nw">${fmtH(r.pay)}</td><td class="r nw"><b>${fmtH(r.mult)}</b></td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty-note">Tidak ada data lembur.</div>';
 }
@@ -2641,6 +2653,7 @@ function openInsight(t){
   $('ins-eyebrow').textContent = 'INSIGHT · ' + eb.toUpperCase(); $('ins-title').textContent = title; $('ins-body').innerHTML = body;
   showOverlay($('ins-overlay'));
 }
+$('results').addEventListener('click', e => { const th = e.target.closest('th[data-isort]'); if (!th) return; const k = th.dataset.isort, IS = state.itemSort || (state.itemSort = { k:'tgl', d:1 }); if (IS.k === k) IS.d *= -1; else { IS.k = k; IS.d = (k === 'dur' || k === 'pay' || k === 'mult') ? -1 : 1; } renderItems(state.itemSrc || []); });
 $('btn-close-ins').addEventListener('click', () => hideOverlay($('ins-overlay')));
 $('ins-overlay').addEventListener('click', e => { if (e.target === $('ins-overlay')) hideOverlay($('ins-overlay')); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') hideOverlay($('ins-overlay')); });
@@ -2993,6 +3006,23 @@ document.addEventListener('keydown', e => {
 $('btn-more').addEventListener('click', e => { e.stopPropagation(); $('more').classList.toggle('open'); });
 document.addEventListener('click', e => { if (!e.target.closest('#more') || e.target.closest('.menu button,.menu a')) $('more').classList.remove('open'); });
 window.addEventListener('resize', () => setTimeout(uiResize, 120));
+
+/* ===== Layar penuh untuk tabel/panel yang bisa di-scroll ===== */
+const FS_IN = '<svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>', FS_OUT = '<svg class="i" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+function fsToggle(target, btn){ const on = target.classList.toggle('fs-on'); if (btn){ btn.innerHTML = on ? FS_OUT : FS_IN; btn.title = on ? 'Tutup layar penuh' : 'Layar penuh'; } }
+function closeAllFS(){ document.querySelectorAll('.fs-on').forEach(el => { el.classList.remove('fs-on'); }); document.querySelectorAll('.fsb[data-fs]').forEach(b => { b.innerHTML = FS_IN; b.title = 'Layar penuh'; }); }
+function addFS(host, target){
+  if (!host || !target) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm2 fsb'; b.dataset.fs = '1'; b.innerHTML = FS_IN; b.title = 'Layar penuh'; b.setAttribute('aria-label', 'Layar penuh');
+  b.addEventListener('click', e => { e.stopPropagation(); fsToggle(target, b); }); host.appendChild(b);
+}
+document.querySelectorAll('.dhb > .card').forEach(card => addFS(card.querySelector('.section-title'), card));
+(function(){ const c = $('ov-ins') && $('ov-ins').closest('.card'); if (c){ const h = c.querySelector('h2'); if (h){ h.style.display = 'flex'; h.style.alignItems = 'center'; addFS(h, c); } } })();
+document.querySelectorAll('#mv-more .section-title').forEach(t => { const w = t.nextElementSibling; if (w && w.classList.contains('rank-table-wrap')){ t.style.display = 'flex'; t.style.alignItems = 'center'; addFS(t, w); } });
+addFS(document.querySelector('#dy-section > .card > .section-title'), document.querySelector('#dy-section > .card'));
+$('btn-fs-ins').innerHTML = FS_IN;
+$('btn-fs-ins').addEventListener('click', () => { const sh = $('ins-overlay').querySelector('.sheet'), on = sh.classList.toggle('big'); $('btn-fs-ins').innerHTML = on ? FS_OUT : FS_IN; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('.fs-on')) closeAllFS(); }, true);
 
 function hideSplash(){ const s = $('app-splash'); if (!s) return; s.classList.add('hide'); setTimeout(() => { if (s.parentNode) s.parentNode.removeChild(s); }, 500); }
 if (typeof Chart !== 'undefined'){ Chart.defaults.font.family = "'Inter','Segoe UI',system-ui,sans-serif"; if (Chart.defaults.plugins) Chart.defaults.plugins.datalabels = { display:false }; }
