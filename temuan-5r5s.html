@@ -134,6 +134,20 @@
     border-radius:8px;width:30px;height:30px;font-size:13px;cursor:pointer;}
   .list-item .editBtn:disabled{opacity:.5;}
 
+  /* success fx */
+  #okFx{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9999;pointer-events:none;background:rgba(10,14,26,.18);}
+  #okFx.show{display:flex;animation:okFade .25s ease;}
+  #okFx .okBox{width:120px;height:120px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 10px 40px rgba(0,0,0,.25);animation:okPop .45s cubic-bezier(.2,1.4,.4,1);}
+  #okFx svg{width:76px;height:76px;}
+  #okFx .okc{fill:none;stroke:#34c759;stroke-width:4;stroke-dasharray:166;stroke-dashoffset:166;stroke-linecap:round;}
+  #okFx .okt{fill:none;stroke:#34c759;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:48;stroke-dashoffset:48;}
+  #okFx.show .okc{animation:okDraw .5s .05s ease forwards;}
+  #okFx.show .okt{animation:okDraw .35s .4s ease forwards;}
+  @keyframes okDraw{to{stroke-dashoffset:0;}}
+  @keyframes okPop{0%{transform:scale(.4);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  @keyframes okFade{from{opacity:0;}to{opacity:1;}}
+
   /* master data */
   .admin-only{display:none !important;}
   body.is-admin .admin-only{display:inline-flex !important;}
@@ -222,23 +236,106 @@
   .p-doc-meta span{ white-space:normal; word-break:break-word; }
   .p-doc-meta span:not(:last-child)::after{ content:" | "; color:#999; font-weight:normal; }
   .p-section-break{ page-break-before:always; }
+  /* ===== REDESIGN: navy + gold, bottom tabs / sidebar ===== */
+  :root{--navy:#0d1b36;--navy-2:#16294d;--gold:#c9a24b;--gold-2:#e3c36f;--orange-2:#c9a24b;--bg:#f5f6fa;--radius:16px;
+    font-family:"Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  body{padding:0 0 96px;background:var(--bg);}
+  header.topbar{background:transparent;color:var(--navy);padding:calc(16px + env(safe-area-inset-top,0px)) 18px 4px;
+    border-radius:0;align-items:center;gap:12px;}
+  header.topbar .ttl h1{margin:0;font-size:20px;color:var(--navy);letter-spacing:-.2px;}
+  header.topbar .ttl p{margin:2px 0 0;font-size:12.5px;color:var(--muted);}
+  .mLogo{display:flex;flex-direction:column;align-items:center;}
+  .logo{font-family:Georgia,"Times New Roman",serif;font-weight:800;letter-spacing:.08em;color:var(--gold);font-size:24px;line-height:1;}
+  .mLogo small{font-size:8.5px;letter-spacing:.14em;color:var(--navy);font-weight:700;margin-top:3px;}
+  header.topbar .ttl{flex:1;display:none;}
+  .tright{display:flex;align-items:center;gap:12px;margin-left:auto;}
+  .tdate{display:none;font-size:12.5px;color:var(--muted);}
+  .chip{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:4px 12px 4px 4px;font-size:12.5px;font-weight:700;color:var(--navy);}
+  .chip .av{width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;}
+  .chip .adm{display:none;} body.is-admin .chip .adm{display:inline;} body.is-admin .chip .guest{display:none;}
+  main{max-width:760px;margin:0 auto;padding:6px 16px 0;}
+  .view{display:none;} .view.on{display:block;}
+  .card{border-radius:var(--radius);box-shadow:0 2px 10px rgba(13,27,54,.06);border:1px solid #eceef5;padding:18px;}
+  .card h2{font-size:16px;}
+  .btn-submit{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;border:1.5px solid var(--gold);border-radius:12px;}
+  .goldBtn{background:linear-gradient(135deg,var(--gold-2),var(--gold));color:var(--navy);border:none;border-radius:11px;padding:12px 20px;font-weight:800;font-size:14.5px;cursor:pointer;box-shadow:0 4px 14px rgba(201,162,75,.35);}
+  .goldBtn:active{transform:scale(.98);}
+  .linkBtn{background:#f1f3f9;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;}
+  .hero{position:relative;overflow:hidden;border-radius:20px;padding:22px 20px;margin-top:10px;color:#fff;
+    background:linear-gradient(110deg,#0a1630 30%,rgba(10,22,48,.82) 62%,rgba(10,22,48,.55)),
+      repeating-linear-gradient(90deg,#1b2d52 0 3px,transparent 3px 46px),
+      repeating-linear-gradient(0deg,#22375f 0 4px,transparent 4px 38px),#0a1630;
+    display:flex;justify-content:space-between;align-items:flex-end;gap:14px;}
+  .hero small{font-size:10.5px;letter-spacing:.12em;color:var(--gold-2);font-weight:700;}
+  .hero h2{margin:8px 0 8px;font-size:23px;line-height:1.2;color:#fff;}
+  .hero p{margin:0 0 14px;font-size:12.5px;color:#cdd5e8;max-width:420px;line-height:1.5;display:none;}
+  .heroTags{list-style:none;margin:0;padding:0;display:none;gap:10px;flex-direction:column;font-size:12.5px;color:#dfe5f3;}
+  .heroTags li::before{content:"✓";color:var(--gold-2);margin-right:8px;}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;}
+  .stat{background:#fff;border:1px solid #eceef5;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;box-shadow:0 2px 10px rgba(13,27,54,.05);}
+  .stat .si{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:16px;}
+  .stat span{display:block;font-size:11.5px;color:var(--muted);font-weight:600;}
+  .stat b{font-size:26px;color:var(--navy);line-height:1.1;}
+  #homeRecent .list-item .editBtn,#homeRecent .list-item .delBtn{display:none;}
+  .setRow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fafbfe;border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-top:9px;font-size:14px;font-weight:700;color:var(--navy);cursor:pointer;}
+  .setRow i{font-style:normal;width:30px;height:30px;border-radius:9px;background:var(--navy);color:var(--gold-2);display:flex;align-items:center;justify-content:center;}
+  body.is-admin .setRow.admin-only{display:flex !important;}
+
+  /* nav: bawah (mobile) */
+  #mainNav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;display:flex;justify-content:space-around;
+    padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));border-top-left-radius:22px;border-top-right-radius:22px;
+    box-shadow:0 -6px 24px rgba(13,27,54,.12);}
+  #mainNav .navBrand,#mainNav .navFoot{display:none;}
+  .navItem{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:transparent;color:#7a8299;
+    font-size:10.5px;font-weight:700;padding:7px 2px;border-radius:16px;cursor:pointer;transition:all .2s;font-family:inherit;}
+  .navItem svg{width:22px;height:22px;}
+  .navItem.on{background:linear-gradient(135deg,var(--gold-2),var(--gold));color:var(--navy);flex:1.25;box-shadow:0 4px 12px rgba(201,162,75,.4);}
+
+  /* desktop: sidebar kiri */
+  @media(min-width:900px){
+    body{padding:0 0 30px 250px;}
+    header.topbar{padding:26px 32px 6px;} header.topbar .ttl{display:block;} .mLogo{display:none;} .tdate{display:inline;}
+    header.topbar .ttl h1{font-size:26px;}
+    main{max-width:1020px;padding:6px 32px 0;}
+    .hero{padding:30px 32px;min-height:200px;} .hero h2{font-size:32px;} .hero p{display:block;} .heroTags{display:flex;}
+    .stat{flex-direction:row;align-items:center;gap:14px;padding:16px;} .stat b{font-size:30px;}
+    #mainNav{top:0;bottom:0;right:auto;width:250px;flex-direction:column;justify-content:flex-start;gap:6px;padding:26px 18px;border-radius:0;
+      background:linear-gradient(180deg,#0a1630,#0f2142);box-shadow:none;}
+    #mainNav .navBrand{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:26px;text-align:center;}
+    #mainNav .navBrand .logo{font-size:40px;} #mainNav .navBrand small{font-size:9px;color:#aab4cf;letter-spacing:.1em;}
+    #mainNav .navBrand b{color:#fff;font-size:13px;letter-spacing:.12em;margin-top:6px;}
+    .navItem{flex:none;flex-direction:row;gap:14px;font-size:14.5px;padding:13px 16px;color:#cdd5e8;border-radius:12px;justify-content:flex-start;}
+    .navItem:hover{background:rgba(255,255,255,.07);}
+    .navItem.on{flex:none;}
+    #mainNav .navFoot{display:block;margin-top:auto;color:#cdd5e8;font-size:13.5px;line-height:1.6;border-bottom:2px solid var(--gold);padding-bottom:14px;width:60%;}
+  }
 </style>
 </head>
 <body>
 
 <header class="topbar">
-  <div class="brand">
-    <small>PT KARYA INDAH MULTIGUNA</small>
-    <h1>Temuan <span>5R5S</span></h1>
-  </div>
-  <div class="actions">
+  <div class="mLogo"><div class="logo">KIM</div><small>5R5S WORKSPACE</small></div>
+  <div class="ttl"><h1>Manajemen Temuan 5R5S</h1><p>Pemantauan &amp; pencatatan kondisi area gudang</p></div>
+  <div class="tright"><span class="tdate" id="topDate"></span>
+    <span class="chip"><i class="av">&#128100;</i><span class="guest">Tamu</span><span class="adm">Admin</span></span></div>
+</header>
+<div class="actions" style="display:none">
     <button class="icon" id="btnHome" title="Kembali ke Home">&#8962;</button>
     <button class="icon" id="btnRefresh" title="Muat ulang database"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg></button>
     <button class="icon" id="btnLogin" title="Login Admin">&#128274;</button>
     <button class="icon admin-only" id="btnMaster" title="Kelola Data Master" style="align-items:center;justify-content:center;">&#128451;</button>
     <button class="icon" id="btnSettings" title="Pengaturan">&#9881;</button>
   </div>
-</header>
+<nav id="mainNav">
+  <div class="navBrand"><div class="logo">KIM</div><small>PT KARYA INDAH MULTIGUNA</small><b>5R5S WORKSPACE</b></div>
+  <button class="navItem on" data-go="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Beranda</span></button>
+  <button class="navItem" data-go="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg><span>Input</span></button>
+  <button class="navItem" data-go="riwayat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Riwayat</span></button>
+  <button class="navItem" data-go="lapor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Laporan</span></button>
+  <button class="navItem" data-go="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Pengaturan</span></button>
+  <div class="navFoot">Gudang Bersih<br>Kerja Lebih Aman<br>Kinerja Lebih Baik</div>
+</nav>
+
 
 <div class="modal-overlay" id="loginOverlay">
   <div class="modal-sheet">
@@ -268,7 +365,48 @@
 
 <main>
 
-  <div class="card">
+  <section class="view on" id="v-home">
+    <div class="hero">
+      <div class="heroTxt">
+        <small>TEMUAN 5R5S &nbsp;|&nbsp; PT KARYA INDAH MULTIGUNA</small>
+        <h2>Inspeksi lebih rapi.<br>Tindak lanjut lebih cepat.</h2>
+        <p>Lingkungan kerja yang rapi, aman dan tertib mendukung produktivitas gudang yang lebih baik.</p>
+        <button class="goldBtn" data-go="input">＋ &nbsp;Catat Temuan Baru</button>
+      </div>
+      <ul class="heroTags"><li>Ringkas</li><li>Jelas</li><li>Mudah</li><li>Tindak Lanjut</li></ul>
+    </div>
+    <div class="stats">
+      <div class="stat"><i class="si" style="background:#e8f0fe;color:#3b6fd4">&#128203;</i><div><span>Total Temuan</span><b id="stTotal">–</b></div></div>
+      <div class="stat"><i class="si" style="background:#fff4d6;color:#d98a1b">&#9888;</i><div><span>Minor</span><b id="stMinor">–</b></div></div>
+      <div class="stat"><i class="si" style="background:#fde8ec;color:#d1445c">&#9888;</i><div><span>Mayor</span><b id="stMayor">–</b></div></div>
+    </div>
+    <div class="card">
+      <h2 style="display:flex;justify-content:space-between;align-items:center;"><span>Temuan Terbaru</span>
+        <button class="linkBtn" data-go="riwayat">Lihat Semua →</button></h2>
+      <div id="homeRecent"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-lapor">
+    <div class="card">
+      <h2>Laporan</h2>
+      <p class="hint" style="font-size:13.5px;line-height:1.5">Cetak, unduh PDF atau Excel rekap temuan berdasarkan periode, area, dan klasifikasi.</p>
+      <button class="goldBtn" id="goLapor" style="width:100%;margin-top:6px">🖨 &nbsp;Buat Laporan</button>
+    </div>
+  </section>
+
+  <section class="view" id="v-set">
+    <div class="card">
+      <h2>Pengaturan</h2>
+      <button class="setRow" data-click="btnLogin"><i>&#128274;</i><span>Login Admin / Akun</span></button>
+      <button class="setRow admin-only" data-click="btnMaster"><i>&#128451;</i><span>Kelola Data Master</span></button>
+      <button class="setRow" data-click="btnSettings"><i>&#9881;</i><span>Sumber Data (Supabase)</span></button>
+      <button class="setRow" data-click="btnRefresh"><i>&#10227;</i><span>Muat Ulang Database</span></button>
+      <button class="setRow" data-click="btnHome"><i>&#8962;</i><span>Kembali ke Home</span></button>
+    </div>
+  </section>
+
+  <div class="card view" id="v-input">
     <h2>Input Temuan</h2>
 
     <label>Tanggal</label>
@@ -318,9 +456,9 @@
     <div class="status-msg" id="statusMsg"></div>
   </div>
 
-  <div class="card">
+  <div class="card view" id="v-riwayat">
     <h2 style="display:flex;justify-content:space-between;align-items:center;">
-      <span>Temuan Terbaru</span>
+      <span>Riwayat Temuan</span>
       <button id="btnCetak" style="background:var(--purple);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;">🖨 Cetak</button>
     </h2>
     <div id="recentList"><div class="hint">Belum ada data / memuat…</div></div>
@@ -364,6 +502,8 @@
     </div>
   </div>
 </div>
+
+<div id="okFx"><div class="okBox"><svg viewBox="0 0 52 52"><circle class="okc" cx="26" cy="26" r="24"/><path class="okt" d="M15 27l8 8 15-17"/></svg></div></div>
 
 <!-- MASTER DATA MODAL (admin) -->
 <div class="modal-overlay" id="masterOverlay">
@@ -657,11 +797,49 @@
     }
   }
 
+  /* ---------------- EFEK SUKSES SIMPAN (centang + suara ting) ---------------- */
+  let audioCtx = null, okTimer = null;
+  function playTing(){
+    try{
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return;
+      audioCtx = audioCtx || new AC();
+      if(audioCtx.state === "suspended") audioCtx.resume();
+      const t0 = audioCtx.currentTime;
+      // dua nada tinggi bertumpuk, peluruhan cepat seperti notifikasi iPhone
+      [[1318.5,0],[1760,0.09]].forEach(([f,d])=>{
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t0+d);
+        g.gain.exponentialRampToValueAtTime(0.35, t0+d+0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0+d+0.7);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t0+d); o.stop(t0+d+0.75);
+      });
+    }catch(e){}
+  }
+  // iOS/Safari hanya mengizinkan audio setelah sentuhan pertama -> "buka kunci" di interaksi pertama
+  ["pointerdown","touchstart","click"].forEach(ev=> document.addEventListener(ev, function unlock(){
+    try{
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(AC){ audioCtx = audioCtx || new AC(); if(audioCtx.state==="suspended") audioCtx.resume(); }
+    }catch(e){}
+    document.removeEventListener(ev, unlock);
+  }, {passive:true}));
+  function successFx(){
+    const el = $("okFx");
+    el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
+    playTing();
+    try{ if(navigator.vibrate) navigator.vibrate(25); }catch(e){}
+    clearTimeout(okTimer);
+    okTimer = setTimeout(()=> el.classList.remove("show"), 1100);
+  }
+
   function populateZonaSelect(targetId){
     const sel = $(targetId || "fZona");
     const prev = sel.value;
     sel.innerHTML = '<option value="">Pilih zona…</option>';
-    zonaDB.forEach(z=>{
+    [...zonaDB].sort((a,b)=> a.zona.localeCompare(b.zona, "id", {numeric:true, sensitivity:"base"})).forEach(z=>{
       const opt = document.createElement("option");
       opt.value = z.zona; opt.textContent = z.zona + (z.area? " — "+z.area : "");
       sel.appendChild(opt);
@@ -1083,6 +1261,7 @@
       sbBucket: $("cfgSbBucket").value.trim() || "foto-temuan"
     };
     saveCfg(CFG);
+    successFx();
     supa = null;
     settingsOverlay.classList.remove("show");
     await loadAllDb();
@@ -1159,6 +1338,7 @@
       if(insErr) throw insErr;
 
       setStatus("Temuan berhasil disimpan ✔","ok");
+      successFx();
       photos = []; renderPhotoPreview();
       $("fKode").value = ""; $("lookupResult").innerHTML = "";
       $("fCatatan").value = "";
@@ -1411,6 +1591,7 @@
         sb.storage.from(CFG.sbBucket).remove(paths).catch(()=>{});
       }
 
+      successFx();
       $("editStatus").textContent = "Perubahan tersimpan ✔";
       $("editStatus").className = "status-msg ok";
       loadRecent();
@@ -1826,6 +2007,36 @@
   /* ---------------- INIT ---------------- */
   $("fTanggal").value = new Date().toISOString().slice(0,10);
 
+
+  /* ---------------- NAVIGASI TAB + BERANDA ---------------- */
+  function showView(v){
+    document.querySelectorAll(".view").forEach(x=> x.classList.toggle("on", x.id==="v-"+v));
+    document.querySelectorAll(".navItem").forEach(x=> x.classList.toggle("on", x.dataset.go===v));
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+  document.addEventListener("click", e=>{
+    const g = e.target.closest("[data-go]"); if(g){ showView(g.dataset.go); return; }
+    const c = e.target.closest("[data-click]"); if(c){ $(c.dataset.click).click(); }
+  });
+  $("goLapor").addEventListener("click", ()=> $("btnCetak").click());
+  $("topDate").textContent = new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+
+  async function loadStats(){
+    const sb = getSupabase(); if(!sb) return;
+    const cnt = async f => { let q = sb.from(CFG.sbTable).select("id",{count:"exact",head:true}); if(f) q = q.eq("klasifikasi",f); const r = await q; return r.error ? "–" : (r.count||0); };
+    try{ const [a,b,c] = await Promise.all([cnt(), cnt("MINOR"), cnt("MAYOR")]); $("stTotal").textContent=a; $("stMinor").textContent=b; $("stMayor").textContent=c; }catch(e){}
+  }
+  let homeT = null;
+  new MutationObserver(()=>{
+    clearTimeout(homeT);
+    homeT = setTimeout(()=>{
+      const box = $("homeRecent"); box.innerHTML = "";
+      Array.from($("recentList").querySelectorAll(".list-item")).slice(0,3).forEach(n=> box.appendChild(n.cloneNode(true)));
+      if(!box.children.length) box.innerHTML = '<div class="hint">Belum ada temuan.</div>';
+      loadStats();
+    }, 150);
+  }).observe($("recentList"), {childList:true});
+
   /* ---------------- MASTER DATA EDITOR (ADMIN) ---------------- */
   let mTab = "kode", mEditKey = null;
   const masterOverlay = $("masterOverlay");
@@ -1926,7 +2137,7 @@
       mCloseForm();
       await loadAllDb();
       mRenderList();
-      mMsg("Tersimpan ✔","ok");
+      mMsg("Tersimpan ✔","ok"); successFx();
     }catch(e){ mMsg("Gagal: "+(e.message||e),"err"); }
   }
 
@@ -1941,7 +2152,7 @@
       if(error) throw error;
       await loadAllDb();
       mRenderList();
-      mMsg("Terhapus ✔","ok");
+      mMsg("Terhapus ✔","ok"); successFx();
     }catch(e){ mMsg("Gagal hapus: "+(e.message||e),"err"); }
   }
 
