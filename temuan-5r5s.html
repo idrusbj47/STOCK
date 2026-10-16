@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Temuan 5R5S - SBJApp</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -135,6 +134,24 @@
     border-radius:8px;width:30px;height:30px;font-size:13px;cursor:pointer;}
   .list-item .editBtn:disabled{opacity:.5;}
 
+  /* master data */
+  .admin-only{display:none !important;}
+  body.is-admin .admin-only{display:inline-flex !important;}
+  .m-tabs{display:flex;gap:6px;margin:4px 0 10px;}
+  .m-tab{flex:1;padding:9px 6px;border-radius:10px;border:1px solid var(--border);background:#fafbfe;font-size:13px;font-weight:700;color:var(--navy);cursor:pointer;}
+  .m-tab.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .m-row{display:flex;gap:8px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .m-row .m-main{flex:1;min-width:0;}
+  .m-row .m-sub{color:#6b7488;font-size:12px;margin-top:2px;}
+  .m-row button{flex-shrink:0;border:1px solid #cdd6f5;background:#eef1fb;color:var(--navy);border-radius:8px;padding:5px 9px;font-size:12px;font-weight:700;cursor:pointer;}
+  .m-row button.del{background:#fdecec;border-color:#f3c3c3;color:#c0392b;}
+  .m-form{background:#f6f8fd;border:1px solid var(--border);border-radius:12px;padding:12px;margin:8px 0 12px;display:none;}
+  .m-form.show{display:block;}
+  .m-form label{display:block;font-size:12px;font-weight:700;margin:8px 0 4px;color:var(--navy);}
+  .m-form input,.m-form select,.m-form textarea{width:100%;padding:10px 11px;border-radius:10px;border:1px solid var(--border);font-size:14px;font-family:inherit;box-sizing:border-box;}
+  .m-form .m-btns{display:flex;gap:8px;margin-top:12px;}
+  .m-form .m-btns button{flex:1;padding:10px;border-radius:10px;border:none;font-weight:700;font-size:13px;cursor:pointer;}
+
   /* modal generic */
   .modal-overlay{position:fixed;inset:0;background:rgba(10,14,26,.55);display:none;
     align-items:flex-end;justify-content:center;z-index:50;}
@@ -218,6 +235,7 @@
     <button class="icon" id="btnHome" title="Kembali ke Home">&#8962;</button>
     <button class="icon" id="btnRefresh" title="Muat ulang database"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg></button>
     <button class="icon" id="btnLogin" title="Login Admin">&#128274;</button>
+    <button class="icon admin-only" id="btnMaster" title="Kelola Data Master" style="align-items:center;justify-content:center;">&#128451;</button>
     <button class="icon" id="btnSettings" title="Pengaturan">&#9881;</button>
   </div>
 </header>
@@ -317,18 +335,6 @@
     <h3>Pengaturan Sumber Data</h3>
 
     <div class="settings-field">
-      <label>Link CSV Database Kode Temuan</label>
-      <input type="text" id="cfgCsvKode" placeholder="https://docs.google.com/.../export?format=csv">
-      <div class="hint">Kolom wajib: kode, uraian, klasifikasi (minor/mayor), poin</div>
-    </div>
-
-    <div class="settings-field">
-      <label>Link CSV Database Zona &amp; Penanggung Jawab</label>
-      <input type="text" id="cfgCsvZona" placeholder="https://docs.google.com/.../export?format=csv">
-      <div class="hint">Kolom wajib: zona, area, penanggung_jawab. Daftar nama Karu diambil otomatis dari kolom L pada sheet ini.</div>
-    </div>
-
-    <div class="settings-field">
       <label>Supabase Project URL</label>
       <input type="text" id="cfgSbUrl" placeholder="https://xxxx.supabase.co">
     </div>
@@ -338,7 +344,13 @@
     </div>
     <div class="settings-field">
       <label>Nama Tabel Supabase</label>
-      <input type="text" id="cfgSbTable" placeholder="temuan_5r5s">
+      <input type="text" id="cfgSbTable" placeholder="5r5s_temuan">
+    </div>
+    <div class="settings-field">
+      <label>Tabel Master: Kode Temuan / Zona / Karu</label>
+      <input type="text" id="cfgTblKode" placeholder="5r5s_kode_temuan" style="margin-bottom:6px;">
+      <input type="text" id="cfgTblZona" placeholder="5r5s_zona" style="margin-bottom:6px;">
+      <input type="text" id="cfgTblKaru" placeholder="5r5s_karu">
     </div>
     <div class="settings-field">
       <label>Nama Storage Bucket (untuk foto)</label>
@@ -348,8 +360,29 @@
     <button class="save-settings" id="saveSettingsBtn">Simpan Pengaturan &amp; Muat Data</button>
     <div class="hint" style="margin-top:10px;">
       Struktur tabel Supabase yang disarankan (SQL):<br>
-      <code style="font-size:11px;">create table temuan_5r5s (id uuid default gen_random_uuid() primary key, tanggal date, area text, zona text, kode text, uraian text, klasifikasi text, poin int, penanggung_jawab text, catatan text, foto_url text, created_at timestamptz default now());</code>
+      <code style="font-size:11px;">create table "5r5s_temuan" (id uuid default gen_random_uuid() primary key, tanggal date, area text, zona text, kode text, uraian text, klasifikasi text, poin int, penanggung_jawab text, catatan text, foto_url text, created_at timestamptz default now());</code>
     </div>
+  </div>
+</div>
+
+<!-- MASTER DATA MODAL (admin) -->
+<div class="modal-overlay" id="masterOverlay">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeMaster">✕</button>
+    <h3>Kelola Data Master</h3>
+    <div class="m-tabs">
+      <button class="m-tab on" data-mt="kode">Kode Temuan</button>
+      <button class="m-tab" data-mt="zona">Zona &amp; PJ</button>
+      <button class="m-tab" data-mt="karu">Karu</button>
+    </div>
+    <div class="hint" style="margin-bottom:8px;">Perubahan hanya berlaku untuk temuan <b>baru</b>. Temuan lama menyimpan salinan teksnya sendiri, jadi laporan &amp; foto lama tidak berubah.</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <input type="text" id="mSearch" placeholder="Cari…" style="flex:1;">
+      <button type="button" id="mAddBtn" style="flex-shrink:0;padding:10px 14px;border-radius:10px;border:none;background:var(--navy);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">＋ Tambah</button>
+    </div>
+    <div class="m-form" id="mForm"></div>
+    <div id="mStatus" class="status-msg"></div>
+    <div id="mList"></div>
   </div>
 </div>
 
@@ -473,13 +506,14 @@
   "use strict";
 
   /* ---------------- CONFIG ---------------- */
-  const CFG_KEY = "temuan5r5s_config_v1";
+  const CFG_KEY = "temuan5r5s_config_v2";
   const defaultCfg = {
-    csvKode: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=557547335&single=true&output=csv",
-    csvZona: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=557547335&single=true&output=csv",
     sbUrl: "https://bpqiejowxcxyeewhoncr.supabase.co",
     sbKey: "sb_publishable_3tCR_a01HgzEpH-5uypqGg_s8WvXsa9",
-    sbTable: "temuan_5r5s",
+    sbTable: "5r5s_temuan",
+    tblKode: "5r5s_kode_temuan",
+    tblZona: "5r5s_zona",
+    tblKaru: "5r5s_karu",
     sbBucket: "foto-temuan-5r5s"
   };
   function loadCfg(){
@@ -575,97 +609,51 @@
     closeLoginModal();
   });
 
-  /* ---------------- CSV LOADING ---------------- */
-  function fetchCsvRaw(url){
-    // header:false -> array of arrays, so we can read the sheet positionally
-    return new Promise((resolve,reject)=>{
-      if(!url){ resolve([]); return; }
-      Papa.parse(url, {
-        download:true, header:false, skipEmptyLines:false,
-        complete: r => resolve(r.data || []),
-        error: err => reject(err)
-      });
-    });
-  }
-  function normKey(obj, keys){
-    const lower = {};
-    Object.keys(obj).forEach(k=> lower[k.trim().toLowerCase()] = obj[k]);
-    for(const k of keys){ if(lower[k] !== undefined) return (lower[k]||"").toString().trim(); }
-    return "";
-  }
-  const KODE_RE = /^[0-9]+[A-Za-z]$/; // e.g. 1A, 3E, 12B
+  /* ---------------- DATABASE MASTER (SUPABASE) ---------------- */
+  const pick = (o, keys) => { for(const k of keys){ if(o[k] !== undefined && o[k] !== null) return String(o[k]).trim(); } return ""; };
 
-  function parseCombinedSheet(rows){
-    const kode = [], zona = [], karu = [];
-
-    // Cari kolom header "KARU" di mana saja pada sheet (case-insensitive).
-    // Kadang daftar namanya tidak persis di bawah header itu sendiri, tapi
-    // di kolom sebelah kanannya (mis. header di L, data di M) — jadi kita
-    // bandingkan jumlah data terisi di kolom header vs kolom+1 dan pilih
-    // yang paling banyak berisi data.
-    let headerCol = -1;
-    for(const row of rows){
-      if(!row) continue;
-      const idx = row.findIndex(c => (c||"").toString().trim().toUpperCase() === "KARU");
-      if(idx !== -1){ headerCol = idx; break; }
+  async function fetchTable(sb, table, orderCols){
+    let q = sb.from(table).select("*");
+    for(const c of orderCols){ q = q.order(c, { ascending:true }); }
+    let { data, error } = await q;
+    if(error){ // kolom urutan mungkin tidak ada -> ulangi tanpa order
+      const r = await sb.from(table).select("*");
+      data = r.data; error = r.error;
     }
-    let karuCol = 11; // fallback: kolom L
-    if(headerCol !== -1){
-      const countFilled = col => rows.reduce((n,row)=>{
-        const v = row && (row[col]||"").toString().trim();
-        return (v && v.toUpperCase() !== "KARU") ? n+1 : n;
-      }, 0);
-      const cSame = countFilled(headerCol);
-      const cNext = countFilled(headerCol+1);
-      karuCol = cNext > cSame ? headerCol+1 : headerCol;
-    }
-
-    rows.forEach(row=>{
-      if(!row || !row.length) return;
-      const c1 = (row[1]||"").toString().trim();      // KODE
-      const c2 = (row[2]||"").toString().trim();      // URAIAN
-      const c3 = (row[3]||"").toString().trim();      // KLASIFIKASI
-      const c4 = (row[4]||"").toString().trim();      // POIN
-      if(KODE_RE.test(c1) && c2){
-        kode.push({ kode:c1.toUpperCase(), uraian:c2, klasifikasi:c3.toUpperCase(), poin:c4 });
-      }
-      const c7 = (row[7]||"").toString().trim();      // KODE AREA / ZONA
-      const c8 = (row[8]||"").toString().trim();      // AREA / ZONE
-      const c9 = (row[9]||"").toString().trim();      // PENJAGA AREA
-      if(c7 && c7.toUpperCase() !== "KODE AREA"){
-        zona.push({ zona:c7, area:c8, pj:c9 });
-      }
-      const cKaru = (row[karuCol]||"").toString().trim();  // KOLOM KARU (terdeteksi otomatis)
-      if(cKaru && cKaru.toUpperCase() !== "KARU"){
-        karu.push(cKaru);
-      }
-    });
-    return { kode, zona, karu };
+    if(error) throw new Error(table + ": " + error.message);
+    return data || [];
   }
 
   async function loadAllDb(){
     setStatus("Memuat database…","");
     try{
-      const rawKode = await fetchCsvRaw(CFG.csvKode);
-      let combined = parseCombinedSheet(rawKode);
-      kodeDB = combined.kode;
-      zonaDB = combined.zona;
-      karuDB = uniqueSorted(combined.karu);
-
-      // If a *different* zona CSV was configured, prefer it for zona/karu data
-      if(CFG.csvZona && CFG.csvZona !== CFG.csvKode){
-        const rawZona = await fetchCsvRaw(CFG.csvZona);
-        const combined2 = parseCombinedSheet(rawZona);
-        if(combined2.zona.length) zonaDB = combined2.zona;
-        if(combined2.karu.length) karuDB = uniqueSorted(combined2.karu);
-      }
+      const sb = getSupabase();
+      if(!sb) throw new Error("Supabase belum dikonfigurasi.");
+      const [kRows, zRows, rRows] = await Promise.all([
+        fetchTable(sb, CFG.tblKode, ["urutan"]),
+        fetchTable(sb, CFG.tblZona, ["urutan"]),
+        fetchTable(sb, CFG.tblKaru, [])
+      ]);
+      kodeDB = kRows.map(r=>({
+        kode: pick(r,["kode"]).toUpperCase(),
+        uraian: pick(r,["uraian"]),
+        klasifikasi: pick(r,["klasifikasi"]).toUpperCase(),
+        poin: pick(r,["poin"]),
+        kategori: pick(r,["kategori"])
+      })).filter(x=>x.kode);
+      zonaDB = zRows.map(r=>({
+        id: r.id, no: pick(r,["no"]),
+        zona: pick(r,["zona","kode_area"]),
+        area: pick(r,["area"]),
+        pj: pick(r,["pj","penanggung_jawab","penjaga"])
+      })).filter(x=>x.zona);
+      karuDB = uniqueSorted(rRows.map(r=>pick(r,["nama","karu"])));
 
       populateZonaSelect();
       populateKaruSelect();
-      const karuNote = karuDB.length ? "" : " (Peringatan: kolom KARU tidak ditemukan di sheet — pastikan ada sel berisi teks 'KARU' sebagai header kolomnya.)";
-      setStatus(kodeDB.length ? `Database dimuat: ${kodeDB.length} kode temuan, ${zonaDB.length} zona, ${karuDB.length} karu.${karuNote}` : "Database kode temuan kosong — cek link CSV di Pengaturan.", kodeDB.length?(karuDB.length?"ok":"err"):"err");
+      setStatus(kodeDB.length ? `Database dimuat: ${kodeDB.length} kode temuan, ${zonaDB.length} zona, ${karuDB.length} karu.` : "Tabel kode temuan kosong — jalankan migrasi SQL dulu.", kodeDB.length?(karuDB.length?"ok":"err"):"err");
     }catch(e){
-      setStatus("Gagal memuat database. Cek link CSV di Pengaturan.","err");
+      setStatus("Gagal memuat database: " + (e.message||e),"err");
     }
   }
 
@@ -1073,11 +1061,12 @@
   /* ---------------- SETTINGS MODAL ---------------- */
   const settingsOverlay = $("settingsOverlay");
   function openSettings(){
-    $("cfgCsvKode").value = CFG.csvKode;
-    $("cfgCsvZona").value = CFG.csvZona;
     $("cfgSbUrl").value = CFG.sbUrl;
     $("cfgSbKey").value = CFG.sbKey;
     $("cfgSbTable").value = CFG.sbTable;
+    $("cfgTblKode").value = CFG.tblKode;
+    $("cfgTblZona").value = CFG.tblZona;
+    $("cfgTblKaru").value = CFG.tblKaru;
     $("cfgSbBucket").value = CFG.sbBucket;
     settingsOverlay.classList.add("show");
   }
@@ -1085,11 +1074,12 @@
   $("closeSettings").addEventListener("click", ()=> settingsOverlay.classList.remove("show"));
   $("saveSettingsBtn").addEventListener("click", async ()=>{
     CFG = {
-      csvKode: $("cfgCsvKode").value.trim(),
-      csvZona: $("cfgCsvZona").value.trim(),
       sbUrl: $("cfgSbUrl").value.trim(),
       sbKey: $("cfgSbKey").value.trim(),
-      sbTable: $("cfgSbTable").value.trim() || "temuan_5r5s",
+      sbTable: $("cfgSbTable").value.trim() || "5r5s_temuan",
+      tblKode: $("cfgTblKode").value.trim() || "5r5s_kode_temuan",
+      tblZona: $("cfgTblZona").value.trim() || "5r5s_zona",
+      tblKaru: $("cfgTblKaru").value.trim() || "5r5s_karu",
       sbBucket: $("cfgSbBucket").value.trim() || "foto-temuan"
     };
     saveCfg(CFG);
@@ -1835,7 +1825,146 @@
 
   /* ---------------- INIT ---------------- */
   $("fTanggal").value = new Date().toISOString().slice(0,10);
-  if(!CFG.csvKode && !CFG.sbUrl){ openSettings(); }
+
+  /* ---------------- MASTER DATA EDITOR (ADMIN) ---------------- */
+  let mTab = "kode", mEditKey = null;
+  const masterOverlay = $("masterOverlay");
+  const mTable = ()=> mTab==="kode" ? CFG.tblKode : mTab==="zona" ? CFG.tblZona : CFG.tblKaru;
+  function mMsg(t, cls){ $("mStatus").textContent = t||""; $("mStatus").className = "status-msg " + (cls||""); }
+
+  function mRenderList(){
+    const q = $("mSearch").value.trim().toLowerCase();
+    const box = $("mList");
+    let items = [];
+    if(mTab==="kode") items = kodeDB.map(r=>({key:r.kode, main:`<b>${escapeHtml(r.kode)}</b> · ${escapeHtml(r.klasifikasi)} · ${escapeHtml(r.poin)}`, sub:escapeHtml(r.uraian), txt:(r.kode+" "+r.uraian+" "+r.kategori).toLowerCase()}));
+    if(mTab==="zona") items = zonaDB.map(r=>({key:String(r.id), main:`<b>${escapeHtml(r.zona)}</b> — ${escapeHtml(r.area)}`, sub:escapeHtml(r.pj||"-"), txt:(r.zona+" "+r.area+" "+r.pj).toLowerCase()}));
+    if(mTab==="karu") items = karuDB.map(n=>({key:n, main:`<b>${escapeHtml(n)}</b>`, sub:"", txt:n.toLowerCase()}));
+    items = items.filter(i=>!q || i.txt.includes(q));
+    box.innerHTML = items.length ? items.map(i=>`
+      <div class="m-row" data-key="${escapeHtml(i.key)}">
+        <div class="m-main"><div>${i.main}</div>${i.sub?`<div class="m-sub">${i.sub}</div>`:""}</div>
+        <button class="mEdit">Edit</button><button class="del mDel">Hapus</button>
+      </div>`).join("") : '<div class="hint">Tidak ada data.</div>';
+  }
+
+  function mOpenForm(key){
+    mEditKey = key;
+    const f = $("mForm");
+    let r = {};
+    if(key!==null){
+      if(mTab==="kode") r = kodeDB.find(x=>x.kode===key)||{};
+      if(mTab==="zona") r = zonaDB.find(x=>String(x.id)===key)||{};
+      if(mTab==="karu") r = {nama:key};
+    }
+    const v = x => escapeHtml(x==null?"":String(x));
+    let body = "";
+    if(mTab==="kode") body = `
+      <label>Kode (mis. 2O)</label><input id="mfKode" value="${v(r.kode)}" ${key!==null?"disabled":""}>
+      <label>Kategori</label><input id="mfKat" value="${v(r.kategori)}" placeholder="mis. 2. Rapi">
+      <label>Uraian</label><textarea id="mfUraian" rows="3">${v(r.uraian)}</textarea>
+      <label>Klasifikasi</label><select id="mfKlas"><option value="MINOR">MINOR</option><option value="MAYOR">MAYOR</option></select>
+      <label>Poin</label><input id="mfPoin" type="number" value="${v(r.poin)}" placeholder="-3 / -5">`;
+    if(mTab==="zona") body = `
+      <label>Kode Zona</label><input id="mfZona" value="${v(r.zona)}" placeholder="mis. A-B1-D">
+      <label>Nama Area</label><input id="mfArea" value="${v(r.area)}">
+      <label>Penjaga Area (pisahkan dengan " / ")</label><textarea id="mfPj" rows="2">${v(r.pj)}</textarea>
+      <label>No</label><input id="mfNo" type="number" value="${v(r.no)}">`;
+    if(mTab==="karu") body = `<label>Nama Karu</label><input id="mfNama" value="${v(r.nama)}">`;
+    f.innerHTML = `<b>${key!==null?"Edit":"Tambah"} data</b>${body}
+      <div class="m-btns"><button type="button" id="mfSave" style="background:var(--navy);color:#fff;">Simpan</button>
+      <button type="button" id="mfCancel" style="background:#e5e8f0;color:var(--navy);">Batal</button></div>`;
+    if(mTab==="kode" && r.klasifikasi) $("mfKlas").value = r.klasifikasi.includes("MAYOR")?"MAYOR":"MINOR";
+    if(mTab==="kode"){
+      $("mfKlas").addEventListener("change", ()=>{ if(!$("mfPoin").value || ["-3","-5"].includes($("mfPoin").value)) $("mfPoin").value = $("mfKlas").value==="MAYOR" ? -5 : -3; });
+    }
+    f.classList.add("show");
+    f.scrollIntoView({block:"nearest"});
+  }
+  function mCloseForm(){ $("mForm").classList.remove("show"); mEditKey = null; }
+
+  async function mSave(){
+    const sb = getSupabase();
+    if(!sb || !currentSession){ mMsg("Login admin dulu.","err"); return; }
+    const t = mTable();
+    const val = id => ($(id).value||"").trim();
+    try{
+      let res;
+      if(mTab==="kode"){
+        const kode = val("mfKode").toUpperCase(), uraian = val("mfUraian");
+        const poin = parseInt($("mfPoin").value);
+        if(!/^[0-9]+[A-Z]$/.test(kode)) throw new Error("Format kode harus angka+huruf, mis. 2O.");
+        if(!uraian) throw new Error("Uraian wajib diisi.");
+        if(isNaN(poin)) throw new Error("Poin wajib angka.");
+        const row = { kode, kategori: val("mfKat"), uraian, klasifikasi: $("mfKlas").value, poin };
+        if(mEditKey===null){
+          if(kodeDB.some(x=>x.kode===kode)) throw new Error("Kode "+kode+" sudah ada.");
+          row.urutan = kodeDB.length + 1;
+          res = await sb.from(t).insert(row);
+        } else {
+          delete row.kode;
+          res = await sb.from(t).update(row).eq("kode", mEditKey);
+        }
+      }
+      if(mTab==="zona"){
+        const zona = val("mfZona"), area = val("mfArea");
+        if(!zona) throw new Error("Kode zona wajib diisi.");
+        const no = parseInt($("mfNo").value);
+        const row = { zona, area, pj: val("mfPj"), no: isNaN(no)?null:no };
+        if(mEditKey===null){
+          row.urutan = zonaDB.length + 1;
+          res = await sb.from(t).insert(row);
+        } else {
+          res = await sb.from(t).update(row).eq("id", mEditKey);
+        }
+      }
+      if(mTab==="karu"){
+        const nama = val("mfNama");
+        if(!nama) throw new Error("Nama wajib diisi.");
+        res = mEditKey===null ? await sb.from(t).insert({nama}) : await sb.from(t).update({nama}).eq("nama", mEditKey);
+      }
+      if(res.error) throw res.error;
+      mCloseForm();
+      await loadAllDb();
+      mRenderList();
+      mMsg("Tersimpan ✔","ok");
+    }catch(e){ mMsg("Gagal: "+(e.message||e),"err"); }
+  }
+
+  async function mDelete(key){
+    const sb = getSupabase();
+    if(!sb || !currentSession){ mMsg("Login admin dulu.","err"); return; }
+    if(!confirm("Hapus data ini dari master?\nTemuan lama tidak terpengaruh.")) return;
+    try{
+      let q = sb.from(mTable()).delete();
+      q = mTab==="kode" ? q.eq("kode",key) : mTab==="zona" ? q.eq("id",key) : q.eq("nama",key);
+      const { error } = await q;
+      if(error) throw error;
+      await loadAllDb();
+      mRenderList();
+      mMsg("Terhapus ✔","ok");
+    }catch(e){ mMsg("Gagal hapus: "+(e.message||e),"err"); }
+  }
+
+  $("btnMaster").addEventListener("click", ()=>{ mCloseForm(); mMsg(""); $("mSearch").value=""; mRenderList(); masterOverlay.classList.add("show"); });
+  $("closeMaster").addEventListener("click", ()=> masterOverlay.classList.remove("show"));
+  masterOverlay.addEventListener("click", e=>{ if(e.target===masterOverlay) masterOverlay.classList.remove("show"); });
+  document.querySelectorAll(".m-tab").forEach(b=> b.addEventListener("click", ()=>{
+    document.querySelectorAll(".m-tab").forEach(x=>x.classList.toggle("on", x===b));
+    mTab = b.dataset.mt; mCloseForm(); mMsg(""); $("mSearch").value=""; mRenderList();
+  }));
+  $("mSearch").addEventListener("input", mRenderList);
+  $("mAddBtn").addEventListener("click", ()=> mOpenForm(null));
+  $("mForm").addEventListener("click", e=>{
+    if(e.target.id==="mfSave") mSave();
+    if(e.target.id==="mfCancel") mCloseForm();
+  });
+  $("mList").addEventListener("click", e=>{
+    const row = e.target.closest(".m-row"); if(!row) return;
+    if(e.target.classList.contains("mEdit")) mOpenForm(row.dataset.key);
+    if(e.target.classList.contains("mDel")) mDelete(row.dataset.key);
+  });
+
+  if(!CFG.sbUrl || !CFG.sbKey){ openSettings(); }
   loadAllDb();
   initAuth();
   loadRecent();
