@@ -651,6 +651,17 @@ body{
   .results{ display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
   .scroll-top-btn{ bottom:24px !important; }
 }
+
+/* Tap to top di Master MC + Cari Stock di tengah */
+.master-to-top{
+  position:fixed; right:16px; bottom:calc(24px + env(safe-area-inset-bottom)); z-index:150;
+  width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:var(--gold-grad); color:var(--on-accent); border:0; cursor:pointer;
+  box-shadow:0 10px 24px -8px rgba(0,0,0,.6);
+  opacity:0; pointer-events:none; transform:translateY(10px); transition:opacity .2s,transform .2s;
+}
+.master-to-top.show{ opacity:1; pointer-events:auto; transform:none; }
+@media (min-width:1000px){ .nav-item[data-nav="search"]{ order:-1; } .nav-items{ } }
 </style>
 </head>
 <body>
@@ -1017,10 +1028,10 @@ body{
     <div class="nav-app">DATA STOCK<br>STOCK OPNAME</div>
   </div>
   <div class="nav-items">
-    <button type="button" class="nav-item active" data-nav="search"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari Stock</span></button>
     <button type="button" class="nav-item" data-nav="btn-open-koreksi"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Koreksi</span></button>
-    <button type="button" class="nav-item" data-nav="btn-open-master"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9-5-9 5v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span>Master MC</span></button>
     <button type="button" class="nav-item" data-nav="btn-download"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg><span>Excel</span></button>
+    <button type="button" class="nav-item active" data-nav="search"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari Stock</span></button>
+    <button type="button" class="nav-item" data-nav="btn-open-master"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9-5-9 5v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span>Master MC</span></button>
     <button type="button" class="nav-item" data-nav="btn-settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><span>Pengaturan</span></button>
   </div>
   <div class="nav-tag">Stock akurat,<br>opname lebih mudah,<br>data lebih terpercaya.<i></i></div>
@@ -1054,6 +1065,7 @@ body{
     <div class="status-row"><span id="master-summary" class="muted">Ketik kata kunci lalu tekan Cari</span></div>
     <div id="master-results" class="results"></div>
   </div>
+  <button type="button" id="master-to-top" class="master-to-top" aria-label="Kembali ke atas" title="Kembali ke atas"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg></button>
 </div>
 
 <!-- Edit Koreksi Tersimpan overlay -->
@@ -2989,6 +3001,18 @@ if ('serviceWorker' in navigator) {
       var i=document.getElementById('search-input'); if(i) setTimeout(function(){i.focus();},250);
     }else{ var t2=document.getElementById(id); if(t2) t2.click(); }
   });
+})();
+</script>
+
+<script>
+(function(){
+  var ov=document.getElementById('master-overlay'), b=document.getElementById('master-to-top');
+  if(!ov||!b) return;
+  var sh=ov.querySelector('.sheet');
+  sh.addEventListener('scroll',function(){ b.classList.toggle('show',sh.scrollTop>240); },{passive:true});
+  b.addEventListener('click',function(){ sh.scrollTo({top:0,behavior:'smooth'}); });
+  new MutationObserver(function(){ if(ov.classList.contains('hidden')) b.classList.remove('show'); })
+    .observe(ov,{attributes:true,attributeFilter:['class']});
 })();
 </script>
 </body>
