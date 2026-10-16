@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>KIM Data Stock</title>
 <meta name="description" content="Cek stok gudang & simpan koreksi saat stock opname" />
-<meta name="theme-color" content="#12161B" id="meta-theme-color" />
+<meta name="theme-color" content="#08111f" id="meta-theme-color" />
 <script>
   (function(){
     try{
@@ -21,6 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
@@ -492,6 +493,164 @@ html,body{ overflow-x:hidden; }
 
 .item-card:focus{ outline:none; }
 .item-card:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; box-shadow:0 0 0 5px color-mix(in srgb, var(--amber) 22%, transparent); }
+
+/* =========================================================
+   REDESIGN "KIM LUXE" — navy + champagne gold, serif display
+   Hanya override tampilan. HTML & JavaScript asli tidak diubah.
+   ========================================================= */
+:root{
+  --font-display:'Cormorant Garamond',Georgia,serif;
+  --font-body:'Manrope',system-ui,sans-serif;
+  --font-mono:'Manrope',system-ui,sans-serif;
+  --gold-grad:linear-gradient(135deg,#ecd08c 0%,#c9993f 55%,#e0bd74 100%);
+  --radius:18px;
+  --bg:#08111f; --surface:#0f1b31; --surface-2:#15264a; --border:#22365a;
+  --text:#f2ecdc; --muted:#9aa7bf;
+  --amber:#e0bd74; --green:#4fd39a; --red:#f07b86; --violet:#b4a0ff;
+  --on-accent:#1b1404; --gray-badge:#4b5a75;
+  --shadow-card:0 14px 34px -20px rgba(0,0,0,.8);
+}
+html[data-theme="dark"]{
+  --bg:#08111f; --surface:#0f1b31; --surface-2:#15264a; --border:#22365a;
+  --text:#f2ecdc; --muted:#9aa7bf; --amber:#e0bd74; --green:#4fd39a; --red:#f07b86;
+  --on-accent:#1b1404; --shadow-card:0 14px 34px -20px rgba(0,0,0,.8);
+}
+html[data-theme="light"]{
+  --bg:#f3f4f9; --surface:#ffffff; --surface-2:#eef0f7; --border:#e1e4ee;
+  --text:#0d1b33; --muted:#66728a; --amber:#a97a2a; --green:#12875f; --red:#d0414f;
+  --on-accent:#1b1404; --shadow-card:0 14px 30px -22px rgba(13,27,51,.45);
+}
+body{
+  background:
+    radial-gradient(900px 420px at 85% -10%, color-mix(in srgb,#c9993f 14%,transparent), transparent 70%),
+    var(--bg);
+  background-attachment:fixed;
+  font-feature-settings:"tnum";
+}
+/* Topbar & brand */
+.brand-eyebrow{ font-size:10.5px; letter-spacing:.16em; color:var(--amber); font-weight:700; }
+.brand-title{
+  font-size:32px; font-weight:700; letter-spacing:.06em; text-transform:none;
+  color:var(--text);
+}
+.brand-title .accent{ background:var(--gold-grad); -webkit-background-clip:text; background-clip:text; color:transparent; margin-left:.12em; }
+.icon-btn,.mode-toggle{
+  border-radius:999px; background:var(--surface); border:1px solid var(--border);
+  box-shadow:var(--shadow-card);
+}
+.mode-toggle[data-mode="admin"]{ border-color:color-mix(in srgb,var(--amber) 60%,transparent); color:var(--amber); }
+/* Search */
+#search-input,#koreksi-search-input{
+  font-family:var(--font-body); font-weight:500; border-radius:14px; background:var(--surface);
+  border:1px solid var(--border); box-shadow:var(--shadow-card);
+}
+#search-input:focus,#koreksi-search-input:focus{
+  border-color:var(--amber); box-shadow:0 0 0 4px color-mix(in srgb,var(--amber) 18%,transparent);
+}
+.btn-primary{
+  background:var(--gold-grad); color:var(--on-accent); font-family:var(--font-body);
+  font-weight:800; font-size:14px; letter-spacing:.02em; text-transform:none;
+  border-radius:14px; box-shadow:0 10px 22px -12px rgba(201,153,63,.9);
+}
+.btn-secondary{ border-radius:14px; }
+.chip{
+  font-family:var(--font-body); font-weight:600; background:var(--surface); border-radius:999px; padding:8px 14px;
+}
+.chip.active{
+  background:var(--gold-grad); color:var(--on-accent); border-color:transparent; font-weight:800;
+  box-shadow:0 8px 18px -10px rgba(201,153,63,.9);
+}
+/* Kartu hasil */
+.item-card{
+  border-radius:var(--radius); box-shadow:var(--shadow-card); border-color:var(--border);
+  transition:transform .18s ease, border-color .18s ease;
+}
+@media (hover:hover){ .item-card:hover{ border-color:color-mix(in srgb,var(--amber) 55%,var(--border)); transform:translateY(-1px); } }
+.card-strip{ width:5px; }
+.card-top .mcs{ font-size:17px; font-weight:800; color:var(--text); letter-spacing:.01em; }
+.model{ font-weight:600; color:var(--muted); }
+.badge{ border-radius:7px; font-weight:800; letter-spacing:.06em; }
+.bal-num{ font-family:var(--font-display); font-size:32px; font-weight:600; line-height:1; letter-spacing:0; }
+.k{ font-weight:500; }
+.v{ font-weight:700; }
+.card-grid.extra-grid{ border-top:1px solid var(--border); }
+/* Bottom sheet / form koreksi */
+.sheet{
+  border-radius:26px 26px 0 0; border:1px solid var(--border); border-bottom:0;
+  box-shadow:0 -24px 60px -20px rgba(0,0,0,.65);
+}
+.sheet-header h2{ font-family:var(--font-display); font-size:30px; font-weight:600; letter-spacing:0; }
+.sheet-eyebrow{ color:var(--amber); font-weight:700; letter-spacing:.14em; }
+.field input{ border-radius:12px; font-family:var(--font-body); font-weight:700; background:var(--surface-2); border-color:var(--border); }
+.field input:focus{ border-color:var(--amber); box-shadow:0 0 0 4px color-mix(in srgb,var(--amber) 18%,transparent); }
+#edit-sheet .btn-primary{ border-radius:14px; }
+.toast{ border-radius:14px; border:1px solid color-mix(in srgb,var(--amber) 55%,transparent); }
+/* Splash */
+#app-splash{ background:radial-gradient(600px 400px at 50% 30%, #16294a, #08111f); }
+#app-splash .splash-title{ font-family:var(--font-display); font-size:34px; letter-spacing:.08em; text-transform:none; color:#f2ecdc; }
+#app-splash .splash-title .accent{ background:var(--gold-grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+#app-splash .splash-sub{ color:#9aa7bf; }
+#app-splash .splash-dots span{ background:#d9b36a; }
+
+/* ===== LAYOUT SESUAI MOCKUP: bottom bar (HP) & sidebar (desktop) ===== */
+.status-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.status-actions{ display:flex; gap:8px; }
+.act-btn{
+  display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border-radius:12px;
+  background:var(--surface); border:1px solid var(--border); color:var(--text);
+  font:700 13px var(--font-body); cursor:pointer; box-shadow:var(--shadow-card);
+}
+.act-btn.dark{ background:#0d1b33; color:#f0dca8; border-color:#c9993f; }
+.act-btn:active{ transform:scale(.97); }
+.nav-brand,.nav-tag{ display:none; }
+.app-nav{
+  position:fixed; left:0; right:0; bottom:0; z-index:80;
+  background:var(--surface); border-top:1px solid var(--border);
+  border-radius:24px 24px 0 0; box-shadow:0 -18px 40px -22px rgba(0,0,0,.55);
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+}
+.nav-items{ display:grid; grid-template-columns:repeat(5,1fr); gap:4px; max-width:560px; margin:0 auto; }
+.nav-item{
+  display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 2px;
+  border:0; background:none; color:var(--muted); font:700 11px var(--font-body); border-radius:16px; cursor:pointer;
+  transition:background .2s,color .2s;
+}
+.nav-item.active{ background:var(--gold-grad); color:var(--on-accent); box-shadow:0 10px 22px -12px rgba(201,153,63,.9); }
+.nav-item:not(.active):active{ background:var(--surface-2); }
+.main{ padding-bottom:120px; }
+.scroll-top-btn{ bottom:calc(92px + env(safe-area-inset-bottom)) !important; }
+.kb-float-toggle{ z-index:90; }
+.field-chips{ overflow-x:auto; flex-wrap:nowrap; scrollbar-width:none; }
+.field-chips::-webkit-scrollbar{ display:none; }
+@media (max-width:719px){
+  .topbar-actions #btn-open-koreksi,.topbar-actions #btn-download,.topbar-actions #btn-refresh,.topbar-actions #btn-settings{ display:none; }
+  .act-btn span{ display:none; }
+  .act-btn{ width:42px; padding:0; justify-content:center; }
+  .status-actions{ margin-left:auto; }
+}
+/* Desktop: sidebar kiri navy + hasil 2 kolom */
+@media (min-width:1000px){
+  body{ padding-left:264px; }
+  .app-nav{
+    left:0; top:0; bottom:0; right:auto; width:264px; border-radius:0; border:0; padding:28px 16px 24px;
+    background:linear-gradient(180deg,#0d1b33,#08111f); color:#e9e2d0; display:flex; flex-direction:column; gap:26px;
+    box-shadow:none; overflow:hidden;
+  }
+  .app-nav::after{ content:""; position:absolute; right:0; top:0; bottom:0; width:1px; background:linear-gradient(transparent,#c9993f 50%,transparent); opacity:.55; }
+  .nav-brand,.nav-tag{ display:block; padding:0 8px; }
+  .nav-mark{ font:700 46px/1 var(--font-display); letter-spacing:.06em; background:var(--gold-grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .nav-co{ font-size:11px; color:#9aa7bf; margin-top:8px; }
+  .nav-app{ font:700 15px/1.25 var(--font-body); color:#fff; margin-top:14px; padding-top:14px; border-top:1px solid rgba(201,153,63,.5); }
+  .nav-items{ display:flex; flex-direction:column; gap:4px; max-width:none; margin:0; }
+  .nav-item{ flex-direction:row; gap:12px; padding:12px 14px; font-size:14px; font-weight:600; color:#b8c3d8; border-radius:12px; }
+  .nav-item:not(.active):hover{ background:rgba(255,255,255,.07); color:#fff; }
+  .nav-tag{ margin-top:auto; font:600 21px/1.3 var(--font-display); color:#d8cfb8; }
+  .nav-tag i{ display:block; width:34px; height:2px; background:#c9993f; margin-top:14px; }
+  .topbar{ padding-left:36px; padding-right:36px; }
+  .main{ max-width:1100px; padding:16px 36px 60px; }
+  .results{ display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
+  .scroll-top-btn{ bottom:24px !important; }
+}
 </style>
 </head>
 <body>
@@ -600,6 +759,10 @@ html,body{ overflow-x:hidden; }
 
   <section class="status-row">
     <span id="result-summary" class="muted">Memuat data…</span>
+    <span class="status-actions">
+      <button type="button" class="act-btn" data-proxy="btn-refresh" aria-label="Refresh data"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg><span>Refresh</span></button>
+      <button type="button" class="act-btn dark" data-proxy="btn-download" aria-label="Unduh Excel"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg><span>Ekspor Excel</span></button>
+    </span>
   </section>
 
   <section id="results" class="results" aria-live="polite"></section>
@@ -847,6 +1010,21 @@ html,body{ overflow-x:hidden; }
   </div>
 </div>
 
+<nav class="app-nav" id="app-nav" aria-label="Menu utama">
+  <div class="nav-brand">
+    <div class="nav-mark">KIM</div>
+    <div class="nav-co">PT Karya Indah Multiguna</div>
+    <div class="nav-app">DATA STOCK<br>STOCK OPNAME</div>
+  </div>
+  <div class="nav-items">
+    <button type="button" class="nav-item active" data-nav="search"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Cari Stock</span></button>
+    <button type="button" class="nav-item" data-nav="btn-open-koreksi"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Koreksi</span></button>
+    <button type="button" class="nav-item" data-nav="btn-open-master"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9-5-9 5v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span>Master MC</span></button>
+    <button type="button" class="nav-item" data-nav="btn-download"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg><span>Excel</span></button>
+    <button type="button" class="nav-item" data-nav="btn-settings"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><span>Pengaturan</span></button>
+  </div>
+  <div class="nav-tag">Stock akurat,<br>opname lebih mudah,<br>data lebih terpercaya.<i></i></div>
+</nav>
 <div id="toast" class="toast hidden"></div>
 <button type="button" id="kb-float-toggle" class="kb-float-toggle" aria-label="Ganti jenis keyboard">123</button>
 <button id="btn-scroll-top" class="scroll-top-btn" aria-label="Kembali ke atas" title="Kembali ke atas">
@@ -2795,6 +2973,22 @@ if ('serviceWorker' in navigator) {
   };
   const ov=document.getElementById('ok-overlay');
   ov.addEventListener('click',()=>{ clearTimeout(hideTimer); ov.classList.remove('show'); });
+})();
+</script>
+
+<script>
+/* Menu bawah/sidebar: meneruskan klik ke tombol asli, tidak mengubah logika aplikasi */
+(function(){
+  document.addEventListener('click',function(e){
+    var n=e.target.closest('[data-nav]'), a=e.target.closest('[data-proxy]');
+    if(a){ var t=document.getElementById(a.dataset.proxy); if(t) t.click(); return; }
+    if(!n) return;
+    var id=n.dataset.nav;
+    if(id==='search'){
+      window.scrollTo({top:0,behavior:'smooth'});
+      var i=document.getElementById('search-input'); if(i) setTimeout(function(){i.focus();},250);
+    }else{ var t2=document.getElementById(id); if(t2) t2.click(); }
+  });
 })();
 </script>
 </body>
