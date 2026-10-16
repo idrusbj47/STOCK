@@ -2163,7 +2163,7 @@ function norm(r){const t=String(r.tanggal||'').slice(0,10),kl=String(r.klasifika
 function keys(r,d){if(d==='pj'){const a=r.pj.split('/').map(s=>s.trim()).filter(Boolean);return a.length?a:['-'];}return [r[d]||'-'];}
 function group(list,d){const m=new Map();list.forEach(r=>keys(r,d).forEach(k=>{let g=m.get(k);if(!g)m.set(k,g={name:k,n:0,my:0,mn:0,poin:0});g.n++;r.kl==='MAYOR'?g.my++:g.mn++;g.poin+=r.poin;}));return[...m.values()];}
 function sum(L){const s={n:L.length,my:0,mn:0,poin:0};L.forEach(r=>{r.kl==='MAYOR'?s.my++:s.mn++;s.poin+=r.poin;});s.zona=new Set(L.map(r=>r.zona)).size;s.pj=new Set(L.flatMap(r=>keys(r,'pj'))).size;return s;}
-const top=(L,d)=>group(L,d).sort((a,b)=>b.n-a.n||b.my-a.my)[0];
+const topG=(L,d)=>group(L,d).sort((a,b)=>b.n-a.n||b.my-a.my)[0];
 const cur=()=>state.periods[state.pi];
 function buildPeriods(){const m=new Map();state.rows.forEach(r=>{if(!/^\d{4}-\d{2}$/.test(r.per))return;(m.get(r.per)||m.set(r.per,[]).get(r.per)).push(r);});
   state.periods=[...m.keys()].sort().map(k=>({key:k,name:perName(k),rows:m.get(k)}));
@@ -2196,7 +2196,7 @@ function renderOverview(){const P=cur(),L=P.rows,S=sum(L),pv=state.periods[state
   const G=group(L,state.ovDim).sort((a,b)=>b.n-a.n).slice(0,10);$('ov-dimname').textContent=DIMN[state.ovDim];
   mk('ov-chart',{type:'bar',data:{labels:G.map(g=>g.name),datasets:[{label:'Mayor',data:G.map(g=>g.my),backgroundColor:cv('--st-kosong')},{label:'Minor',data:G.map(g=>g.mn),backgroundColor:cv('--st-kurang')}]},options:{indexAxis:'y',scales:{x:ax(1),y:Object.assign(ax(1,false),{ticks:{color:cv('--muted'),autoSkip:false}})}}});
   const it=[];const add=(ic,cl,t,g,dim)=>g&&it.push(`<div class="it clk" data-dim="${dim}" data-key="${esc(g.name)}"><div class="kic ${cl}">${ic}</div><div><div class="t">${t}</div><div class="b">${esc(g.name)}</div><div class="d">${g.n} temuan · ${g.my} mayor · poin ${g.poin}</div></div><span class="go">›</span></div>`);
-  add(I.pin,'rd','ZONA TERBANYAK',top(L,'zona'),'zona');add(I.pin,'am','AREA TERBANYAK',top(L,'area'),'area');add(I.user,'bl','PJ TERBANYAK',top(L,'pj'),'pj');add(I.user,'out','KARU TERBANYAK',top(L,'karu'),'karu');add(I.tag,'in','KODE PALING SERING',top(L,'kode'),'kode');
+  add(I.pin,'rd','ZONA TERBANYAK',topG(L,'zona'),'zona');add(I.pin,'am','AREA TERBANYAK',topG(L,'area'),'area');add(I.user,'bl','PJ TERBANYAK',topG(L,'pj'),'pj');add(I.user,'out','KARU TERBANYAK',topG(L,'karu'),'karu');add(I.tag,'in','KODE PALING SERING',topG(L,'kode'),'kode');
   if(PS)it.push(`<div class="it"><div class="kic ${S.n>PS.n?'rd':'in'}">${I.pts}</div><div><div class="t">TREN VS ${esc(pn.toUpperCase())}</div><div class="b">${S.n>PS.n?'Temuan naik':S.n<PS.n?'Temuan turun':'Temuan sama'} (${S.n-PS.n>=0?'+':''}${S.n-PS.n})</div><div class="d">Mayor ${PS.my} → ${S.my} · Minor ${PS.mn} → ${S.mn}</div></div></div>`);
   $('ov-ins').innerHTML=it.join('')||'<div class="empty-note">Belum ada data</div>';}
 /* ---------- DETAIL ---------- */
