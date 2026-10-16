@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stock-opname-shell-v145';
+const CACHE_NAME = 'stock-opname-shell-v146';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const SHELL_FILES = [
   './ringkasan-slg.html',
   './ringkasan-mlg.html',
   './ringkasan-sob2.html',
+  './ringkasan-5r5s.html',
   './manifest.json',
   './analisa-memo.html',
   './analisa2.html',
