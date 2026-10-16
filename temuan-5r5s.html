@@ -29,7 +29,7 @@
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);}
   body{padding-bottom:40px;}
   header.topbar{
-    background:linear-gradient(135deg,var(--navy),var(--navy-2));
+    background:linear-gradient(135deg,var(--nbg),var(--navy-2));
     color:#fff;padding:18px 20px 22px;
     padding-top:calc(18px + env(safe-area-inset-top,0px));
     border-bottom-left-radius:22px;border-bottom-right-radius:22px;
@@ -54,7 +54,7 @@
   .refresh-splash .box{background:#fff;border-radius:16px;padding:22px 28px;
     display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 6px 20px rgba(0,0,0,.2);}
   .refresh-splash .dots{display:flex;gap:7px;}
-  .refresh-splash .dots span{width:10px;height:10px;border-radius:50%;background:var(--navy);
+  .refresh-splash .dots span{width:10px;height:10px;border-radius:50%;background:var(--nbg);
     animation:dotBounce 1s ease-in-out infinite;}
   .refresh-splash .dots span:nth-child(2){animation-delay:.15s;}
   .refresh-splash .dots span:nth-child(3){animation-delay:.3s;}
@@ -153,7 +153,7 @@
   body.is-admin .admin-only{display:inline-flex !important;}
   .m-tabs{display:flex;gap:6px;margin:4px 0 10px;}
   .m-tab{flex:1;padding:9px 6px;border-radius:10px;border:1px solid var(--border);background:#fafbfe;font-size:13px;font-weight:700;color:var(--navy);cursor:pointer;}
-  .m-tab.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .m-tab.on{background:var(--nbg);color:#fff;border-color:var(--navy);}
   .m-row{display:flex;gap:8px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
   .m-row .m-main{flex:1;min-width:0;}
   .m-row .m-sub{color:#6b7488;font-size:12px;margin-top:2px;}
@@ -182,7 +182,7 @@
   .tool-row{display:flex;gap:8px;overflow-x:auto;margin:12px 0 6px;padding-bottom:2px;}
   .tool-btn{flex:0 0 auto;padding:9px 13px;border-radius:10px;border:1px solid var(--border);
     background:#fafbfe;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
-  .tool-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .tool-btn.active{background:var(--nbg);color:#fff;border-color:var(--navy);}
   .slider-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
   .slider-row input[type=range]{flex:1;}
   .editor-footer{display:flex;gap:10px;margin-top:14px;}
@@ -194,7 +194,7 @@
   .settings-field{margin-bottom:12px;}
   .settings-field label{margin-bottom:4px;}
   .hint{font-size:11.5px;color:var(--muted);margin-top:3px;}
-  .save-settings{width:100%;padding:13px;border:none;border-radius:10px;background:var(--navy);color:#fff;font-weight:700;margin-top:6px;cursor:pointer;}
+  .save-settings{width:100%;padding:13px;border:none;border-radius:10px;background:var(--nbg);color:#fff;font-weight:700;margin-top:6px;cursor:pointer;}
 
   select[multiple]{height:auto;}
 
@@ -251,13 +251,13 @@
   .tright{display:flex;align-items:center;gap:12px;margin-left:auto;}
   .tdate{display:none;font-size:12.5px;color:var(--muted);}
   .chip{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:4px 12px 4px 4px;font-size:12.5px;font-weight:700;color:var(--navy);}
-  .chip .av{width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;}
+  .chip .av{width:26px;height:26px;border-radius:50%;background:var(--nbg);color:#fff;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;}
   .chip .adm{display:none;} body.is-admin .chip .adm{display:inline;} body.is-admin .chip .guest{display:none;}
   main{max-width:760px;margin:0 auto;padding:6px 16px 0;}
   .view{display:none;} .view.on{display:block;}
   .card{border-radius:var(--radius);box-shadow:0 2px 10px rgba(13,27,54,.06);border:1px solid #eceef5;padding:18px;}
   .card h2{font-size:16px;}
-  .btn-submit{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;border:1.5px solid var(--gold);border-radius:12px;}
+  .btn-submit{background:linear-gradient(135deg,var(--nbg),var(--navy-2));color:#fff;border:1.5px solid var(--gold);border-radius:12px;}
   .goldBtn{background:linear-gradient(135deg,var(--gold-2),var(--gold));color:var(--navy);border:none;border-radius:11px;padding:12px 20px;font-weight:800;font-size:14.5px;cursor:pointer;box-shadow:0 4px 14px rgba(201,162,75,.35);}
   .goldBtn:active{transform:scale(.98);}
   .linkBtn{background:#f1f3f9;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;}
@@ -278,7 +278,7 @@
   .stat b{font-size:26px;color:var(--navy);line-height:1.1;}
   #homeRecent .list-item .editBtn,#homeRecent .list-item .delBtn{display:none;}
   .setRow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fafbfe;border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-top:9px;font-size:14px;font-weight:700;color:var(--navy);cursor:pointer;}
-  .setRow i{font-style:normal;width:30px;height:30px;border-radius:9px;background:var(--navy);color:var(--gold-2);display:flex;align-items:center;justify-content:center;}
+  .setRow i{font-style:normal;width:30px;height:30px;border-radius:9px;background:var(--nbg);color:var(--gold-2);display:flex;align-items:center;justify-content:center;}
   body.is-admin .setRow.admin-only{display:flex !important;}
 
   /* nav: bawah (mobile) */
@@ -309,6 +309,76 @@
     .navItem.on{flex:none;}
     #mainNav .navFoot{display:block;margin-top:auto;color:#cdd5e8;font-size:13.5px;line-height:1.6;border-bottom:2px solid var(--gold);padding-bottom:14px;width:60%;}
   }
+
+  /* ===== WARNA SEGAR + TEMA GELAP ===== */
+  :root{--nbg:#0d1b36;--teal:#0ea5a4;--indigo:#6366f1;--amber:#f59e0b;--rose:#f43f5e;--emerald:#10b981;}
+  .card{position:relative;overflow:hidden;background:linear-gradient(180deg,#ffffff,#fbfcff);}
+  .card::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--teal),var(--indigo),var(--gold));}
+  #v-input::before{background:linear-gradient(90deg,var(--emerald),var(--teal));}
+  #v-riwayat::before{background:linear-gradient(90deg,var(--indigo),#8b5cf6);}
+  #v-lapor::before{background:linear-gradient(90deg,var(--amber),var(--gold));}
+  .card h2:not([style])::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal);margin-right:8px;vertical-align:middle;}
+  .stat{border:none;position:relative;overflow:hidden;}
+  .stat::after{content:"";position:absolute;right:-18px;top:-18px;width:70px;height:70px;border-radius:50%;opacity:.18;background:currentColor;}
+  .stat.s1{background:linear-gradient(135deg,#e6f0ff,#f6faff);color:#3b6fd4;}
+  .stat.s2{background:linear-gradient(135deg,#fff3d6,#fffaf0);color:#d98a1b;}
+  .stat.s3{background:linear-gradient(135deg,#ffe6ea,#fff6f7);color:#e0405a;}
+  .stat .si{background:rgba(255,255,255,.75);color:inherit;box-shadow:0 2px 6px rgba(0,0,0,.06);}
+  .stat span{color:#5f6b85;} .stat b{color:var(--navy);}
+  .list-item{border:1px solid var(--border);border-left:4px solid var(--amber);border-radius:14px;padding:10px;margin-top:10px;cursor:pointer;
+    background:linear-gradient(90deg,rgba(245,158,11,.07),transparent 55%);transition:transform .15s,box-shadow .15s;}
+  .list-item:last-child{border-bottom:1px solid var(--border);}
+  .list-item.mayor{border-left-color:var(--rose);background:linear-gradient(90deg,rgba(244,63,94,.08),transparent 55%);}
+  .list-item:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(13,27,54,.08);}
+  .list-item img{width:62px;height:62px;border-radius:12px;}
+  .badge.minor{background:linear-gradient(135deg,#fbbf24,#f59e0b);} .badge.mayor{background:linear-gradient(135deg,#fb7185,#e11d48);}
+  .goldBtn,.linkBtn{font-family:inherit;}
+  .themeBtn{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:15px;line-height:1;}
+
+  /* detail temuan */
+  .dMain{position:relative;border-radius:16px;overflow:hidden;background:#0b1220;min-height:160px;display:flex;align-items:center;justify-content:center;cursor:zoom-in;}
+  .dMain img{width:100%;max-height:52vh;object-fit:contain;display:block;}
+  .dMain.nofoto{cursor:default;color:#8e9bb8;font-size:13px;}
+  .dNav{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.85);font-size:22px;line-height:1;cursor:pointer;color:#0d1b36;}
+  .dNav.prev{left:8px;} .dNav.next{right:8px;}
+  .dCount{position:absolute;right:10px;top:10px;background:rgba(0,0,0,.55);color:#fff;border-radius:20px;padding:2px 10px;font-size:11.5px;font-weight:700;}
+  .dHint{position:absolute;left:10px;bottom:8px;background:rgba(0,0,0,.45);color:#fff;border-radius:20px;padding:2px 10px;font-size:10.5px;}
+  .dThumbs{display:flex;gap:8px;overflow-x:auto;margin:10px 0;}
+  .dThumbs img{width:58px;height:58px;border-radius:10px;object-fit:cover;border:2px solid transparent;cursor:pointer;flex-shrink:0;opacity:.7;}
+  .dThumbs img.on{border-color:var(--gold);opacity:1;}
+  .dRow{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+  .dRow:last-child{border-bottom:none;} .dRow span{flex:0 0 104px;color:var(--muted);font-weight:600;font-size:12.5px;} .dRow b{flex:1;font-weight:600;word-break:break-word;}
+  #zoomView{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.95);display:none;}
+  #zoomView.show{display:block;}
+  #zoomView .zScroll{position:absolute;inset:0;overflow:auto;display:flex;align-items:center;justify-content:center;-webkit-overflow-scrolling:touch;}
+  #zoomView img{max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in;}
+  #zoomView.z2 .zScroll{display:block;} #zoomView.z2 img{max-width:none;max-height:none;width:230%;cursor:zoom-out;}
+  #zClose{position:absolute;right:14px;top:calc(14px + env(safe-area-inset-top,0px));z-index:2;width:38px;height:38px;border-radius:50%;border:none;background:rgba(255,255,255,.9);font-size:16px;cursor:pointer;}
+
+  /* ===== TEMA GELAP ===== */
+  body.dark{--bg:#0a111f;--card:#111a2c;--border:#22304a;--text:#e6ecf8;--muted:#8e9bb8;--navy:#e6ecf8;--nbg:#16294d;--navy-2:#1d3566;color-scheme:dark;}
+  body.dark .card{background:linear-gradient(180deg,#121c30,#0f1829);border-color:#1f2d47;box-shadow:0 4px 18px rgba(0,0,0,.35);}
+  body.dark .stat.s1{background:linear-gradient(135deg,rgba(99,102,241,.22),rgba(99,102,241,.06));color:#a5b4fc;}
+  body.dark .stat.s2{background:linear-gradient(135deg,rgba(245,158,11,.22),rgba(245,158,11,.05));color:#fcd34d;}
+  body.dark .stat.s3{background:linear-gradient(135deg,rgba(244,63,94,.22),rgba(244,63,94,.05));color:#fda4af;}
+  body.dark .stat .si{background:rgba(255,255,255,.1);box-shadow:none;} body.dark .stat span{color:#a9b4cc;}
+  body.dark .list-item{background:linear-gradient(90deg,rgba(245,158,11,.10),transparent 55%);}
+  body.dark .list-item.mayor{background:linear-gradient(90deg,rgba(244,63,94,.12),transparent 55%);}
+  body.dark .list-item img{background:#1a2640;}
+  body.dark .chip,body.dark .themeBtn,body.dark .refresh-splash .box,body.dark #okFx .okBox{background:#14203a;color:var(--text);border-color:var(--border);}
+  body.dark .modal-sheet{background:#101a2e;color:var(--text);}
+  body.dark input[type=text],body.dark input[type=date],body.dark input[type=number],body.dark select,body.dark textarea,
+  body.dark .pj-chipbox,body.dark .m-form input,body.dark .m-form select,body.dark .m-form textarea{background:#0b1424;color:var(--text);border-color:var(--border);}
+  body.dark .pj-chip{background:#1d2c4d;color:#dbe5fb;}
+  body.dark .setRow,body.dark .m-tab,body.dark .tool-btn,body.dark #btnCekKode{background:#14203a !important;color:var(--text) !important;border-color:var(--border) !important;}
+  body.dark .m-tab.on,body.dark .tool-btn.active{background:var(--gold) !important;color:#0d1b36 !important;border-color:var(--gold) !important;}
+  body.dark .m-form{background:#0e1830;} body.dark .m-row button,body.dark .list-item .editBtn,body.dark .linkBtn,body.dark .modal-close,body.dark .editor-footer .cancel{background:#1b2a47;color:var(--text);border-color:#2a3b5e;}
+  body.dark .m-row button.del,body.dark .list-item .delBtn{background:#3a1a24;color:#fda4af;border-color:#5a2a38;}
+  body.dark .kode-ref-item:active{background:#16223b;}
+  body.dark #mainNav{background:#0c1426;box-shadow:0 -6px 24px rgba(0,0,0,.5);}
+  body.dark .navItem{color:#8e9bb8;} body.dark .navItem.on{color:#0d1b36;}
+  body.dark header.topbar .ttl h1,body.dark .mLogo small{color:var(--text);}
+  body.dark .dRow{border-color:var(--border);}
 </style>
 </head>
 <body>
@@ -317,6 +387,7 @@
   <div class="mLogo"><div class="logo">KIM</div><small>5R5S WORKSPACE</small></div>
   <div class="ttl"><h1>Manajemen Temuan 5R5S</h1><p>Pemantauan &amp; pencatatan kondisi area gudang</p></div>
   <div class="tright"><span class="tdate" id="topDate"></span>
+    <button class="themeBtn" id="btnTheme" title="Ganti tema" type="button">🌙</button>
     <span class="chip"><i class="av">&#128100;</i><span class="guest">Tamu</span><span class="adm">Admin</span></span></div>
 </header>
 <div class="actions" style="display:none">
@@ -376,9 +447,9 @@
       <ul class="heroTags"><li>Ringkas</li><li>Jelas</li><li>Mudah</li><li>Tindak Lanjut</li></ul>
     </div>
     <div class="stats">
-      <div class="stat"><i class="si" style="background:#e8f0fe;color:#3b6fd4">&#128203;</i><div><span>Total Temuan</span><b id="stTotal">–</b></div></div>
-      <div class="stat"><i class="si" style="background:#fff4d6;color:#d98a1b">&#9888;</i><div><span>Minor</span><b id="stMinor">–</b></div></div>
-      <div class="stat"><i class="si" style="background:#fde8ec;color:#d1445c">&#9888;</i><div><span>Mayor</span><b id="stMayor">–</b></div></div>
+      <div class="stat s1"><i class="si">&#128203;</i><div><span>Total Temuan</span><b id="stTotal">–</b></div></div>
+      <div class="stat s2"><i class="si">&#9888;</i><div><span>Minor</span><b id="stMinor">–</b></div></div>
+      <div class="stat s3"><i class="si">&#9888;</i><div><span>Mayor</span><b id="stMayor">–</b></div></div>
     </div>
     <div class="card">
       <h2 style="display:flex;justify-content:space-between;align-items:center;"><span>Temuan Terbaru</span>
@@ -398,6 +469,7 @@
   <section class="view" id="v-set">
     <div class="card">
       <h2>Pengaturan</h2>
+      <button class="setRow" data-click="btnTheme"><i>🌓</i><span>Ganti Tema Terang / Gelap</span></button>
       <button class="setRow" data-click="btnLogin"><i>&#128274;</i><span>Login Admin / Akun</span></button>
       <button class="setRow admin-only" data-click="btnMaster"><i>&#128451;</i><span>Kelola Data Master</span></button>
       <button class="setRow" data-click="btnSettings"><i>&#9881;</i><span>Sumber Data (Supabase)</span></button>
@@ -505,6 +577,21 @@
 
 <div id="okFx"><div class="okBox"><svg viewBox="0 0 52 52"><circle class="okc" cx="26" cy="26" r="24"/><path class="okt" d="M15 27l8 8 15-17"/></svg></div></div>
 
+<!-- DETAIL TEMUAN -->
+<div class="modal-overlay" id="detailOverlay">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeDetail">✕</button>
+    <h3 id="dTitle">Detail Temuan</h3>
+    <div class="dMain" id="dMain"><img id="dImg" alt="Foto temuan">
+      <button class="dNav prev" id="dPrev" type="button">‹</button><button class="dNav next" id="dNext" type="button">›</button>
+      <span class="dCount" id="dCount"></span><span class="dHint">Ketuk untuk memperbesar</span></div>
+    <div class="dThumbs" id="dThumbs"></div>
+    <div id="dInfo"></div>
+    <button class="save-settings" id="dEdit" style="display:none;">✎ Edit Temuan</button>
+  </div>
+</div>
+<div id="zoomView"><button id="zClose" type="button">✕</button><div class="zScroll" id="zScroll"><img id="zImg" alt=""></div></div>
+
 <!-- MASTER DATA MODAL (admin) -->
 <div class="modal-overlay" id="masterOverlay">
   <div class="modal-sheet">
@@ -518,7 +605,7 @@
     <div class="hint" style="margin-bottom:8px;">Perubahan hanya berlaku untuk temuan <b>baru</b>. Temuan lama menyimpan salinan teksnya sendiri, jadi laporan &amp; foto lama tidak berubah.</div>
     <div style="display:flex;gap:8px;margin-bottom:8px;">
       <input type="text" id="mSearch" placeholder="Cari…" style="flex:1;">
-      <button type="button" id="mAddBtn" style="flex-shrink:0;padding:10px 14px;border-radius:10px;border:none;background:var(--navy);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">＋ Tambah</button>
+      <button type="button" id="mAddBtn" style="flex-shrink:0;padding:10px 14px;border-radius:10px;border:none;background:var(--nbg);color:#fff;font-weight:700;font-size:13px;cursor:pointer;">＋ Tambah</button>
     </div>
     <div class="m-form" id="mForm"></div>
     <div id="mStatus" class="status-msg"></div>
@@ -630,7 +717,7 @@
       <span style="font-weight:600;color:var(--text);font-size:13.5px;">Sertakan halaman dokumentasi foto</span>
     </label>
     <div style="display:flex;gap:10px;margin-top:16px;">
-      <button class="save-settings" id="btnCetakPrint" style="margin-top:0;background:var(--navy);flex:1;">🖨 Cetak</button>
+      <button class="save-settings" id="btnCetakPrint" style="margin-top:0;background:var(--nbg);flex:1;">🖨 Cetak</button>
       <button class="save-settings" id="btnGeneratePdf" style="margin-top:0;flex:1;">⬇️ Unduh PDF</button>
     </div>
     <button class="save-settings" id="btnGenerateExcel" style="margin-top:10px;background:var(--green);">📊 Unduh Excel</button>
@@ -1364,7 +1451,8 @@
         const thumb = (r.foto_url||"").split(",")[0] || "";
         const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
         const div = document.createElement("div");
-        div.className = "list-item";
+        div.className = "list-item " + (isMayor ? "mayor" : "minor");
+        div.dataset.row = encodeURIComponent(JSON.stringify(r));
         div.innerHTML = `${thumb ? `<img src="${thumb}">` : ""}
           <div class="meta">
             <b>${escapeHtml(r.kode)} · ${escapeHtml(r.area||"-")}</b><br>
@@ -2008,6 +2096,72 @@
   $("fTanggal").value = new Date().toISOString().slice(0,10);
 
 
+
+  /* ---------------- TEMA TERANG / GELAP ---------------- */
+  function applyTheme(dark){
+    document.body.classList.toggle("dark", dark);
+    document.documentElement.style.background = dark ? "#0a111f" : "";
+    $("btnTheme").textContent = dark ? "☀️" : "🌙";
+    const m = document.querySelector('meta[name="theme-color"]');
+    if(m) m.setAttribute("content", dark ? "#0a111f" : "#f5f6fa");
+  }
+  (function(){
+    let s = null; try{ s = localStorage.getItem("temuan5r5s_theme"); }catch(e){}
+    applyTheme(s ? s==="dark" : (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches));
+  })();
+  $("btnTheme").addEventListener("click", ()=>{
+    const d = !document.body.classList.contains("dark");
+    applyTheme(d);
+    try{ localStorage.setItem("temuan5r5s_theme", d?"dark":"light"); }catch(e){}
+  });
+
+  /* ---------------- DETAIL TEMUAN (klik item) ---------------- */
+  let dRow = null, dFotos = [], dIdx = 0;
+  function dShow(){
+    const main = $("dMain");
+    main.classList.toggle("nofoto", !dFotos.length);
+    if(dFotos.length){
+      $("dImg").style.display = ""; $("dImg").src = dFotos[dIdx];
+      $("dCount").textContent = (dIdx+1)+" / "+dFotos.length;
+    } else { $("dImg").style.display = "none"; $("dCount").textContent = ""; if(!main.querySelector(".noF")) main.insertAdjacentHTML("afterbegin",'<span class="noF">Tidak ada foto</span>'); }
+    main.querySelectorAll(".noF").forEach(n=> n.style.display = dFotos.length ? "none" : "");
+    $("dPrev").style.display = $("dNext").style.display = dFotos.length>1 ? "" : "none";
+    $("dThumbs").innerHTML = dFotos.length>1 ? dFotos.map((u,i)=>`<img src="${escapeHtml(u)}" data-i="${i}" class="${i===dIdx?"on":""}">`).join("") : "";
+  }
+  function openDetail(r){
+    dRow = r; dIdx = 0;
+    dFotos = (r.foto_url||"").split(",").map(s=>s.trim()).filter(Boolean);
+    const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+    $("dTitle").textContent = "Temuan " + (r.kode||"");
+    const rows = [
+      ["Klasifikasi", `<span class="badge ${isMayor?"mayor":"minor"}" style="flex:none;color:#fff;font-size:11px;">${isMayor?"MAYOR":"MINOR"}</span>`],
+      ["Kode", escapeHtml(r.kode||"")], ["Uraian", escapeHtml(r.uraian||"")], ["Tanggal", escapeHtml(r.tanggal||"")],
+      ["Area", escapeHtml(r.area||"")], ["Zona", escapeHtml(r.zona||"")],
+      ["Penanggung Jawab", escapeHtml(r.penanggung_jawab||"")], ["Kepala Regu", escapeHtml(r.kepala_regu||"")],
+      ["Catatan", escapeHtml(r.catatan||"").replace(/\n/g,"<br>")]
+    ].filter(x=>x[1]);
+    $("dInfo").innerHTML = rows.map(x=>`<div class="dRow"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
+    $("dEdit").style.display = currentSession ? "" : "none";
+    dShow();
+    $("detailOverlay").classList.add("show");
+  }
+  function zoomOpen(){ if(!dFotos.length) return; $("zImg").src = dFotos[dIdx]; $("zoomView").classList.remove("z2"); $("zoomView").classList.add("show"); }
+  document.addEventListener("click", e=>{
+    const it = e.target.closest(".list-item");
+    if(it && it.dataset.row && !e.target.closest("button")){
+      try{ openDetail(JSON.parse(decodeURIComponent(it.dataset.row))); }catch(err){}
+    }
+  });
+  $("closeDetail").addEventListener("click", ()=> $("detailOverlay").classList.remove("show"));
+  $("detailOverlay").addEventListener("click", e=>{ if(e.target===$("detailOverlay")) $("detailOverlay").classList.remove("show"); });
+  $("dPrev").addEventListener("click", e=>{ e.stopPropagation(); dIdx = (dIdx-1+dFotos.length)%dFotos.length; dShow(); });
+  $("dNext").addEventListener("click", e=>{ e.stopPropagation(); dIdx = (dIdx+1)%dFotos.length; dShow(); });
+  $("dThumbs").addEventListener("click", e=>{ const t = e.target.closest("img"); if(t){ dIdx = +t.dataset.i; dShow(); } });
+  $("dMain").addEventListener("click", e=>{ if(!e.target.closest(".dNav")) zoomOpen(); });
+  $("zImg").addEventListener("click", ()=> $("zoomView").classList.toggle("z2"));
+  $("zClose").addEventListener("click", ()=> $("zoomView").classList.remove("show","z2"));
+  $("dEdit").addEventListener("click", ()=>{ $("detailOverlay").classList.remove("show"); if(dRow) openEditTemuan(dRow); });
+
   /* ---------------- NAVIGASI TAB + BERANDA ---------------- */
   function showView(v){
     document.querySelectorAll(".view").forEach(x=> x.classList.toggle("on", x.id==="v-"+v));
@@ -2082,7 +2236,7 @@
       <label>No</label><input id="mfNo" type="number" value="${v(r.no)}">`;
     if(mTab==="karu") body = `<label>Nama Karu</label><input id="mfNama" value="${v(r.nama)}">`;
     f.innerHTML = `<b>${key!==null?"Edit":"Tambah"} data</b>${body}
-      <div class="m-btns"><button type="button" id="mfSave" style="background:var(--navy);color:#fff;">Simpan</button>
+      <div class="m-btns"><button type="button" id="mfSave" style="background:var(--nbg);color:#fff;">Simpan</button>
       <button type="button" id="mfCancel" style="background:#e5e8f0;color:var(--navy);">Batal</button></div>`;
     if(mTab==="kode" && r.klasifikasi) $("mfKlas").value = r.klasifikasi.includes("MAYOR")?"MAYOR":"MINOR";
     if(mTab==="kode"){
