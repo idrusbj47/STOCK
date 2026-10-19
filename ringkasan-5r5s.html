@@ -2032,6 +2032,54 @@ body.pres #sm-more,body.pres .sum-filter-info,body.pres #btn-sm-table{display:no
 @keyframes dotpulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
 @media(prefers-reduced-motion:reduce){.view-tabs button.active::before,.date-tab.active::before,.sum-filter-btn.active::before,.qv-filter-chip.active::before,.seg button.on::before,.dim-switch button.active::before,.sf-seg button.on::before{animation:none}}
 </style>
+<style>
+/* ===== RATA TABEL: judul kolom & isi kolom SATU rata (kolom pertama kiri, kolom angka tengah) ===== */
+table.rank-table th,table.rank-table td{text-align:center;vertical-align:middle}
+table.rank-table th:first-child,table.rank-table td:first-child{text-align:left}
+.rank-table .bar-track{margin-right:0}
+.rank-table tfoot td{font-weight:800;background:var(--surface-2);border-top:1px solid var(--border);border-bottom:0;position:sticky;bottom:0}
+.dt-items th,.dt-items td{text-align:left}
+.dt-items th.r,.dt-items td.r{text-align:right}
+.pr-table th,.pr-table td{text-align:left}
+.pr-table th.num,.pr-table td.num{text-align:right}
+
+/* ===== TOMBOL LAYAR PENUH (grafik & tabel) ===== */
+.chd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex:none;margin-bottom:6px}
+.chd>div:first-child{min-width:0}
+.chd h2{margin:0}
+.chtools{display:flex;align-items:center;gap:8px;flex:none}
+.chtools .fsb,.chd>.fsb{margin-left:0}
+.fsb .ic-cmp{display:none}
+.fs-on .fsb .ic-exp{display:none}
+.fs-on .fsb .ic-cmp{display:block}
+.fs-on{height:auto!important;width:auto!important;max-height:none!important;margin:0!important;grid-column:auto!important;grid-row:auto!important;overflow:hidden!important;animation:none!important;box-shadow:0 24px 70px rgba(0,0,0,.4)!important}
+.fs-on .chart-canvas-wrap{flex:1;min-height:0}
+.fs-on table.rank-table{font-size:13.5px}
+.fs-on table.rank-table td{padding-top:9px;padding-bottom:9px}
+#fs-back{display:none;position:fixed;inset:0;z-index:240;background:rgba(10,14,30,.55)}
+#fs-back.on{display:block}
+body.fs-open{overflow:hidden}
+
+/* ===== PERGERAKAN: 1 tahun berjalan ===== */
+#mv-section>*{flex:none}
+.mvg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mvg .chart-card{height:340px}
+.mvg .chart-card.wide{grid-column:1/-1;height:380px}
+.mvg .chart-card.tbl{height:auto;max-height:480px}
+.chart-card .scr{flex:1;min-height:0;overflow:auto}
+.chart-card .chart-card-sub{margin:2px 0 4px}
+.hm th,.hm td{padding:7px 6px;min-width:46px;white-space:nowrap}
+.hm th:first-child,.hm td:first-child{min-width:130px}
+.hm td.hc{border-left:1px solid var(--grid)}
+.hm td.tot{background:var(--surface-2)}
+.sum-filter .sf-seg{align-self:flex-end}
+@media(max-width:999px){
+  .mvg{grid-template-columns:1fr}
+  .mvg .chart-card,.mvg .chart-card.wide{height:320px}
+  .mvg .chart-card.tbl{max-height:420px}
+  .sum-filter .sf-seg{width:100%;overflow-x:auto}
+}
+</style>
 </head>
 <body>
 <div id="app-splash"><div class="splash-logo">KIM</div><div class="splash-title">RINGKASAN<span class="accent"> 5R5S</span></div><div class="splash-sub">PT Karya Indah Multiguna</div><div class="splash-dots"><span></span><span></span><span></span></div></div>
@@ -2070,33 +2118,38 @@ body.pres #sm-more,body.pres .sum-filter-info,body.pres #btn-sm-table{display:no
     <div class="stc" id="ov-status"></div>
     <div class="hero">
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h2 style="margin:0">Temuan per <span id="ov-dimname">Zona</span> (Top 10)</h2><div class="seg" id="ov-seg"><button data-m="area">Area</button><button data-m="zona" class="on">Zona</button><button data-m="pj">PJ</button><button data-m="karu">Karu</button></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h2 style="margin:0">Temuan per <span id="ov-dimname">Zona</span> (Top 10)</h2><div style="display:flex;gap:8px;align-items:center"><div class="seg" id="ov-seg"><button data-m="area">Area</button><button data-m="zona" class="on">Zona</button><button data-m="pj">PJ</button><button data-m="karu">Karu</button></div><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div>
         <div id="ov-comp"></div>
         <div style="flex:1;min-height:150px;position:relative"><canvas id="ov-chart"></canvas></div>
       </div>
-      <div class="card"><h2>Insight</h2><div class="ins" id="ov-ins"></div></div>
+      <div class="card"><div class="chd"><h2>Insight</h2><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div><div class="ins" id="ov-ins"></div></div>
     </div>
   </section>
 
-  <div id="mv-section" class="pg hidden">
+  <div id="mv-section" class="pg scroll hidden">
     <div class="sum-filter">
+      <div class="sf-seg" id="mv-preset"><button data-p="ytd" class="on">Tahun Berjalan</button><button data-p="12">12 Bulan</button><button data-p="6">6 Bulan</button><button data-p="all">Semua</button></div>
       <label class="qview-field">Periode awal<select id="mv-from"></select></label>
       <label class="qview-field">Periode akhir<select id="mv-to"></select></label>
       <span class="sum-filter-info" id="mv-info"></span>
-      <button class="btn sm2" id="btn-mv-table" style="margin-left:auto"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span>Lihat Detail Tabel</span></button>
     </div>
     <div class="mk mk5" id="mv-kpi"></div>
-    <div class="smg">
-      <div class="chart-card" style="grid-column:1;grid-row:1"><div class="chart-card-title">Temuan per Periode</div><p class="chart-card-sub">Mayor &amp; minor (batang), total poin (garis)</p><div class="chart-canvas-wrap"><canvas id="ch-mv1"></canvas></div></div>
-      <div class="chart-card" style="grid-column:2;grid-row:1"><div class="chart-card-title">Porsi Mayor per Periode</div><p class="chart-card-sub">Persentase temuan mayor terhadap total</p><div class="chart-canvas-wrap"><canvas id="ch-mv2"></canvas></div></div>
-      <div class="chart-card" style="grid-column:1;grid-row:2"><div class="chart-card-title">Perubahan Temuan per Zona</div><p class="chart-card-sub">Selisih jumlah temuan periode akhir dibanding awal</p><div class="chart-canvas-wrap"><canvas id="ch-mv3"></canvas></div></div>
-      <div class="chart-card" style="grid-column:2;grid-row:2"><div class="chart-card-title">Kode Temuan Terbanyak</div><p class="chart-card-sub">Top 8 kode dalam rentang periode terpilih</p><div class="chart-canvas-wrap"><canvas id="ch-mv4"></canvas></div></div>
-    </div>
-    <div id="mv-more" style="display:none;flex:0 0 42%;min-height:0;overflow:auto;flex-direction:column;gap:12px">
-      <div class="section-title" style="margin:0">Ringkasan per Periode</div>
-      <div class="rank-table-wrap" style="overflow:auto"><table class="rank-table"><thead><tr><th>Periode</th><th>Temuan</th><th>Δ</th><th>Mayor</th><th>Minor</th><th>% Mayor</th><th>Total Poin</th><th>Zona</th></tr></thead><tbody id="mv-tbody1"></tbody></table></div>
-      <div class="section-title" style="margin:0">Perubahan per Zona</div>
-      <div class="rank-table-wrap" style="overflow:auto"><table class="rank-table"><thead><tr><th>Zona</th><th>Awal</th><th>Akhir</th><th>Δ</th><th>Mayor Akhir</th></tr></thead><tbody id="mv-tbody2"></tbody></table></div>
+    <div class="mvg">
+<div class="chart-card wide" id="mc-mv1"><div class="chd"><div><div class="chart-card-title" id="mv1-t">Temuan per Bulan</div><p class="chart-card-sub" id="mv1-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv1"></canvas></div></div>
+<div class="chart-card" id="mc-mv2"><div class="chd"><div><div class="chart-card-title" id="mv2-t">Porsi Mayor per Bulan</div><p class="chart-card-sub" id="mv2-s">Persentase temuan mayor terhadap total bulan tersebut</p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv2"></canvas></div></div>
+<div class="chart-card" id="mc-mv5"><div class="chd"><div><div class="chart-card-title" id="mv5-t">Akumulasi Temuan</div><p class="chart-card-sub" id="mv5-s">Total temuan berjalan (kumulatif) sejak awal rentang</p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv5"></canvas></div></div>
+<div class="chart-card wide" id="mc-mv6"><div class="chd"><div><div class="chart-card-title" id="mv6-t">Tren Zona Teratas</div><p class="chart-card-sub" id="mv6-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv6"></canvas></div></div>
+<div class="chart-card" id="mc-mv8"><div class="chd"><div><div class="chart-card-title" id="mv8-t">Zona Terbanyak</div><p class="chart-card-sub" id="mv8-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv8"></canvas></div></div>
+<div class="chart-card" id="mc-mv3"><div class="chd"><div><div class="chart-card-title" id="mv3-t">Perubahan Temuan per Zona</div><p class="chart-card-sub" id="mv3-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv3"></canvas></div></div>
+<div class="chart-card" id="mc-mv4"><div class="chd"><div><div class="chart-card-title" id="mv4-t">Kode Temuan Terbanyak</div><p class="chart-card-sub" id="mv4-s"></p></div><div class="chtools"><div class="sf-seg" id="mv-kode-seg"><button data-k="all" class="on">Semua</button><button data-k="MAYOR">Mayor</button><button data-k="MINOR">Minor</button></div><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv4"></canvas></div></div>
+<div class="chart-card" id="mc-mv7"><div class="chd"><div><div class="chart-card-title" id="mv7-t">Sebaran Kategori</div><p class="chart-card-sub" id="mv7-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv7"></canvas></div></div>
+<div class="chart-card" id="mc-mv9"><div class="chd"><div><div class="chart-card-title" id="mv9-t">Area Terbanyak</div><p class="chart-card-sub" id="mv9-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv9"></canvas></div></div>
+<div class="chart-card" id="mc-mv10"><div class="chd"><div><div class="chart-card-title" id="mv10-t">Temuan per Hari</div><p class="chart-card-sub" id="mv10-s">Hari pemeriksaan dengan temuan terbanyak (Senin – Minggu)</p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv10"></canvas></div></div>
+<div class="chart-card" id="mc-mv11"><div class="chd"><div><div class="chart-card-title" id="mv11-t">Penanggung Jawab</div><p class="chart-card-sub" id="mv11-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv11"></canvas></div></div>
+<div class="chart-card" id="mc-mv12"><div class="chd"><div><div class="chart-card-title" id="mv12-t">Kepala Regu / Karu</div><p class="chart-card-sub" id="mv12-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv12"></canvas></div></div>
+<div class="chart-card tbl wide" id="mc-hm"><div class="chd"><div><div class="chart-card-title">Peta Zona × Bulan</div><p class="chart-card-sub" id="mv-hm-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="scr rank-table-wrap" id="mv-hm"></div></div>
+<div class="chart-card tbl" id="mc-t1"><div class="chd"><div><div class="chart-card-title">Ringkasan per Periode</div><p class="chart-card-sub" id="mv-t1-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="scr rank-table-wrap"><table class="rank-table"><thead><tr><th>Periode</th><th>Temuan</th><th>Δ</th><th>Mayor</th><th>Minor</th><th>% Mayor</th><th>Total Poin</th><th>Zona</th></tr></thead><tbody id="mv-tbody1"></tbody><tfoot id="mv-tfoot1"></tfoot></table></div></div>
+<div class="chart-card tbl" id="mc-t2"><div class="chd"><div><div class="chart-card-title">Perubahan per Zona</div><p class="chart-card-sub" id="mv-t2-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="scr rank-table-wrap"><table class="rank-table"><thead id="mv-thead2"></thead><tbody id="mv-tbody2"></tbody></table></div></div>
     </div>
   </div>
 
@@ -2110,8 +2163,8 @@ body.pres #sm-more,body.pres .sum-filter-info,body.pres #btn-sm-table{display:no
     <div class="dht"><div class="sf-seg" id="kl-seg"><button data-k="all" class="on">Semua Level</button><button data-k="MAYOR">Mayor</button><button data-k="MINOR">Minor</button></div></div>
     <div class="mk mk5" id="dt-mini"></div>
     <div class="dhb">
-      <div class="card"><div class="section-title"><span id="rank-title">Temuan per Zona</span> <small id="rank-count"></small></div><div class="scr rank-table-wrap"><table class="rank-table"><thead id="rank-thead"></thead><tbody id="rank-tbody"></tbody></table></div></div>
-      <div class="card" id="results-section"><div class="section-title">Detail Temuan <small id="results-count"></small></div><section id="results" class="results scr"></section></div>
+      <div class="card"><div class="section-title"><span id="rank-title">Temuan per Zona</span> <small id="rank-count"></small><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div><div class="scr rank-table-wrap"><table class="rank-table"><thead id="rank-thead"></thead><tbody id="rank-tbody"></tbody></table></div></div>
+      <div class="card" id="results-section"><div class="section-title">Detail Temuan <small id="results-count"></small><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div><section id="results" class="results scr"></section></div>
     </div>
   </div>
 
@@ -2125,6 +2178,7 @@ body.pres #sm-more,body.pres .sum-filter-info,body.pres #btn-sm-table{display:no
   </div>
 </main>
 
+<div id="fs-back"></div>
 <div id="pn"><button id="pn-prev" aria-label="Sebelumnya">‹</button><span id="pn-c">1 / 4</span><button id="pn-next" aria-label="Berikutnya">›</button></div>
 <div id="print-area"></div>
 <div id="settings-overlay" class="sheet-overlay"><div class="sheet" role="dialog" aria-modal="true"><div class="sheet-handle"></div>
@@ -2143,11 +2197,12 @@ body.pres #sm-more,body.pres .sum-filter-info,body.pres #btn-sm-table{display:no
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const KEY='ringkasan5r5s.cfg',DKEY='ringkasan5r5s.data',THEME_KEY='ringkasan5r5s.theme';
-const DEF={url:'https://bpqiejowxcxyeewhoncr.supabase.co',key:'sb_publishable_3tCR_a01HgzEpH-5uypqGg_s8WvXsa9',table:'5r5s_temuan'};
+const DEF={url:'https://bpqiejowxcxyeewhoncr.supabase.co',key:'sb_publishable_3tCR_a01HgzEpH-5uypqGg_s8WvXsa9',table:'5r5s_temuan',kodeTable:'5r5s_kode_temuan'};
+const KKEY='ringkasan5r5s.kode';
 const PAGES=['overview','move','detail','report'],PAGE_ID={overview:'ov-section',move:'mv-section',detail:'dt-section',report:'rp-section'};
 const DIMN={area:'Area',zona:'Zona',pj:'PJ',karu:'Karu',kode:'Kode'};
 const BLN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-const state={cfg:Object.assign({},DEF),rows:[],periods:[],pi:0,view:'overview',ovDim:'zona',dim:'zona',kl:'all',search:'',sel:null,sk:'n',sd:-1,mvA:0,mvB:0,isk:'tgl',isd:-1,source:''};
+const state={cfg:Object.assign({},DEF),rows:[],periods:[],pi:0,view:'overview',ovDim:'zona',dim:'zona',kl:'all',search:'',sel:null,sk:'n',sd:-1,mvA:0,mvB:0,mvPreset:'ytd',mvKode:'all',kat:new Map(),isk:'tgl',isd:-1,source:''};
 const CH={};
 const f0=n=>Math.round(n).toLocaleString('id-ID');
 const pct=(a,b)=>b?Math.round(a/b*100):0;
@@ -2168,7 +2223,7 @@ const cur=()=>state.periods[state.pi];
 function buildPeriods(){const m=new Map();state.rows.forEach(r=>{if(!/^\d{4}-\d{2}$/.test(r.per))return;(m.get(r.per)||m.set(r.per,[]).get(r.per)).push(r);});
   state.periods=[...m.keys()].sort().map(k=>({key:k,name:perName(k),rows:m.get(k)}));
   if(!state.periods.length)state.periods=[{key:'—',name:'—',rows:[]}];
-  state.pi=state.periods.length-1;state.mvA=Math.max(0,state.periods.length-6);state.mvB=state.periods.length-1;}
+  state.pi=state.periods.length-1;mvApply(state.mvPreset||'ytd');}
 /* ---------- LOAD ---------- */
 async function fetchAll(){const c=state.cfg,out=[];for(let from=0;;from+=1000){const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),20000);
   try{const r=await fetch(`${c.url.replace(/\/$/,'')}/rest/v1/${encodeURIComponent(c.table)}?select=*&order=tanggal.asc`,{headers:{apikey:c.key,Authorization:'Bearer '+c.key,'Range-Unit':'items',Range:`${from}-${from+999}`},signal:ctl.signal});
@@ -2179,9 +2234,27 @@ async function loadData(){try{const st=JSON.parse(localStorage.getItem(KEY)||'{}
   catch(e){let c=null;try{c=JSON.parse(localStorage.getItem(DKEY)||'null');}catch(_){}
     if(c&&c.raw){state.rows=c.raw.map(norm);state.source='cache';setBanner('Gagal memuat Supabase ('+esc(e.message)+'). Memakai data tersimpan '+new Date(c.at).toLocaleString('id-ID')+'. <button onclick="loadData().then(renderAll)">Coba lagi</button>');}
     else{state.rows=[];state.source='none';setBanner('Gagal memuat data dari Supabase: '+esc(e.message)+'. Periksa koneksi / pengaturan Sumber Data atau kebijakan akses (RLS) tabel. <button onclick="loadData().then(renderAll)">Coba lagi</button>');}}
-  buildPeriods();$('src-info').textContent=(state.source==='live'?'Live · Supabase':state.source==='cache'?'Data tersimpan':'Tidak ada data')+' · '+f0(state.rows.length)+' baris';renderAll();}
+  buildPeriods();$('src-info').textContent=(state.source==='live'?'Live · Supabase':state.source==='cache'?'Data tersimpan':'Tidak ada data')+' · '+f0(state.rows.length)+' baris';renderAll();loadKode();}
+/* master kode temuan -> kategori (untuk donut Sebaran Kategori); gagal = pakai cache / sebaran area */
+async function loadKode(){const c=state.cfg;
+  try{const r=await fetch(`${c.url.replace(/\/$/,'')}/rest/v1/${encodeURIComponent(c.kodeTable||DEF.kodeTable)}?select=kode,kategori`,{headers:{apikey:c.key,Authorization:'Bearer '+c.key}});
+    if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();
+    state.kat=new Map(d.filter(x=>x&&x.kode&&x.kategori).map(x=>[String(x.kode).toUpperCase().trim(),String(x.kategori).trim()]));
+    try{localStorage.setItem(KKEY,JSON.stringify([...state.kat]));}catch(e){}}
+  catch(e){try{const k=JSON.parse(localStorage.getItem(KKEY)||'null');if(k)state.kat=new Map(k);}catch(_){}}
+  if(state.view==='move')renderMove();}
 /* ---------- CHART ---------- */
-function mk(id,cfg){if(CH[id])CH[id].destroy();const o=cfg.options=cfg.options||{};o.responsive=true;o.maintainAspectRatio=false;o.animation=false;o.plugins=Object.assign({legend:{labels:{color:cv('--muted'),boxWidth:10}}},o.plugins||{});CH[id]=new Chart($(id),cfg);}
+/* angka pada grafik hanya ditampilkan saat mode layar penuh */
+const DLO={
+  bar:()=>({display:c=>{const v=c.dataset.data[c.dataIndex];return v?'auto':false;},color:'#fff',font:{weight:'700',size:11},anchor:'center',align:'center',clamp:true,padding:2}),
+  line:()=>({display:'auto',color:cv('--text'),font:{weight:'700',size:11},anchor:'end',align:'top',offset:4,padding:2}),
+  donut:()=>({display:c=>{const d=c.dataset.data,t=d.reduce((x,y)=>x+y,0);return !!t&&d[c.dataIndex]/t>=.05;},color:'#fff',font:{weight:'700',size:12}})
+};
+function mk(id,cfg){if(CH[id])CH[id].destroy();const o=cfg.options=cfg.options||{};o.responsive=true;o.maintainAspectRatio=false;o.animation=false;
+  const kind=cfg.dl||'bar';delete cfg.dl;
+  o.plugins=Object.assign({legend:{labels:{color:cv('--muted'),boxWidth:10}}},o.plugins||{});
+  const cv0=$(id);o.plugins.datalabels=(typeof FS!=='undefined'&&FS&&cv0&&FS.contains(cv0)&&kind!=='none')?DLO[kind]():{display:false};
+  CH[id]=new Chart(cv0,cfg);}
 const ax=(st,g)=>({stacked:!!st,grid:{display:g!==false,color:cv('--grid')},ticks:{color:cv('--muted')}});
 const uiResize=()=>Object.values(CH).forEach(c=>c&&c.resize&&c.resize());
 const dtag=(a,b,pn)=>b==null?'':`<span class="dtag ${a>b?'bad':a<b?'good':'neu'}">${a>b?'▲ +':a<b?'▼ ':'• '}${a-b} vs ${pn}</span>`;
@@ -2217,22 +2290,108 @@ function renderDetail(){const L=filt(),S=sum(L),d=state.dim;$('rank-title').text
   const ih=(l,key)=>`<th data-isort="${key}" class="${ik===key?(id>0?'asc':'desc'):''}">${l}</th>`;
   $('results').innerHTML=R.length?`<table class="dt-items"><thead><tr>${ih('Tanggal','tgl')}${ih('Area / Zona','area')}${ih('Kode / Uraian','kode')}${ih('Level','kl')}${ih('PJ / Karu','pj')}<th>Batas</th><th>Foto</th></tr></thead><tbody>${R.slice(0,400).map(r=>`<tr><td class="nw">${r.tgl}</td><td class="wr md">${esc(r.area)}<span class="sub">${esc(r.zona)}</span></td><td class="wr"><b>${esc(r.kode)}</b><span class="sub">${esc(r.uraian)}${r.cat?' · '+esc(r.cat):''}</span></td><td><span class="ket ${r.kl==='MAYOR'?'kt-destroy':'kt-tunggu'}">${r.kl}</span></td><td class="wr">${esc(r.pj)}<span class="sub">Karu: ${esc(r.karu)}</span></td><td class="nw">${deadline(r.tgl)}</td><td>${r.foto?`<a href="${esc(r.foto)}" target="_blank" rel="noopener">Lihat</a>`:'–'}</td></tr>`).join('')}</tbody></table>${R.length>400?`<div class="empty-note">Menampilkan 400 dari ${R.length}. Persempit dengan filter.</div>`:''}`:'<div class="empty-note">Tidak ada temuan</div>';}
 /* ---------- PERGERAKAN ---------- */
+const PAL=['#6366f1','#0ea5a4','#f59e0b','#f43f5e','#10b981','#8b5cf6','#0ea5e9'];
+const GRAY='#94a3b8';
+const HRN=['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+const rgba=(h,a)=>{h=String(h).trim().replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');const n=parseInt(h,16)||0;return`rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;};
+const wrapTxt=(s,n)=>{const o=[];let l='';String(s||'').split(/\s+/).forEach(w=>{if(l&&(l+' '+w).length>n){o.push(l);l=w;}else l=l?l+' '+w:w;});if(l)o.push(l);return o;};
+const cut=(s,n)=>String(s).length>n?String(s).slice(0,n-1)+'…':String(s);
+const sgn=n=>(n>0?'+':'')+n;
+function monthSeq(a,b){const out=[];let y=+a.slice(0,4),m=+a.slice(5);const y2=+b.slice(0,4),m2=+b.slice(5);
+  while(y<y2||(y===y2&&m<=m2)){out.push(y+'-'+String(m).padStart(2,'0'));m++;if(m>12){m=1;y++;}}return out;}
+/* preset rentang: ytd = tahun berjalan (Jan s/d periode terakhir), 12 / 6 = bulan terakhir, all = semua */
+function mvApply(p){const Ps=state.periods,n=Ps.length,last=Ps[n-1].key;state.mvPreset=p;state.mvB=n-1;
+  if(!/^\d{4}-\d{2}$/.test(last)){state.mvA=0;return;}
+  const ly=+last.slice(0,4),lm=+last.slice(5);let start='0000-00';
+  if(p==='ytd')start=ly+'-01';
+  else if(p==='12'||p==='6'){let y=ly,m=lm-(p==='12'?11:5);while(m<1){m+=12;y--;}start=y+'-'+String(m).padStart(2,'0');}
+  const a=Ps.findIndex(x=>x.key>=start);state.mvA=a<0?0:a;}
 function renderMove(){const Ps=state.periods,opts=Ps.map((p,i)=>`<option value="${i}">${p.name}</option>`).join('');
   $('mv-from').innerHTML=opts;$('mv-to').innerHTML=opts;$('mv-from').value=state.mvA;$('mv-to').value=state.mvB;
-  let a=state.mvA,b=state.mvB;if(a>b)[a,b]=[b,a];const R=Ps.slice(a,b+1),SS=R.map(p=>sum(p.rows)),all=R.flatMap(p=>p.rows),T=sum(all);
-  $('mv-info').textContent=R.length+' periode · '+perName(R[0].key)+' – '+perName(R[R.length-1].key);
-  const f=SS[0],l=SS[SS.length-1];
-  $('mv-kpi').innerHTML=kpi(I.all,'bl','Total Temuan',f0(T.n))+kpi(I.pts,'out','Rata-rata / Periode',(T.n/R.length).toFixed(1))+kpi(I.warn,'rd','Total Mayor',f0(T.my),pct(T.my,T.n)+'%')+kpi(I.pts,l.n>f.n?'rd':'in','Perubahan',(l.n-f.n>=0?'+':'')+(l.n-f.n),R[0].name+' → '+R[R.length-1].name)+kpi(I.minor,'am','Total Poin',f0(T.poin));
-  const lb=R.map(p=>p.name);
-  mk('ch-mv1',{data:{labels:lb,datasets:[{type:'bar',label:'Mayor',data:SS.map(s=>s.my),backgroundColor:cv('--st-kosong'),stack:'a'},{type:'bar',label:'Minor',data:SS.map(s=>s.mn),backgroundColor:cv('--st-kurang'),stack:'a'},{type:'line',label:'Total poin',data:SS.map(s=>s.poin),borderColor:cv('--primary'),backgroundColor:cv('--primary'),yAxisID:'y1',tension:.3}]},options:{scales:{x:ax(1,false),y:ax(1),y1:{position:'right',grid:{display:false},ticks:{color:cv('--muted')}}}}});
-  mk('ch-mv2',{type:'line',data:{labels:lb,datasets:[{label:'% Mayor',data:SS.map(s=>pct(s.my,s.n)),borderColor:cv('--st-kosong'),backgroundColor:cv('--st-kosong'),tension:.3}]},options:{scales:{x:ax(0,false),y:Object.assign(ax(),{min:0,max:100})}}});
-  const ga=new Map(group(R[0].rows,'zona').map(g=>[g.name,g])),gb=new Map(group(R[R.length-1].rows,'zona').map(g=>[g.name,g])),zs=[...new Set([...ga.keys(),...gb.keys()])].map(z=>({z,a:(ga.get(z)||{n:0}).n,b:(gb.get(z)||{n:0}).n,my:(gb.get(z)||{my:0}).my})).map(o=>Object.assign(o,{d:o.b-o.a})).sort((x,y)=>Math.abs(y.d)-Math.abs(x.d));
-  const z10=zs.filter(o=>o.d).slice(0,10);
-  mk('ch-mv3',{type:'bar',data:{labels:z10.map(o=>o.z),datasets:[{label:'Δ temuan',data:z10.map(o=>o.d),backgroundColor:z10.map(o=>o.d>0?cv('--st-kosong'):cv('--st-lunas'))}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:ax(),y:Object.assign(ax(0,false),{ticks:{color:cv('--muted'),autoSkip:false}})}}});
-  const k8=group(all,'kode').sort((x,y)=>y.n-x.n).slice(0,8);
-  mk('ch-mv4',{type:'bar',data:{labels:k8.map(g=>g.name),datasets:[{label:'Mayor',data:k8.map(g=>g.my),backgroundColor:cv('--st-kosong')},{label:'Minor',data:k8.map(g=>g.mn),backgroundColor:cv('--st-kurang')}]},options:{scales:{x:ax(1,false),y:ax(1)}}});
-  $('mv-tbody1').innerHTML=R.map((p,i)=>{const s=SS[i],dl=i?s.n-SS[i-1].n:null;return`<tr><td>${p.name}</td><td><b>${s.n}</b></td><td>${dl==null?'–':`<span class="dtag ${dl>0?'bad':dl<0?'good':'neu'}">${dl>0?'+':''}${dl}</span>`}</td><td>${s.my}</td><td>${s.mn}</td><td>${pct(s.my,s.n)}%</td><td>${s.poin}</td><td>${s.zona}</td></tr>`;}).join('');
-  $('mv-tbody2').innerHTML=zs.map(o=>`<tr><td>${esc(o.z)}</td><td>${o.a}</td><td>${o.b}</td><td><span class="dtag ${o.d>0?'bad':o.d<0?'good':'neu'}">${o.d>0?'+':''}${o.d}</span></td><td>${o.my}</td></tr>`).join('');}
+  document.querySelectorAll('#mv-preset button').forEach(x=>x.classList.toggle('on',x.dataset.p===state.mvPreset));
+  document.querySelectorAll('#mv-kode-seg button').forEach(x=>x.classList.toggle('on',x.dataset.k===state.mvKode));
+  let i0=state.mvA,i1=state.mvB;if(i0>i1)[i0,i1]=[i1,i0];
+  const R=Ps.slice(i0,i1+1);
+  if(!R.length||!/^\d{4}-\d{2}$/.test(R[0].key)){$('mv-info').textContent='';$('mv-kpi').innerHTML='<div class="empty-note" style="grid-column:1/-1">Belum ada data temuan</div>';return;}
+  /* deret bulan berkesinambungan (bulan tanpa temuan tetap tampil = 0) */
+  const pm=new Map(Ps.map(p=>[p.key,p])),ms=monthSeq(R[0].key,R[R.length-1].key),multi=ms[0].slice(0,4)!==ms[ms.length-1].slice(0,4);
+  const MS=ms.map(k=>{const p=pm.get(k),rows=p?p.rows:[];return{key:k,name:perName(k),short:BLN[+k.slice(5)-1]+(multi?' '+k.slice(2,4):''),rows,s:sum(rows)};});
+  const nm=MS.length,all=MS.flatMap(m=>m.rows),T=sum(all),f=MS[0].s,l=MS[nm-1].s,pk=MS.reduce((x,y)=>y.s.n>x.s.n?y:x,MS[0]),lb=MS.map(m=>m.short);
+  $('mv-info').textContent=(state.mvPreset==='ytd'?'Tahun berjalan '+ms[nm-1].slice(0,4)+' · ':'')+nm+' bulan · '+perName(ms[0])+' – '+perName(ms[nm-1]);
+  $('mv-kpi').innerHTML=kpi(I.all,'bl','Total Temuan',f0(T.n)+'<small>temuan</small>',nm+' bulan · '+f0(T.zona)+' zona')
+    +kpi(I.pts,'out','Rata-rata / Bulan',(T.n/nm).toFixed(1),'Tertinggi: '+pk.name+' ('+pk.s.n+')')
+    +kpi(I.warn,'rd','Total Mayor',f0(T.my),pct(T.my,T.n)+'% dari total')
+    +kpi(I.pts,l.n>f.n?'rd':'in','Perubahan',sgn(l.n-f.n),MS[0].short+' → '+MS[nm-1].short)
+    +kpi(I.minor,'am','Total Poin',f0(T.poin),'Minor '+f0(T.mn)+' · '+pct(T.mn,T.n)+'%');
+  const hb=(id,G,aft)=>mk(id,{type:'bar',dl:'bar',data:{labels:G.map(g=>cut(g.name,26)),datasets:[{label:'Mayor',data:G.map(g=>g.my),backgroundColor:cv('--st-kosong')},{label:'Minor',data:G.map(g=>g.mn),backgroundColor:cv('--st-kurang')}]},
+    options:{indexAxis:'y',plugins:{tooltip:{callbacks:{title:it=>G[it[0].dataIndex].name,afterTitle:it=>aft?aft(G[it[0].dataIndex]):''}}},scales:{x:ax(1),y:Object.assign(ax(1,false),{ticks:{color:cv('--muted'),autoSkip:false}})}}});
+  /* 1. tren per bulan */
+  $('mv1-s').textContent='Mayor & minor (batang), total poin (garis) · '+nm+' bulan';
+  mk('ch-mv1',{type:'bar',dl:'bar',data:{labels:lb,datasets:[{type:'bar',label:'Mayor',data:MS.map(m=>m.s.my),backgroundColor:cv('--st-kosong'),stack:'a'},{type:'bar',label:'Minor',data:MS.map(m=>m.s.mn),backgroundColor:cv('--st-kurang'),stack:'a'},{type:'line',label:'Total poin',data:MS.map(m=>m.s.poin),borderColor:cv('--primary'),backgroundColor:cv('--primary'),yAxisID:'y1',tension:.3,datalabels:{color:cv('--primary'),anchor:'end',align:'top'}}]},
+    options:{scales:{x:ax(1,false),y:ax(1),y1:{position:'right',grid:{display:false},ticks:{color:cv('--muted')}}}}});
+  /* 2. porsi mayor */
+  mk('ch-mv2',{type:'line',dl:'line',data:{labels:lb,datasets:[{label:'% Mayor',data:MS.map(m=>m.s.n?pct(m.s.my,m.s.n):null),borderColor:cv('--st-kosong'),backgroundColor:cv('--st-kosong'),tension:.3,spanGaps:true,datalabels:{formatter:v=>v+'%'}}]},
+    options:{plugins:{legend:{display:false}},scales:{x:ax(0,false),y:Object.assign(ax(),{min:0,max:100})}}});
+  /* 3. akumulasi */
+  let c1=0,c2=0;const cu=MS.map(m=>{c1+=m.s.n;c2+=m.s.my;return[c1,c2];});
+  mk('ch-mv5',{type:'line',dl:'line',data:{labels:lb,datasets:[{label:'Total temuan',data:cu.map(x=>x[0]),borderColor:cv('--st-siap'),backgroundColor:rgba(cv('--st-siap'),.14),fill:true,tension:.25},{label:'Mayor',data:cu.map(x=>x[1]),borderColor:cv('--st-kosong'),backgroundColor:cv('--st-kosong'),tension:.25}]},
+    options:{scales:{x:ax(0,false),y:ax()}}});
+  /* 4. tren 5 zona teratas */
+  const zAll=group(all,'zona').sort((a,b)=>b.n-a.n||b.my-a.my),z5=zAll.slice(0,5);
+  $('mv6-s').textContent='Jumlah temuan per bulan untuk '+z5.length+' zona dengan temuan terbanyak';
+  mk('ch-mv6',{type:'line',dl:'line',data:{labels:lb,datasets:z5.map((z,i)=>({label:z.name,data:MS.map(m=>m.rows.filter(r=>r.zona===z.name).length),borderColor:PAL[i],backgroundColor:PAL[i],tension:.3,pointRadius:3}))},
+    options:{scales:{x:ax(0,false),y:Object.assign(ax(),{beginAtZero:true,ticks:{color:cv('--muted'),precision:0}})}}});
+  /* 5. zona terbanyak (total rentang) */
+  $('mv8-s').textContent='Top '+Math.min(10,zAll.length)+' dari '+zAll.length+' zona · mayor & minor';
+  hb('ch-mv8',zAll.slice(0,10));
+  /* 6. perubahan per zona awal -> akhir */
+  const ga=new Map(group(MS[0].rows,'zona').map(g=>[g.name,g])),gb=new Map(group(MS[nm-1].rows,'zona').map(g=>[g.name,g])),
+    zs=[...new Set([...ga.keys(),...gb.keys()])].map(z=>({z,a:(ga.get(z)||{n:0}).n,b:(gb.get(z)||{n:0}).n,my:(gb.get(z)||{my:0}).my})).map(o=>Object.assign(o,{d:o.b-o.a})).sort((x,y)=>Math.abs(y.d)-Math.abs(x.d)||y.b-x.b),
+    z10=zs.filter(o=>o.d).slice(0,10);
+  $('mv3-s').textContent='Selisih jumlah temuan '+MS[nm-1].name+' dibanding '+MS[0].name;
+  mk('ch-mv3',{type:'bar',dl:'bar',data:{labels:z10.map(o=>cut(o.z,26)),datasets:[{label:'Δ temuan',data:z10.map(o=>o.d),backgroundColor:z10.map(o=>o.d>0?cv('--st-kosong'):cv('--st-lunas'))}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:ax(),y:Object.assign(ax(0,false),{ticks:{color:cv('--muted'),autoSkip:false}})}}});
+  /* 7. kode terbanyak (tab semua / mayor / minor) */
+  const KL=state.mvKode,rk=KL==='all'?all:all.filter(r=>r.kl===KL),k10=group(rk,'kode').sort((x,y)=>y.n-x.n||y.my-x.my).slice(0,10),ura=new Map();
+  all.forEach(r=>{if(r.uraian&&!ura.has(r.kode))ura.set(r.kode,r.uraian);});
+  $('mv4-s').textContent='Top 10 kode · '+(KL==='all'?'semua level':KL.toLowerCase())+' (arahkan kursor untuk uraian)';
+  hb('ch-mv4',k10,g=>wrapTxt(ura.get(g.name),48));
+  /* 8. sebaran kategori (atau area bila master kode belum tersedia) */
+  let dn=[],dTitle,dSub;
+  if(state.kat&&state.kat.size){const m=new Map();all.forEach(r=>{const k=state.kat.get(r.kode)||'Tanpa kategori';m.set(k,(m.get(k)||0)+1);});
+    dn=[...m].map(([name,n])=>({name,n})).sort((a,b)=>b.n-a.n);dTitle='Sebaran Kategori';dSub='Proporsi temuan per kategori 5R5S';}
+  else{dn=group(all,'area').sort((a,b)=>b.n-a.n).map(g=>({name:g.name,n:g.n}));dTitle='Sebaran per Area';dSub='Kategori kode belum tersedia — menampilkan sebaran area';}
+  if(dn.length>7){const rest=dn.slice(6).reduce((s,x)=>s+x.n,0);dn=dn.slice(0,6).concat([{name:'Lainnya',n:rest}]);}
+  $('mv7-t').textContent=dTitle;$('mv7-s').textContent=dSub;
+  let ci=0;const dcol=dn.map(d=>(d.name==='Tanpa kategori'||d.name==='Lainnya')?GRAY:PAL[ci++%PAL.length]);
+  mk('ch-mv7',{type:'doughnut',dl:'donut',data:{labels:dn.map(d=>d.name),datasets:[{data:dn.map(d=>d.n),backgroundColor:dcol,borderColor:cv('--surface'),borderWidth:2}]},
+    options:{cutout:'58%',plugins:{legend:{position:'right',labels:{color:cv('--muted'),boxWidth:10,font:{size:12}}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((x,y)=>x+y,0);return' '+c.label+': '+c.raw+' ('+pct(c.raw,t)+'%)';}}}}}});
+  /* 9. area, 10. hari, 11. PJ, 12. karu */
+  const aG=group(all,'area').sort((a,b)=>b.n-a.n||b.my-a.my);
+  $('mv9-s').textContent='Top '+Math.min(10,aG.length)+' dari '+aG.length+' area · mayor & minor';
+  hb('ch-mv9',aG.slice(0,10));
+  const hw=HRN.map(()=>({my:0,mn:0}));
+  all.forEach(r=>{const d=new Date(r.tgl+'T00:00:00');if(isNaN(d))return;const i=(d.getDay()+6)%7;r.kl==='MAYOR'?hw[i].my++:hw[i].mn++;});
+  mk('ch-mv10',{type:'bar',dl:'bar',data:{labels:HRN,datasets:[{label:'Mayor',data:hw.map(x=>x.my),backgroundColor:cv('--st-kosong'),stack:'a'},{label:'Minor',data:hw.map(x=>x.mn),backgroundColor:cv('--st-kurang'),stack:'a'}]},
+    options:{scales:{x:ax(1,false),y:ax(1)}}});
+  const pG=group(all,'pj').sort((a,b)=>b.n-a.n||b.my-a.my),kG=group(all,'karu').sort((a,b)=>b.n-a.n||b.my-a.my);
+  $('mv11-s').textContent='Top '+Math.min(8,pG.length)+' dari '+pG.length+' penanggung jawab';
+  hb('ch-mv11',pG.slice(0,8));
+  $('mv12-s').textContent='Top '+Math.min(8,kG.length)+' dari '+kG.length+' kepala regu';
+  hb('ch-mv12',kG.slice(0,8));
+  /* tabel: heatmap zona x bulan */
+  const zc=new Map();MS.forEach((m,i)=>m.rows.forEach(r=>{let a=zc.get(r.zona);if(!a)zc.set(r.zona,a=Array(nm).fill(0));a[i]++;}));
+  const zH=zAll.slice(0,15),cmax=Math.max(1,...zH.flatMap(z=>zc.get(z.name)||[0]));
+  $('mv-hm-s').textContent='Jumlah temuan tiap zona per bulan · '+zH.length+' dari '+zAll.length+' zona · makin pekat makin banyak';
+  $('mv-hm').innerHTML=`<table class="rank-table hm"><thead><tr><th>Zona</th>${MS.map(m=>`<th>${m.short}</th>`).join('')}<th>Total</th></tr></thead><tbody>${zH.map(z=>{const a=zc.get(z.name)||[];return`<tr><td class="rank-name nm">${esc(z.name)}</td>${a.map(v=>`<td class="hc" style="background:${v?`color-mix(in srgb,var(--st-kosong) ${Math.round(8+v/cmax*52)}%,transparent)`:'transparent'}">${v?`<b>${v}</b>`:'<span class="muted">·</span>'}</td>`).join('')}<td class="tot"><b>${z.n}</b></td></tr>`;}).join('')||`<tr><td colspan="${nm+2}" class="empty-note">Tidak ada data</td></tr>`}</tbody><tfoot><tr><td>Total semua zona</td>${MS.map(m=>`<td>${m.s.n||'–'}</td>`).join('')}<td>${T.n}</td></tr></tfoot></table>`;
+  /* tabel: ringkasan per periode */
+  $('mv-t1-s').textContent=nm+' bulan · '+perName(ms[0])+' – '+perName(ms[nm-1]);
+  $('mv-tbody1').innerHTML=MS.map((m,i)=>{const s=m.s,dl=i?s.n-MS[i-1].s.n:null;return`<tr><td>${m.name}</td><td><b>${s.n}</b></td><td>${dl==null?'–':`<span class="dtag ${dl>0?'bad':dl<0?'good':'neu'}">${sgn(dl)}</span>`}</td><td>${s.my}</td><td>${s.mn}</td><td>${s.n?pct(s.my,s.n)+'%':'–'}</td><td>${s.poin}</td><td>${s.zona}</td></tr>`;}).join('');
+  $('mv-tfoot1').innerHTML=`<tr><td>Total</td><td>${T.n}</td><td>–</td><td>${T.my}</td><td>${T.mn}</td><td>${T.n?pct(T.my,T.n)+'%':'–'}</td><td>${T.poin}</td><td>${T.zona}</td></tr>`;
+  /* tabel: perubahan per zona */
+  $('mv-t2-s').textContent='Perbandingan '+MS[0].name+' → '+MS[nm-1].name+' · '+zs.length+' zona';
+  $('mv-thead2').innerHTML=`<tr><th>Zona</th><th>${MS[0].short}</th><th>${MS[nm-1].short}</th><th>Δ</th><th>Mayor ${MS[nm-1].short}</th></tr>`;
+  $('mv-tbody2').innerHTML=zs.map(o=>`<tr><td class="rank-name nm">${esc(o.z)}</td><td>${o.a}</td><td>${o.b}</td><td><span class="dtag ${o.d>0?'bad':o.d<0?'good':'neu'}">${sgn(o.d)}</span></td><td>${o.my}</td></tr>`).join('')||'<tr><td colspan="5" class="empty-note">Tidak ada data</td></tr>';}
 /* ---------- LAPORAN ---------- */
 function repHTML(){const P=cur(),L=P.rows.slice().sort((a,b)=>a.tgl.localeCompare(b.tgl)),S=sum(L);
   const tb=(h,rows)=>`<table class="pr-table"><thead><tr>${h.map(x=>`<th class="${x[1]?'num':''}">${x[0]}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
@@ -2257,8 +2416,8 @@ async function copyText(t){try{await navigator.clipboard.writeText(t);return tru
 /* ---------- RENDER / VIEW ---------- */
 function renderPeriodTabs(){$('period-tabs').innerHTML=state.periods.map((p,i)=>`<button class="date-tab ${i===state.pi?'active':''}" data-i="${i}">${p.name}</button>`).join('');$('pbar').classList.toggle('hidden',state.view==='move');
   $('cutoff-badge').classList.remove('hidden');$('cutoff-value').textContent=cur().name;}
-function renderAll(){renderPeriodTabs();({overview:renderOverview,move:renderMove,detail:renderDetail,report:renderReport})[state.view]();setTimeout(uiResize,60);}
-function setView(v){state.view=v;PAGES.forEach(p=>$(PAGE_ID[p]).classList.toggle('hidden',p!==v));document.querySelectorAll('#view-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));$('pn-c').textContent=(PAGES.indexOf(v)+1)+' / '+PAGES.length;renderAll();}
+function renderAll(){renderPeriodTabs();({overview:renderOverview,move:renderMove,detail:renderDetail,report:renderReport})[state.view]();setTimeout(uiResize,60);if(FS)setTimeout(fsFit,90);}
+function setView(v){fsExit(true);state.view=v;PAGES.forEach(p=>$(PAGE_ID[p]).classList.toggle('hidden',p!==v));document.querySelectorAll('#view-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));$('pn-c').textContent=(PAGES.indexOf(v)+1)+' / '+PAGES.length;renderAll();}
 function gotoDetail(dim,sel,kl){state.dim=dim||state.dim;state.sel=sel||null;state.kl=kl||'all';setView('detail');}
 function getTheme(){return document.documentElement.getAttribute('data-theme')||'light';}
 function applyTheme(t){document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem(THEME_KEY,t);}catch(e){}$('theme-icon-sun').classList.toggle('hidden',t!=='dark');$('theme-icon-moon').classList.toggle('hidden',t==='dark');const m=document.getElementById('meta-theme-color');if(m)m.content=t==='dark'?'#0f1428':'#f3f5f9';}
@@ -2281,9 +2440,22 @@ let sT=null;$('search-input').addEventListener('input',e=>{clearTimeout(sT);sT=s
 $('btn-clear-search').addEventListener('click',()=>{state.search='';renderAll();});
 $('btn-clear-selected').addEventListener('click',()=>{state.sel=null;renderAll();});
 $('btn-reset-filter').addEventListener('click',()=>{state.search='';state.sel=null;state.kl='all';renderAll();});
-$('mv-from').addEventListener('change',e=>{state.mvA=+e.target.value;renderAll();});
-$('mv-to').addEventListener('change',e=>{state.mvB=+e.target.value;renderAll();});
-$('btn-mv-table').addEventListener('click',()=>{const o=$('mv-section').classList.toggle('open');$('mv-more').style.display=o?'flex':'none';$('btn-mv-table').lastElementChild.textContent=o?'Sembunyikan Tabel':'Lihat Detail Tabel';setTimeout(uiResize,60);});
+$('mv-from').addEventListener('change',e=>{state.mvA=+e.target.value;state.mvPreset=null;renderAll();});
+$('mv-to').addEventListener('change',e=>{state.mvB=+e.target.value;state.mvPreset=null;renderAll();});
+$('mv-preset').addEventListener('click',e=>{const b=tgt(e,'button');if(!b)return;mvApply(b.dataset.p);renderAll();});
+$('mv-kode-seg').addEventListener('click',e=>{const b=tgt(e,'button');if(!b)return;state.mvKode=b.dataset.k;renderAll();});
+/* ---------- LAYAR PENUH (grafik & tabel) ---------- */
+let FS=null,FSY=0,FSW=0;
+function fsFit(){if(!FS)return;FS.querySelectorAll('table').forEach(t=>t.style.zoom='');
+  const sc=FS.querySelector('.scr');if(!sc)return;const t=sc.querySelector('table');if(!t)return;
+  const r=sc.clientHeight/sc.scrollHeight;if(r<1&&r>=.62)t.style.zoom=r.toFixed(3);} /* tabel diperkecil agar muat 1 layar tanpa scroll */
+function fsExit(quiet){if(!FS)return;const pg=FS.closest('.pg');FS.classList.remove('fs-on');FS.querySelectorAll('table').forEach(t=>t.style.zoom='');FS=null;
+  document.body.classList.remove('fs-open');$('fs-back').classList.remove('on');if(pg)pg.scrollTop=FSY;try{window.scrollTo(0,FSW);}catch(e){}
+  if(!quiet){renderAll();setTimeout(uiResize,120);}}
+function fsToggle(c){if(FS===c){fsExit();return;}if(FS)fsExit(true);const pg=c.closest('.pg');FSY=pg?pg.scrollTop:0;FSW=window.scrollY||0;FS=c;c.classList.add('fs-on');document.body.classList.add('fs-open');$('fs-back').classList.add('on');
+  renderAll();setTimeout(()=>{uiResize();fsFit();},140);}
+document.addEventListener('click',e=>{const b=e.target.closest('.fsb');if(!b)return;const c=b.closest('.chart-card,.card');if(c)fsToggle(c);});
+$('fs-back').addEventListener('click',()=>fsExit());
 $('btn-print').addEventListener('click',doPrint);$('rp-print').addEventListener('click',doPrint);
 $('btn-download').addEventListener('click',downloadExcel);$('rp-xls').addEventListener('click',downloadExcel);
 $('btn-theme-toggle').addEventListener('click',()=>{applyTheme(getTheme()==='dark'?'light':'dark');renderAll();});
@@ -2296,12 +2468,12 @@ $('btn-save-settings').addEventListener('click',async()=>{const c={url:$('set-ur
 $('btn-pres').addEventListener('click',()=>uiPres());
 $('pn-prev').addEventListener('click',()=>uiGo(uiPage()-1));$('pn-next').addEventListener('click',()=>uiGo(uiPage()+1));
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)document.body.classList.remove('pres');setTimeout(uiResize,250);});
-document.addEventListener('keydown',e=>{if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName||''))return;if(document.querySelector('.sheet-overlay.show'))return;if(e.key==='Escape'){if(document.body.classList.contains('pres'))uiPres(false);$('more').classList.remove('open');}else if(e.key==='ArrowRight')uiGo(uiPage()+1);else if(e.key==='ArrowLeft')uiGo(uiPage()-1);});
+document.addEventListener('keydown',e=>{if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName||''))return;if(FS){if(e.key==='Escape')fsExit();return;}if(document.querySelector('.sheet-overlay.show'))return;if(e.key==='Escape'){if(document.body.classList.contains('pres'))uiPres(false);$('more').classList.remove('open');}else if(e.key==='ArrowRight')uiGo(uiPage()+1);else if(e.key==='ArrowLeft')uiGo(uiPage()-1);});
 $('btn-more').addEventListener('click',e=>{e.stopPropagation();$('more').classList.toggle('open');});
 document.addEventListener('click',e=>{if(!e.target.closest('#more')||e.target.closest('.menu button,.menu a'))$('more').classList.remove('open');});
 window.addEventListener('resize',()=>setTimeout(uiResize,120));
 let aiT=null;$('btn-ai').addEventListener('click',async()=>{const ok=await copyText(buildAI()),b=$('btn-ai');showToast(ok?'Data tersalin — tempel ke ChatGPT / Claude / Gemini':'Gagal menyalin, coba lagi');if(!ok)return;b.classList.add('is-success');b.querySelector('.ai-icon-sparkle').classList.add('hidden');b.querySelector('.ai-icon-check').classList.remove('hidden');$('btn-ai-label').textContent='Tersalin';clearTimeout(aiT);aiT=setTimeout(()=>{b.classList.remove('is-success');b.querySelector('.ai-icon-sparkle').classList.remove('hidden');b.querySelector('.ai-icon-check').classList.add('hidden');$('btn-ai-label').textContent='Analisa AI';},2500);});
-const ssSkip=n=>n&&n.nodeType===1&&n.classList&&(n.classList.contains('fab-row')||n.classList.contains('sheet-overlay')||n.classList.contains('toast')||n.id==='print-area'||n.id==='app-splash');
+const ssSkip=n=>n&&n.nodeType===1&&n.classList&&(n.classList.contains('fab-row')||n.classList.contains('sheet-overlay')||n.classList.contains('toast')||n.id==='print-area'||n.id==='app-splash'||n.id==='fs-back'||n.classList.contains('fsb'));
 $('btn-screenshot').addEventListener('click',async()=>{const fab=document.querySelector('.fab-row'),vis=fab.style.visibility;fab.style.visibility='hidden';showToast('Menyiapkan screenshot…');window.scrollTo(0,0);
   try{await new Promise(r=>setTimeout(r,200));const bg=getComputedStyle(document.body).backgroundColor,sc=window.devicePixelRatio>1?2:1.5;let url=null,err=null;
     if(typeof html2canvas!=='undefined'){try{url=(await html2canvas(document.body,{backgroundColor:bg,useCORS:true,scale:sc,scrollX:0,scrollY:0,ignoreElements:ssSkip})).toDataURL('image/png');}catch(e){err=e;}}
