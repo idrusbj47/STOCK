@@ -414,6 +414,32 @@
   body.dark .m-row .m-sub{color:#8e9bb8;}
   body.dark .photo-preview .thumb{border-color:var(--border);}
   body.dark ::placeholder{color:#6f7d9c;opacity:1;}
+  /* kalender pilih tanggal (riwayat) */
+  .rTglBtn{flex:1;min-width:0;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--an-card);color:var(--text);font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rTglBtn.on{border-color:var(--gold);}
+  .cal-nav{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px;}
+  .cal-nav b{font-size:15px;color:var(--text);text-transform:capitalize;}
+  .cal-nav button{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:var(--an-card);color:var(--text);font-size:20px;font-weight:700;cursor:pointer;line-height:1;}
+  .cal-wd,.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
+  .cal-wd span{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0;}
+  .cal-d{position:relative;aspect-ratio:1;border-radius:12px;border:1px solid transparent;background:transparent;color:var(--text);font:inherit;font-weight:700;font-size:14px;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .cal-d.blank{visibility:hidden;pointer-events:none;}
+  .cal-d.none{color:var(--muted);opacity:.38;pointer-events:none;font-weight:600;}
+  .cal-d.load{color:var(--muted);pointer-events:none;font-weight:600;}
+  .cal-d.has{background:rgba(201,162,75,var(--a,.25));border-color:rgba(201,162,75,.55);}
+  .cal-d.today{box-shadow:inset 0 0 0 1.5px var(--muted);}
+  .cal-d.sel{outline:2.5px solid var(--nbg);outline-offset:1px;}
+  body.dark .cal-d.sel{outline-color:var(--gold);}
+  .cal-d i{position:absolute;right:5px;bottom:3px;font-style:normal;font-size:9.5px;font-weight:800;color:var(--muted);}
+  .cal-d.has i{color:var(--text);}
+  .cal-d em{position:absolute;right:5px;top:5px;width:7px;height:7px;border-radius:50%;background:#e11d48;}
+  .cal-sum{margin:12px 2px 6px;font-size:12.5px;color:var(--text);font-weight:600;}
+  .cal-lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:var(--muted);margin-bottom:12px;}
+  .cal-lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;}
+  .cal-lg i.g{background:rgba(201,162,75,.55);border:1px solid rgba(201,162,75,.8);}
+  .cal-lg i.r{background:#e11d48;border-radius:50%;}
+  .cal-ft{display:flex;gap:8px;}
+  .cal-ft .linkBtn{flex:1;padding:11px;}
   /* zoom foto: cubit, geser, ketuk 2x */
   #zoomView .zScroll{overflow:hidden;touch-action:none;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;}
   #zoomView img{max-width:100%;max-height:100%;object-fit:contain;cursor:grab;transform-origin:50% 50%;will-change:transform;-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none;touch-action:none;}
@@ -665,7 +691,8 @@
       <button id="btnCetak" style="background:var(--purple);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;">🖨 Cetak</button>
     </h2>
     <div class="r-filter">
-      <input type="date" id="rTanggal" aria-label="Pilih tanggal">
+      <input type="hidden" id="rTanggal">
+      <button type="button" class="rTglBtn" id="rTglBtn">📅 &nbsp;Pilih tanggal</button>
       <button type="button" class="linkBtn" id="rReset">Terbaru</button>
     </div>
     <div class="hint" id="rInfo" style="margin:0 0 4px;"></div>
@@ -755,6 +782,18 @@
     <div class="cek-head"><h3>Cari Kode Temuan</h3><button class="modal-close" id="closeCekKode">✕</button></div>
     <div id="cekKodeList" class="cek-list"></div>
     <div class="cek-search"><input type="text" id="cekKodeSearch" placeholder="Ketik kode atau uraian…" autocomplete="off" enterkeyhint="search"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="calOverlay">
+  <div class="modal-sheet">
+    <div class="cek-head"><h3>Pilih Tanggal Temuan</h3><button class="modal-close" id="calClose" type="button">✕</button></div>
+    <div class="cal-nav"><button type="button" id="calPrev" aria-label="Bulan sebelumnya">‹</button><b id="calTitle"></b><button type="button" id="calNext" aria-label="Bulan berikutnya">›</button></div>
+    <div class="cal-wd"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-sum" id="calSum"></div>
+    <div class="cal-lg"><span><i class="g"></i>Ada temuan (makin pekat = makin banyak)</span><span><i class="r"></i>Ada mayor</span></div>
+    <div class="cal-ft"><button type="button" class="linkBtn" id="calNow">Bulan ini</button><button type="button" class="linkBtn" id="calClear">Hapus pilihan</button></div>
   </div>
 </div>
 
@@ -1721,8 +1760,7 @@
       box.innerHTML = '<div class="hint">Gagal memuat riwayat: '+escapeHtml(e.message||String(e))+'</div>';
     }
   }
-  $("rTanggal").addEventListener("change", loadRecent);
-  $("rReset").addEventListener("click", ()=>{ $("rTanggal").value = ""; loadRecent(); });
+  $("rReset").addEventListener("click", ()=>{ $("rTanggal").value = ""; calSetLabel(); loadRecent(); });
 
   async function deleteTemuan(id, fotoUrls, btn){
     if(!currentSession){ alert("Anda harus login sebagai admin untuk menghapus temuan."); return; }
@@ -2701,6 +2739,92 @@
     if(k){ anKodeTab = k.dataset.kt; renderAn(false); }
   });
 
+  /* ---------------- KALENDER PILIH TANGGAL (riwayat) ---------------- */
+  let calY = null, calM = null, calToken = 0;
+  const calCache = new Map();
+  const CAL_BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  function calSetLabel(){
+    const t = $("rTanggal").value, b = $("rTglBtn");
+    b.textContent = t ? "📅  " + parseYmd(t).toLocaleDateString("id-ID",{weekday:"short",day:"numeric",month:"short",year:"numeric"}) : "📅  Pilih tanggal";
+    b.classList.toggle("on", !!t);
+  }
+  async function calLoadMonth(y, m){
+    const key = y+"-"+pad2(m+1);
+    if(calCache.has(key)) return calCache.get(key);
+    const sb = getSupabase(); if(!sb) throw new Error("Supabase belum dikonfigurasi.");
+    const a = key+"-01", b = key+"-"+pad2(new Date(y,m+1,0).getDate());
+    const out = new Map(); let from = 0;
+    while(true){
+      const { data, error } = await sb.from(CFG.sbTable).select("tanggal,klasifikasi")
+        .gte("tanggal", a).lte("tanggal", b).order("tanggal").order("created_at").range(from, from+999);
+      if(error) throw error;
+      (data||[]).forEach(r=>{ const o = out.get(r.tanggal) || {n:0, ma:0}; o.n++; if(isMayorRow(r)) o.ma++; out.set(r.tanggal, o); });
+      if(!data || data.length < 1000) break;
+      from += 1000;
+    }
+    calCache.set(key, out); return out;
+  }
+  // map = null -> sedang memuat
+  function calDraw(y, m, map, sel){
+    const offset = (new Date(y,m,1).getDay()+6)%7, nd = new Date(y,m+1,0).getDate(), today = ymd(new Date());
+    let html = "", days = 0, total = 0;
+    for(let i=0;i<offset;i++) html += '<span class="cal-d blank"></span>';
+    for(let d=1; d<=nd; d++){
+      const key = y+"-"+pad2(m+1)+"-"+pad2(d), info = map && map.get(key);
+      const cls = ["cal-d", !map ? "load" : info ? "has" : "none", key===today?"today":"", key===sel?"sel":""].join(" ");
+      let extra = "", style = "";
+      if(info){
+        days++; total += info.n;
+        style = ` style="--a:${info.n>=8?.62:info.n>=4?.46:info.n>=2?.33:.2}"`;
+        extra = `<i>${info.n}</i>` + (info.ma ? "<em></em>" : "");
+      }
+      html += `<button type="button" class="${cls}" data-d="${key}"${style}>${d}${extra}</button>`;
+    }
+    const sum = !map ? "Memuat…" : days ? `${days} hari ada temuan · ${nfmt(total)} temuan bulan ini` : "Tidak ada temuan di bulan ini.";
+    return { html, sum };
+  }
+  async function renderCal(){
+    const my = ++calToken, y = calY, m = calM, sel = $("rTanggal").value;
+    $("calTitle").textContent = CAL_BULAN[m] + " " + y;
+    let r = calDraw(y, m, null, sel);
+    $("calGrid").innerHTML = r.html; $("calSum").textContent = r.sum;
+    try{
+      const map = await calLoadMonth(y, m);
+      if(my !== calToken) return;
+      r = calDraw(y, m, map, sel);
+      $("calGrid").innerHTML = r.html; $("calSum").textContent = r.sum;
+    }catch(e){
+      if(my === calToken) $("calSum").textContent = "Gagal memuat: " + (e.message||e);
+    }
+  }
+  async function openCal(){
+    $("calOverlay").classList.add("show");
+    const sel = $("rTanggal").value;
+    if(sel){ const d = parseYmd(sel); calY = d.getFullYear(); calM = d.getMonth(); }
+    else if(calY == null){
+      const n = new Date(); calY = n.getFullYear(); calM = n.getMonth();
+      try{   // buka di bulan yang punya temuan terakhir
+        const sb = getSupabase();
+        if(sb){
+          const { data } = await sb.from(CFG.sbTable).select("tanggal").order("tanggal",{ascending:false}).limit(1);
+          if(data && data[0] && data[0].tanggal){ const d = parseYmd(data[0].tanggal); calY = d.getFullYear(); calM = d.getMonth(); }
+        }
+      }catch(e){}
+    }
+    renderCal();
+  }
+  function calShift(n){ const d = new Date(calY, calM+n, 1); calY = d.getFullYear(); calM = d.getMonth(); renderCal(); }
+  $("rTglBtn").addEventListener("click", openCal);
+  $("calClose").addEventListener("click", ()=> $("calOverlay").classList.remove("show"));
+  $("calPrev").addEventListener("click", ()=> calShift(-1));
+  $("calNext").addEventListener("click", ()=> calShift(1));
+  $("calNow").addEventListener("click", ()=>{ const n = new Date(); calY = n.getFullYear(); calM = n.getMonth(); renderCal(); });
+  $("calClear").addEventListener("click", ()=>{ $("rTanggal").value = ""; calSetLabel(); $("calOverlay").classList.remove("show"); loadRecent(); });
+  $("calGrid").addEventListener("click", e=>{
+    const b = e.target.closest(".cal-d[data-d]"); if(!b || b.classList.contains("none") || b.classList.contains("load")) return;
+    $("rTanggal").value = b.dataset.d; calSetLabel(); $("calOverlay").classList.remove("show"); loadRecent();
+  });
+
   /* ---------------- NAVIGASI TAB + BERANDA ---------------- */
   function showView(v){
     document.querySelectorAll(".view").forEach(x=> x.classList.toggle("on", x.id==="v-"+v));
@@ -2721,7 +2845,7 @@
     try{ const [a,b,c] = await Promise.all([cnt(), cnt("MINOR"), cnt("MAYOR")]); $("stTotal").textContent=a; $("stMinor").textContent=b; $("stMayor").textContent=c; }catch(e){}
   }
   let homeT = null;
-  new MutationObserver(()=>{ clearTimeout(homeT); homeT = setTimeout(loadStats, 150); anStamp = 0; }).observe($("recentList"), {childList:true});
+  new MutationObserver(()=>{ clearTimeout(homeT); homeT = setTimeout(loadStats, 150); anStamp = 0; calCache.clear(); }).observe($("recentList"), {childList:true});
 
   /* ---------------- MASTER DATA EDITOR (ADMIN) ---------------- */
   let mTab = "kode", mEditKey = null;
