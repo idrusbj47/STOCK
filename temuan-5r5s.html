@@ -414,6 +414,89 @@
   body.dark .m-row .m-sub{color:#8e9bb8;}
   body.dark .photo-preview .thumb{border-color:var(--border);}
   body.dark ::placeholder{color:#6f7d9c;opacity:1;}
+  /* ===== ANALISA (tab Laporan) ===== */
+  :root{--track:#eef0f6;--line:rgba(13,27,54,.08);--an-card:#ffffff;}
+  body.dark{--track:#1b2842;--line:rgba(255,255,255,.08);--an-card:#111a2c;}
+  .an-seg{display:flex;gap:6px;margin-top:14px;align-items:stretch;}
+  .an-seg button{flex:1;padding:9px 4px;border-radius:10px;border:1px solid var(--border);background:var(--an-card);color:var(--text);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .an-seg button.on{background:var(--nbg);color:#fff;border-color:var(--gold);}
+  .an-seg .an-ref{flex:none;width:40px;font-size:16px;}
+  .an-period{margin:14px 2px 0;font-size:12px;color:var(--muted);font-weight:600;}
+  .an-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px;}
+  .an-kpi{background:var(--an-card);border:1px solid var(--border);border-radius:16px;padding:14px;position:relative;overflow:hidden;}
+  .an-kpi::after{content:"";position:absolute;right:-16px;top:-16px;width:66px;height:66px;border-radius:50%;background:var(--c);opacity:.13;}
+  .an-kpi span{display:block;font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.02em;}
+  .an-kpi b{display:block;font-size:28px;line-height:1.15;margin-top:4px;color:var(--text);font-variant-numeric:tabular-nums;}
+  .an-kpi small{font-size:11.5px;color:var(--muted);}
+  .an-hls{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px;}
+  .an-hl{display:flex;align-items:center;gap:12px;background:var(--an-card);border:1px solid var(--border);border-radius:16px;padding:12px 14px;min-width:0;}
+  .an-hl i{flex:none;font-style:normal;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;position:relative;}
+  .an-hl i::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--c);opacity:.16;}
+  .an-hl i em{font-style:normal;position:relative;}
+  .an-hl div{min-width:0;}
+  .an-hl small{display:block;font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+  .an-hl b{display:block;font-size:16px;color:var(--text);margin:1px 0;}
+  .an-hl span{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .an-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px;align-items:start;}
+  .an-p{background:var(--an-card);border:1px solid var(--border);border-radius:18px;padding:18px 16px 16px;min-width:0;box-shadow:0 2px 10px rgba(13,27,54,.04);position:relative;overflow:hidden;}
+  .an-p::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--c,var(--gold));}
+  body.dark .an-p{box-shadow:none;}
+  .an-ph{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:14px;}
+  .an-ph h3{margin:0;font-size:14.5px;color:var(--text);}
+  .an-ph p{margin:2px 0 0;font-size:11.5px;color:var(--muted);}
+  .an-empty{padding:18px 8px;text-align:center;color:var(--muted);font-size:13px;}
+  .an-rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:13px;}
+  .an-rk-top{display:flex;align-items:center;gap:10px;}
+  .an-no{flex:none;width:22px;height:22px;border-radius:50%;background:var(--track);color:var(--muted);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  .an-rank li:nth-child(1) .an-no{background:linear-gradient(135deg,var(--gold-2),var(--gold));color:#0d1b36;}
+  .an-rk-txt{flex:1;min-width:0;}
+  .an-rk-txt b{display:block;font-size:13.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .an-rk-txt small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:1px;}
+  .an-n{flex:none;font-weight:800;font-size:15px;color:var(--text);font-variant-numeric:tabular-nums;}
+  .an-n i{font-style:normal;font-weight:600;font-size:11px;color:var(--muted);margin-left:1px;}
+  .an-bar{height:6px;border-radius:99px;background:var(--track);margin:7px 0 0 32px;overflow:hidden;}
+  .an-bar span{display:block;height:100%;width:0;border-radius:99px;transition:width .8s cubic-bezier(.2,.8,.2,1);}
+  .an-go .an-bar span{width:var(--w);}
+  .an-noanim .an-bar span,.an-noanim .tr-seg{transition:none;}
+  .an-seg-k{display:inline-flex;background:var(--track);border-radius:10px;padding:3px;gap:2px;flex:none;}
+  .an-seg-k button{border:none;background:transparent;color:var(--muted);font:inherit;font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:8px;cursor:pointer;}
+  .an-seg-k button.on{background:var(--an-card);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.14);}
+  .tr-wrap{position:relative;height:150px;background-image:linear-gradient(to top,var(--line) 1px,transparent 1px);background-size:100% 25%;border-bottom:1px solid var(--line);}
+  .tr-chart{position:absolute;inset:0;display:flex;align-items:flex-end;gap:var(--g,3px);}
+  .tr-col{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .tr-seg{width:100%;height:0;transition:height .7s cubic-bezier(.2,.8,.2,1);}
+  .an-go .tr-seg{height:max(var(--h),4px);}
+  .tr-seg.mayor{background:linear-gradient(180deg,#fb7185,#e11d48);border-radius:4px 4px 0 0;}
+  .tr-seg.minor{background:linear-gradient(180deg,#fbbf24,#f59e0b);}
+  .tr-seg.minor:first-child{border-radius:4px 4px 0 0;}
+  .tr-col:hover .tr-seg{opacity:.85;}
+  .tr-col.sel .tr-seg{filter:brightness(1.18) saturate(1.1);}
+  .tr-ax{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px;}
+  .tr-info{font-size:12.5px;color:var(--text);margin-top:10px;min-height:18px;}
+  .an-lg{display:flex;gap:14px;font-size:11.5px;color:var(--muted);margin-top:8px;}
+  .an-lg i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;}
+  .an-donut{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center;}
+  .an-dn{position:relative;width:136px;height:136px;flex:none;}
+  .an-dn svg{width:100%;height:100%;animation:anSpin .9s cubic-bezier(.2,.8,.2,1);}
+  @keyframes anSpin{from{transform:rotate(-70deg) scale(.88);opacity:0;}to{transform:none;opacity:1;}}
+  .an-dn-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .an-dn-c b{font-size:26px;color:var(--text);line-height:1;}
+  .an-dn-c span{font-size:11px;color:var(--muted);margin-top:3px;}
+  .an-lgd{flex:1;min-width:170px;display:flex;flex-direction:column;gap:10px;}
+  .an-lgd div{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);min-width:0;}
+  .an-lgd i{width:10px;height:10px;border-radius:3px;flex:none;}
+  .an-lgd span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .an-lgd em{font-style:normal;font-weight:800;font-variant-numeric:tabular-nums;}
+  .an-lgd small{color:var(--muted);font-size:11.5px;width:36px;text-align:right;flex:none;}
+  .an-skel{height:110px;border-radius:18px;margin-top:12px;background:linear-gradient(90deg,var(--track),var(--an-card),var(--track));background-size:200% 100%;animation:anSh 1.3s linear infinite;}
+  @keyframes anSh{to{background-position:-200% 0;}}
+  @media(min-width:760px){
+    .an-kpis{grid-template-columns:repeat(4,minmax(0,1fr));}
+    .an-hls{grid-template-columns:repeat(3,minmax(0,1fr));}
+    .an-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .an-span2{grid-column:1/-1;}
+    .tr-wrap{height:190px;}
+  }
 </style>
 </head>
 <body>
@@ -495,10 +578,18 @@
 
   <section class="view" id="v-lapor">
     <div class="card">
-      <h2>Laporan</h2>
-      <p class="hint" style="font-size:13.5px;line-height:1.5">Cetak, unduh PDF atau Excel rekap temuan berdasarkan periode, area, dan klasifikasi.</p>
-      <button class="goldBtn" id="goLapor" style="width:100%;margin-top:6px">🖨 &nbsp;Buat Laporan</button>
+      <h2 style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;"><span>Laporan &amp; Analisa</span>
+        <button class="goldBtn" id="goLapor" style="padding:9px 14px;font-size:13px;">🖨 &nbsp;Buat Laporan</button></h2>
+      <p class="hint" style="font-size:13px;line-height:1.5;margin:0;">Ringkasan temuan menurut periode. Untuk cetak, PDF atau Excel, pakai tombol Buat Laporan.</p>
+      <div class="an-seg" id="anRange">
+        <button type="button" data-r="7">7 Hari</button>
+        <button type="button" data-r="30" class="on">30 Hari</button>
+        <button type="button" data-r="90">90 Hari</button>
+        <button type="button" data-r="0">Semua</button>
+        <button type="button" class="an-ref" id="anRefresh" title="Muat ulang analisa" aria-label="Muat ulang analisa">⟳</button>
+      </div>
     </div>
+    <div id="anBody"><div class="an-skel"></div><div class="an-skel"></div></div>
   </section>
 
   <section class="view" id="v-set">
@@ -2312,11 +2403,233 @@
   $("zClose").addEventListener("click", ()=> $("zoomView").classList.remove("show","z2"));
   $("dEdit").addEventListener("click", ()=>{ $("detailOverlay").classList.remove("show"); if(dRow) openEditTemuan(dRow); });
 
+  /* ---------------- ANALISA (tab Laporan) ---------------- */
+  let anRows = null, anStamp = 0, anRange = 30, anKodeTab = "all", anLoading = false;
+  const AN_PAL = ["#0ea5a4","#6366f1","#f59e0b","#f43f5e","#10b981","#8b5cf6","#0ea5e9"];
+  const pad2 = n => String(n).padStart(2,"0");
+  const ymd = d => d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
+  const parseYmd = t => { const p = String(t).split("-").map(Number); return new Date(p[0], (p[1]||1)-1, p[2]||1); };
+  const addDays = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+  const fmtShort = t => parseYmd(t).toLocaleDateString("id-ID",{day:"numeric",month:"short"});
+  const isMayorRow = r => (r.klasifikasi||"").toUpperCase().includes("MAYOR");
+  const poinOf = r => { const p = parseInt(r.poin); return Math.abs(isNaN(p) ? (isMayorRow(r) ? 5 : 3) : p); };
+  const nfmt = n => Number(n).toLocaleString("id-ID");
+
+  async function anFetchAll(){
+    const sb = getSupabase(); if(!sb) throw new Error("Supabase belum dikonfigurasi.");
+    const all = []; let from = 0; const step = 1000;
+    while(true){
+      const { data, error } = await sb.from(CFG.sbTable)
+        .select("tanggal,area,zona,kode,klasifikasi,poin,penanggung_jawab,kepala_regu")
+        .order("tanggal",{ascending:false}).order("created_at",{ascending:false}).range(from, from+step-1);
+      if(error) throw error;
+      all.push(...(data||[]));
+      if(!data || data.length < step) break;
+      from += step;
+    }
+    return all;
+  }
+  function anFiltered(){
+    if(!anRows) return [];
+    if(!anRange) return anRows;
+    const n = new Date();
+    const start = ymd(addDays(new Date(n.getFullYear(), n.getMonth(), n.getDate()), -(anRange-1)));
+    return anRows.filter(r=> (r.tanggal||"") >= start);
+  }
+  // kelompokkan & hitung (kunci tidak peka huruf besar/kecil)
+  function anGroup(rows, keysOf){
+    const m = new Map();
+    rows.forEach(r=> keysOf(r).forEach(k=>{
+      if(!k) return;
+      const nk = k.toLowerCase();
+      const o = m.get(nk) || {key:k, n:0, mayor:0};
+      o.n++; if(isMayorRow(r)) o.mayor++;
+      m.set(nk, o);
+    }));
+    return Array.from(m.values()).sort((a,b)=> b.n-a.n || a.key.localeCompare(b.key,"id",{numeric:true}));
+  }
+  function anRank(items, color){
+    if(!items.length) return '<div class="an-empty">Belum ada data pada periode ini.</div>';
+    const max = items[0].n || 1;
+    return '<ol class="an-rank">' + items.map((it,i)=>`<li>
+      <div class="an-rk-top"><span class="an-no">${i+1}</span>
+        <div class="an-rk-txt"><b>${it.label}</b>${it.sub?`<small>${it.sub}</small>`:""}</div>
+        <span class="an-n">${nfmt(it.n)}<i>×</i></span></div>
+      <div class="an-bar"><span style="--w:${Math.max(4,Math.round(it.n/max*100))}%;background:${color}"></span></div></li>`).join("") + '</ol>';
+  }
+  function anPanel(title, sub, inner, color, cls, head){
+    return `<div class="an-p ${cls||""}" style="--c:${color}"><div class="an-ph"><div><h3>${title}</h3><p>${sub}</p></div>${head||""}</div>${inner}</div>`;
+  }
+
+  // tren: harian / mingguan / bulanan menyesuaikan lebar periode, batang bertumpuk minor + mayor
+  function anTrend(rows){
+    const dates = rows.map(r=>r.tanggal).filter(Boolean).sort();
+    let end = parseYmd(ymd(new Date()));
+    const lastD = parseYmd(dates[dates.length-1]); if(lastD > end) end = lastD;
+    const start = anRange ? addDays(end, -(anRange-1)) : parseYmd(dates[0]);
+    const span = Math.round((end-start)/864e5) + 1;
+    const mode = span <= 35 ? "d" : span <= 210 ? "w" : "m";
+    const keyOf = t => {
+      const d = parseYmd(t);
+      if(mode==="d") return ymd(d);
+      if(mode==="w") return ymd(addDays(d, -((d.getDay()+6)%7)));
+      return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-01";
+    };
+    let cur = start;
+    if(mode==="w") cur = addDays(start, -((start.getDay()+6)%7));
+    if(mode==="m") cur = new Date(start.getFullYear(), start.getMonth(), 1);
+    const bk = [], idx = new Map();
+    while(cur <= end){
+      idx.set(ymd(cur), bk.length); bk.push({k:ymd(cur), mi:0, ma:0});
+      cur = mode==="d" ? addDays(cur,1) : mode==="w" ? addDays(cur,7) : new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+    }
+    rows.forEach(r=>{ const i = idx.get(keyOf(r.tanggal)); if(i==null) return; if(isMayorRow(r)) bk[i].ma++; else bk[i].mi++; });
+    const max = Math.max(1, ...bk.map(b=>b.mi+b.ma));
+    const label = b => {
+      const d = parseYmd(b.k);
+      if(mode==="d") return d.toLocaleDateString("id-ID",{weekday:"short",day:"numeric",month:"short"});
+      if(mode==="w") return fmtShort(b.k)+" – "+fmtShort(ymd(addDays(d,6)));
+      return d.toLocaleDateString("id-ID",{month:"long",year:"numeric"});
+    };
+    const axis = b => mode==="m" ? parseYmd(b.k).toLocaleDateString("id-ID",{month:"short",year:"2-digit"}) : fmtShort(b.k);
+    const gap = mode==="d" ? 3 : mode==="w" ? 4 : 7;
+    const cols = bk.map(b=>`<div class="tr-col" data-l="${escapeHtml(label(b))}" data-mi="${b.mi}" data-ma="${b.ma}">`
+      + (b.ma ? `<div class="tr-seg mayor" style="--h:${(b.ma/max*100).toFixed(1)}%"></div>` : "")
+      + (b.mi ? `<div class="tr-seg minor" style="--h:${(b.mi/max*100).toFixed(1)}%"></div>` : "") + `</div>`).join("");
+    const ax = [bk[0]]; if(bk.length>=5) ax.push(bk[Math.floor(bk.length/2)]); if(bk.length>1) ax.push(bk[bk.length-1]);
+    const unit = mode==="d" ? "hari" : mode==="w" ? "minggu" : "bulan";
+    return { unit, peak:max, html:
+      `<div class="tr-wrap"><div class="tr-chart" style="--g:${gap}px">${cols}</div></div>
+       <div class="tr-ax">${ax.map(b=>`<span>${axis(b)}</span>`).join("")}</div>
+       <div class="tr-info" id="anTrInfo">Ketuk batang untuk melihat rincian.</div>
+       <div class="an-lg"><span><i style="background:#f59e0b"></i>Minor</span><span><i style="background:#e11d48"></i>Mayor</span></div>` };
+  }
+
+  function anDonut(items, total){
+    let off = 25;
+    const circles = items.map(it=>{
+      const pct = it.n/total*100, len = Math.max(pct-0.7, 0.2);
+      const c = `<circle r="15.915" cx="21" cy="21" fill="none" stroke="${it.color}" stroke-width="5.4" stroke-dasharray="${len.toFixed(2)} ${(100-len).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}"/>`;
+      off -= pct; return c;
+    }).join("");
+    return `<div class="an-donut"><div class="an-dn">
+        <svg viewBox="0 0 42 42"><circle r="15.915" cx="21" cy="21" fill="none" stroke="var(--track)" stroke-width="5.4"/>${circles}</svg>
+        <div class="an-dn-c"><b>${nfmt(total)}</b><span>temuan</span></div></div>
+      <div class="an-lgd">${items.map(it=>`<div><i style="background:${it.color}"></i><span title="${escapeHtml(it.label)}">${escapeHtml(it.label)}</span><em>${nfmt(it.n)}</em><small>${Math.round(it.n/total*100)}%</small></div>`).join("")}</div></div>`;
+  }
+
+  function renderAn(animate){
+    const body = $("anBody"); if(!body || !anRows) return;
+    const rows = anFiltered(), total = rows.length;
+    body.classList.remove("an-go","an-noanim");
+    const n0 = new Date();
+    const ptxt = anRange ? fmtShort(ymd(addDays(n0,-(anRange-1))))+" – "+fmtShort(ymd(n0))+" · "+anRange+" hari terakhir" : "Seluruh data tercatat";
+    const per = `<div class="an-period">${ptxt}</div>`;
+    if(!total){ body.innerHTML = per + '<div class="an-p" style="margin-top:12px"><div class="an-empty">Belum ada temuan pada periode ini.</div></div>'; return; }
+
+    const mayor = rows.filter(isMayorRow).length, minor = total - mayor;
+    const poin = rows.reduce((a,r)=> a + poinOf(r), 0);
+    const days = new Set(rows.map(r=>r.tanggal)).size;
+    const kmap = new Map(kodeDB.map(k=>[k.kode,k]));
+    const zmap = new Map(zonaDB.map(z=>[z.zona,z.area]));
+    const rowArea = new Map(); rows.forEach(r=>{ if(r.zona && r.area && !rowArea.has(r.zona)) rowArea.set(r.zona, r.area); });
+    const split = v => String(v||"").split("/").map(x=>x.trim().replace(/\s+/g," ")).filter(Boolean);
+    const kodeG = anGroup(rows, r=>[(r.kode||"").trim().toUpperCase()]);
+    const zonaG = anGroup(rows, r=>[(r.zona||"").trim()]);
+    const areaG = anGroup(rows, r=>[(r.area||"").trim()]);
+    const pjG   = anGroup(rows, r=>split(r.penanggung_jawab));
+    const karuG = anGroup(rows, r=>[String(r.kepala_regu||"").trim()]);
+    const dayG  = anGroup(rows, r=>[r.tanggal||""]);
+    const pct = x => Math.round(x/total*100);
+
+    const kpi = (l,v,sub,c)=>`<div class="an-kpi" style="--c:${c}"><span>${l}</span><b>${v}</b><small>${sub}</small></div>`;
+    const kpis = `<div class="an-kpis">`
+      + kpi("Total Temuan", nfmt(total), `≈ ${(total/days).toFixed(1)} per hari input`, "#6366f1")
+      + kpi("Mayor", nfmt(mayor), pct(mayor)+"% dari total", "#f43f5e")
+      + kpi("Minor", nfmt(minor), pct(minor)+"% dari total", "#f59e0b")
+      + kpi("Total Poin", "−"+nfmt(poin), "akumulasi pengurangan", "#0ea5a4") + `</div>`;
+
+    const hl = (ic,l,v,sub,c)=>`<div class="an-hl" style="--c:${c}"><i><em>${ic}</em></i><div><small>${l}</small><b>${v}</b><span>${sub}</span></div></div>`;
+    const tk = kodeG[0], tz = zonaG[0], td = dayG[0], kk = tk && kmap.get(tk.key);
+    const ur = ((kk && kk.uraian) || "");
+    const hls = `<div class="an-hls">`
+      + hl("🔝","Kode terbanyak", tk?escapeHtml(tk.key):"-", tk?`${tk.n}× · ${escapeHtml(ur.length>46?ur.slice(0,46)+"…":ur)}`:"", "#6366f1")
+      + hl("📍","Zona terbanyak", tz?escapeHtml(tz.key):"-", tz?`${tz.n}× · ${escapeHtml(zmap.get(tz.key)||rowArea.get(tz.key)||"")}`:"", "#0ea5a4")
+      + hl("📅","Hari tersibuk", td?fmtShort(td.key):"-", td?`${td.n} temuan · ${td.mayor} mayor`:"", "#f59e0b") + `</div>`;
+
+    const tr = anTrend(rows);
+    const pTrend = anPanel("Tren Temuan", `Per ${tr.unit} · puncak ${tr.peak} temuan`, tr.html, "var(--gold)", "an-span2");
+
+    const rowsK = anKodeTab==="all" ? rows : rows.filter(r=> anKodeTab==="mayor" ? isMayorRow(r) : !isMayorRow(r));
+    const kodeItems = anGroup(rowsK, r=>[(r.kode||"").trim().toUpperCase()]).slice(0,8).map(g=>{
+      const k = kmap.get(g.key);
+      const isM = k ? (k.klasifikasi||"").toUpperCase().includes("MAYOR") : g.mayor > g.n/2;
+      return { n:g.n,
+        label:`${escapeHtml(g.key)} <span class="badge ${isM?"mayor":"minor"}" style="font-size:9.5px;padding:1px 7px;vertical-align:middle;">${isM?"MAYOR":"MINOR"}</span>`,
+        sub: k ? escapeHtml(k.uraian) : "" };
+    });
+    const seg = `<div class="an-seg-k">${[["all","Semua"],["mayor","Mayor"],["minor","Minor"]].map(([v,t])=>`<button type="button" data-kt="${v}" class="${anKodeTab===v?"on":""}">${t}</button>`).join("")}</div>`;
+    const pKode = anPanel("Kode Temuan Terbanyak","Top 8 kode yang paling sering ditemukan", anRank(kodeItems,"#6366f1"), "#6366f1", "", seg);
+
+    const katMap = new Map();
+    rows.forEach(r=>{ const k = kmap.get((r.kode||"").trim().toUpperCase()); const c = (k && k.kategori) ? k.kategori : "Tanpa kategori"; katMap.set(c,(katMap.get(c)||0)+1); });
+    let ci = 0;
+    const katArr = Array.from(katMap, ([label,n])=>({label,n})).sort((a,b)=>b.n-a.n)
+      .map(x=>({...x, color: x.label==="Tanpa kategori" ? "#94a3b8" : AN_PAL[(ci++) % AN_PAL.length]}));
+    const pKat = anPanel("Sebaran Kategori","Proporsi temuan per kategori 5R5S", anDonut(katArr,total), "#10b981");
+
+    const zonaItems = zonaG.slice(0,8).map(g=>({ n:g.n, label:escapeHtml(g.key), sub:escapeHtml(zmap.get(g.key)||rowArea.get(g.key)||"") }));
+    const pZona = anPanel("Zona Terbanyak","Top 8 zona dengan temuan terbanyak", anRank(zonaItems,"#0ea5a4"), "#0ea5a4");
+    const areaItems = areaG.slice(0,8).map(g=>({ n:g.n, label:escapeHtml(g.key), sub:`${g.mayor} mayor · ${g.n-g.mayor} minor` }));
+    const pArea = anPanel("Area Gudang Terbanyak","Top 8 area dengan temuan terbanyak", anRank(areaItems,"#f59e0b"), "#f59e0b");
+    const orang = g => ({ n:g.n, label:escapeHtml(g.key), sub:`${g.mayor} mayor · ${g.n-g.mayor} minor` });
+    const pPj = anPanel("Penanggung Jawab","Top 5 penjaga area dengan temuan terbanyak", anRank(pjG.slice(0,5).map(orang),"#8b5cf6"), "#8b5cf6");
+    const pKaru = anPanel("Kepala Regu / Karu","Top 5 karu dengan temuan terbanyak", anRank(karuG.slice(0,5).map(orang),"#f43f5e"), "#f43f5e");
+
+    body.innerHTML = per + kpis + hls + `<div class="an-grid">${pTrend}${pKode}${pKat}${pZona}${pArea}${pPj}${pKaru}</div>`;
+    if(animate === false){ body.classList.add("an-noanim","an-go"); }
+    else requestAnimationFrame(()=> requestAnimationFrame(()=> body.classList.add("an-go")));
+  }
+
+  async function loadAnalytics(force){
+    if(anLoading) return;
+    const hadCache = !!anRows;
+    if(hadCache && !force && Date.now()-anStamp < 30000){ renderAn(true); return; }
+    if(hadCache) renderAn(true);
+    else $("anBody").innerHTML = '<div class="an-skel"></div><div class="an-skel"></div><div class="an-skel"></div>';
+    anLoading = true;
+    try{
+      anRows = await anFetchAll(); anStamp = Date.now();
+      renderAn(!hadCache ? true : false);
+    }catch(e){
+      if(!hadCache) $("anBody").innerHTML = '<div class="an-p" style="margin-top:12px"><div class="an-empty">Gagal memuat analisa: '+escapeHtml(e.message||String(e))+'</div></div>';
+    }finally{ anLoading = false; }
+  }
+  $("anRange").addEventListener("click", e=>{
+    const b = e.target.closest("button[data-r]"); if(!b) return;
+    anRange = +b.dataset.r;
+    document.querySelectorAll("#anRange button[data-r]").forEach(x=> x.classList.toggle("on", x===b));
+    if(anRows) renderAn(true); else loadAnalytics();
+  });
+  $("anRefresh").addEventListener("click", ()=> loadAnalytics(true));
+  $("anBody").addEventListener("click", e=>{
+    const c = e.target.closest(".tr-col");
+    if(c){
+      document.querySelectorAll(".tr-col.sel").forEach(x=> x.classList.remove("sel")); c.classList.add("sel");
+      const mi = +c.dataset.mi, ma = +c.dataset.ma, t = mi+ma;
+      $("anTrInfo").innerHTML = `<b>${c.dataset.l}</b> · ${t} temuan` + (t ? ` (${ma} mayor, ${mi} minor)` : "");
+      return;
+    }
+    const k = e.target.closest("[data-kt]");
+    if(k){ anKodeTab = k.dataset.kt; renderAn(false); }
+  });
+
   /* ---------------- NAVIGASI TAB + BERANDA ---------------- */
   function showView(v){
     document.querySelectorAll(".view").forEach(x=> x.classList.toggle("on", x.id==="v-"+v));
     document.querySelectorAll(".navItem").forEach(x=> x.classList.toggle("on", x.dataset.go===v));
     window.scrollTo({top:0, behavior:"smooth"});
+    if(v==="lapor") loadAnalytics();
   }
   document.addEventListener("click", e=>{
     const g = e.target.closest("[data-go]"); if(g){ showView(g.dataset.go); return; }
@@ -2331,7 +2644,7 @@
     try{ const [a,b,c] = await Promise.all([cnt(), cnt("MINOR"), cnt("MAYOR")]); $("stTotal").textContent=a; $("stMinor").textContent=b; $("stMayor").textContent=c; }catch(e){}
   }
   let homeT = null;
-  new MutationObserver(()=>{ clearTimeout(homeT); homeT = setTimeout(loadStats, 150); }).observe($("recentList"), {childList:true});
+  new MutationObserver(()=>{ clearTimeout(homeT); homeT = setTimeout(loadStats, 150); anStamp = 0; }).observe($("recentList"), {childList:true});
 
   /* ---------------- MASTER DATA EDITOR (ADMIN) ---------------- */
   let mTab = "kode", mEditKey = null;
