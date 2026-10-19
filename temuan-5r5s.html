@@ -414,6 +414,11 @@
   body.dark .m-row .m-sub{color:#8e9bb8;}
   body.dark .photo-preview .thumb{border-color:var(--border);}
   body.dark ::placeholder{color:#6f7d9c;opacity:1;}
+  /* zoom foto: cubit, geser, ketuk 2x */
+  #zoomView .zScroll{overflow:hidden;touch-action:none;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;}
+  #zoomView img{max-width:100%;max-height:100%;object-fit:contain;cursor:grab;transform-origin:50% 50%;will-change:transform;-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none;touch-action:none;}
+  .zHint{position:absolute;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:6px 14px;border-radius:20px;pointer-events:none;white-space:nowrap;animation:zHintOut .5s 3.2s forwards;}
+  @keyframes zHintOut{to{opacity:0;}}
   /* ===== ANALISA (tab Laporan) ===== */
   :root{--track:#eef0f6;--line:rgba(13,27,54,.08);--an-card:#ffffff;}
   body.dark{--track:#1b2842;--line:rgba(255,255,255,.08);--an-card:#111a2c;}
@@ -721,7 +726,7 @@
     <button class="save-settings" id="dEdit" style="display:none;">✎ Edit Temuan</button>
   </div>
 </div>
-<div id="zoomView"><button id="zClose" type="button">✕</button><div class="zScroll" id="zScroll"><img id="zImg" alt=""></div></div>
+<div id="zoomView"><button id="zClose" type="button">✕</button><div class="zScroll" id="zScroll"><img id="zImg" alt="" draggable="false"></div><div class="zHint">Cubit untuk zoom · ketuk 2× untuk perbesar</div></div>
 
 <!-- MASTER DATA MODAL (admin) -->
 <div class="modal-overlay" id="masterOverlay">
@@ -2387,7 +2392,7 @@
     dShow();
     $("detailOverlay").classList.add("show");
   }
-  function zoomOpen(){ if(!dFotos.length) return; $("zImg").src = dFotos[dIdx]; $("zoomView").classList.remove("z2"); $("zoomView").classList.add("show"); }
+  function zoomOpen(){ if(!dFotos.length) return; $("zImg").src = dFotos[dIdx]; $("zoomView").classList.remove("z2"); zReset(false); $("zoomView").classList.add("show"); }
   document.addEventListener("click", e=>{
     const it = e.target.closest(".list-item");
     if(it && it.dataset.row && !e.target.closest("button")){
@@ -2399,9 +2404,81 @@
   $("dNext").addEventListener("click", e=>{ e.stopPropagation(); dIdx = (dIdx+1)%dFotos.length; dShow(); });
   $("dThumbs").addEventListener("click", e=>{ const t = e.target.closest("img"); if(t){ dIdx = +t.dataset.i; dShow(); } });
   $("dMain").addEventListener("click", e=>{ if(!e.target.closest(".dNav")) zoomOpen(); });
-  $("zImg").addEventListener("click", ()=> $("zoomView").classList.toggle("z2"));
-  $("zClose").addEventListener("click", ()=> $("zoomView").classList.remove("show","z2"));
+  $("zClose").addEventListener("click", ()=>{ $("zoomView").classList.remove("show","z2"); zReset(false); });
   $("dEdit").addEventListener("click", ()=>{ $("detailOverlay").classList.remove("show"); if(dRow) openEditTemuan(dRow); });
+
+  /* ---------------- ZOOM FOTO (cubit, geser, ketuk 2x) ---------------- */
+  const zv = $("zoomView"), zs = $("zScroll"), zi = $("zImg");
+  const Z = {s:1, x:0, y:0, min:1, max:6};
+  const zPts = new Map(); let zPinch = null, zPan = null, zLastTap = {t:0, x:0, y:0};
+  function zApply(smooth){
+    zi.style.transition = smooth ? "transform .25s ease" : "none";
+    zi.style.transform = `translate(${Z.x}px,${Z.y}px) scale(${Z.s})`;
+  }
+  function zClamp(){
+    Z.s = Math.min(Z.max, Math.max(Z.min, Z.s));
+    const W = zs.clientWidth, H = zs.clientHeight, w = zi.offsetWidth*Z.s, h = zi.offsetHeight*Z.s;
+    const mx = Math.max(0,(w-W)/2), my = Math.max(0,(h-H)/2);
+    Z.x = Math.min(mx, Math.max(-mx, Z.x)); Z.y = Math.min(my, Math.max(-my, Z.y));
+  }
+  function zReset(smooth){ Z.s = 1; Z.x = 0; Z.y = 0; zPts.clear(); zPinch = null; zPan = null; zApply(smooth); }
+  // posisi sentuhan relatif terhadap pusat layar
+  function zRel(e){ const r = zs.getBoundingClientRect(); return {x:e.clientX-(r.left+r.width/2), y:e.clientY-(r.top+r.height/2)}; }
+  // zoom ke skala ns dengan titik p tetap di bawah jari
+  function zZoomAt(ns, p, smooth){
+    ns = Math.min(Z.max, Math.max(Z.min, ns));
+    const k = ns/Z.s;
+    Z.x = p.x - (p.x - Z.x)*k; Z.y = p.y - (p.y - Z.y)*k; Z.s = ns;
+    zClamp(); if(Z.s <= 1.001){ Z.x = 0; Z.y = 0; } zApply(smooth);
+  }
+  zs.addEventListener("pointerdown", e=>{
+    try{ zs.setPointerCapture(e.pointerId); }catch(err){}
+    const p = zRel(e); zPts.set(e.pointerId, p);
+    if(zPts.size === 2){
+      const [a,b] = Array.from(zPts.values());
+      zPinch = {d: Math.hypot(a.x-b.x, a.y-b.y) || 1, s:Z.s, x:Z.x, y:Z.y, m:{x:(a.x+b.x)/2, y:(a.y+b.y)/2}};
+      zPan = null;
+    } else if(zPts.size === 1){
+      zPan = {sx:p.x, sy:p.y, x:Z.x, y:Z.y, moved:false};
+    }
+  });
+  zs.addEventListener("pointermove", e=>{
+    if(!zPts.has(e.pointerId)) return;
+    const p = zRel(e); zPts.set(e.pointerId, p);
+    if(zPinch && zPts.size >= 2){
+      const [a,b] = Array.from(zPts.values());
+      const d = Math.hypot(a.x-b.x, a.y-b.y) || 1, m = {x:(a.x+b.x)/2, y:(a.y+b.y)/2};
+      const ns = Math.min(Z.max, Math.max(Z.min, zPinch.s*d/zPinch.d)), k = ns/zPinch.s;
+      Z.s = ns; Z.x = m.x - (zPinch.m.x - zPinch.x)*k; Z.y = m.y - (zPinch.m.y - zPinch.y)*k;
+      zClamp(); if(Z.s <= 1.001){ Z.x = 0; Z.y = 0; } zApply(false);
+    } else if(zPan && zPts.size === 1){
+      const dx = p.x - zPan.sx, dy = p.y - zPan.sy;
+      if(Math.abs(dx) > 6 || Math.abs(dy) > 6) zPan.moved = true;
+      if(Z.s > 1){ Z.x = zPan.x + dx; Z.y = zPan.y + dy; zClamp(); zApply(false); }
+    }
+  });
+  function zEnd(e){
+    if(!zPts.has(e.pointerId)) return;
+    const wasTap = zPts.size === 1 && zPan && !zPan.moved && !zPinch && e.type === "pointerup";
+    const p = zRel(e);
+    zPts.delete(e.pointerId);
+    if(zPts.size < 2) zPinch = null;
+    if(zPts.size === 1){ const q = Array.from(zPts.values())[0]; zPan = {sx:q.x, sy:q.y, x:Z.x, y:Z.y, moved:true}; }
+    else zPan = null;
+    if(zPts.size === 0 && Z.s < 1.03){ Z.s = 1; Z.x = 0; Z.y = 0; zApply(true); }
+    if(wasTap){
+      const now = Date.now();
+      if(now - zLastTap.t < 320 && Math.hypot(p.x-zLastTap.x, p.y-zLastTap.y) < 40){
+        if(Z.s > 1.05){ Z.s = 1; Z.x = 0; Z.y = 0; zApply(true); } else zZoomAt(2.5, p, true);
+        zLastTap.t = 0;
+      } else zLastTap = {t:now, x:p.x, y:p.y};
+    }
+  }
+  zs.addEventListener("pointerup", zEnd);
+  zs.addEventListener("pointercancel", zEnd);
+  zs.addEventListener("wheel", e=>{ e.preventDefault(); zZoomAt(Z.s*Math.exp(-e.deltaY*0.0015), zRel(e), false); }, {passive:false});
+  zi.addEventListener("dragstart", e=> e.preventDefault());
+  window.addEventListener("resize", ()=>{ if(zv.classList.contains("show")){ zClamp(); zApply(false); } });
 
   /* ---------------- ANALISA (tab Laporan) ---------------- */
   let anRows = null, anStamp = 0, anRange = 30, anKodeTab = "all", anLoading = false;
