@@ -385,6 +385,9 @@
     input:not([type=checkbox]):not([type=range]):not([type=file]),select,textarea{font-size:16px !important;}
   }
   body.modal-open{overflow:hidden;}
+  .r-filter{display:flex;gap:8px;align-items:center;margin:2px 0 8px;}
+  .r-filter input{flex:1;min-width:0;}
+  .r-filter .linkBtn{flex:none;padding:11px 14px;}
 
   /* Cek kode: judul atas, daftar scroll di tengah, kolom cari SELALU di atas keyboard */
   .cek-sheet{display:flex;flex-direction:column;height:92%;max-height:92%;overflow:hidden;padding-top:14px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));}
@@ -484,7 +487,7 @@
       <div class="stat s3"><i class="si">&#9888;</i><div><span>Mayor</span><b id="stMayor">–</b></div></div>
     </div>
     <div class="card">
-      <h2 style="display:flex;justify-content:space-between;align-items:center;"><span>Temuan Terbaru</span>
+      <h2 style="display:flex;justify-content:space-between;align-items:center;"><span>Temuan Terbaru <small id="homeDate" style="font-weight:600;color:var(--muted);font-size:12px;"></small></span>
         <button class="linkBtn" data-go="riwayat">Lihat Semua →</button></h2>
       <div id="homeRecent"></div>
     </div>
@@ -565,6 +568,11 @@
       <span>Riwayat Temuan</span>
       <button id="btnCetak" style="background:var(--purple);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;">🖨 Cetak</button>
     </h2>
+    <div class="r-filter">
+      <input type="date" id="rTanggal" aria-label="Pilih tanggal">
+      <button type="button" class="linkBtn" id="rReset">Terbaru</button>
+    </div>
+    <div class="hint" id="rInfo" style="margin:0 0 4px;"></div>
     <div id="recentList"><div class="hint">Belum ada data / memuat…</div></div>
   </div>
 
@@ -1533,44 +1541,92 @@
   });
 
   /* ---------------- RECENT LIST ---------------- */
+  function itemHtml(r){
+    const thumb = (r.foto_url||"").split(",")[0] || "";
+    const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+    const rowEnc = encodeURIComponent(JSON.stringify(r));
+    return `<div class="list-item ${isMayor?"mayor":"minor"}" data-row="${rowEnc}">${thumb ? `<img src="${thumb}">` : ""}
+      <div class="meta">
+        <b>${escapeHtml(r.kode)} · ${escapeHtml(r.area||"-")}</b><br>
+        ${escapeHtml(r.uraian||"")}<br>
+        <span class="badge ${isMayor?'mayor':'minor'}" style="margin-top:4px;display:inline-block;">${isMayor?'MAYOR':'MINOR'}</span>
+        ${r.penanggung_jawab? " · PJ: "+escapeHtml(r.penanggung_jawab):""}${r.kepala_regu? " · Karu: "+escapeHtml(r.kepala_regu):""} · ${escapeHtml(r.tanggal||"")}
+      </div>
+      ${currentSession ? `<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+        <button class="editBtn" data-row="${rowEnc}" title="Edit temuan">✎</button>
+        <button class="delBtn" data-id="${r.id}" data-fotos="${escapeHtml(r.foto_url||"")}" title="Hapus temuan">✕</button>
+      </div>` : ""}</div>`;
+  }
+  function fmtTgl(t){
+    try{ return new Date(t+"T00:00:00").toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"}); }catch(e){ return t; }
+  }
+  // ambil SEMUA baris satu tanggal (tanpa batas; per 1000 baris agar tidak terpotong limit Supabase)
+  async function fetchByDate(sb, tgl){
+    const all = []; let from = 0; const step = 1000;
+    while(true){
+      const { data, error } = await sb.from(CFG.sbTable).select("*").eq("tanggal", tgl)
+        .order("created_at",{ascending:false}).range(from, from+step-1);
+      if(error) throw error;
+      all.push(...(data||[]));
+      if(!data || data.length < step) break;
+      from += step;
+    }
+    return all;
+  }
+  function bindListActions(box){
+    box.querySelectorAll(".delBtn").forEach(btn=>{
+      btn.addEventListener("click", ()=> deleteTemuan(btn.dataset.id, btn.dataset.fotos, btn));
+    });
+    box.querySelectorAll(".editBtn").forEach(btn=>{
+      btn.addEventListener("click", ()=> openEditTemuan(JSON.parse(decodeURIComponent(btn.dataset.row))));
+    });
+  }
+
+  // Beranda: semua temuan pada tanggal terbaru
+  async function loadHome(){
+    const sb = getSupabase(); const box = $("homeRecent");
+    if(!sb) return;
+    try{
+      const { data: last, error } = await sb.from(CFG.sbTable).select("tanggal").order("tanggal",{ascending:false}).limit(1);
+      if(error) throw error;
+      if(!last || !last.length){ box.innerHTML = '<div class="hint">Belum ada temuan.</div>'; $("homeDate").textContent = ""; return; }
+      const tgl = last[0].tanggal;
+      const rows = await fetchByDate(sb, tgl);
+      $("homeDate").textContent = "· " + fmtTgl(tgl) + " (" + rows.length + ")";
+      box.innerHTML = rows.map(itemHtml).join("");
+      box.scrollTop = 0;
+    }catch(e){
+      box.innerHTML = '<div class="hint">Gagal memuat: '+escapeHtml(e.message||String(e))+'</div>';
+    }
+  }
+
+  // Riwayat: tanpa tanggal = 20 terbaru; pilih tanggal = semua temuan tanggal itu, tanpa batas
   async function loadRecent(){
     const sb = getSupabase();
     const box = $("recentList");
     if(!sb){ box.innerHTML = '<div class="hint">Konfigurasikan Supabase di Pengaturan untuk melihat riwayat.</div>'; return; }
+    loadHome();
+    const tgl = $("rTanggal").value;
     try{
-      const { data, error } = await sb.from(CFG.sbTable).select("*").order("created_at",{ascending:false}).limit(20);
-      if(error) throw error;
-      if(!data || !data.length){ box.innerHTML = '<div class="hint">Belum ada temuan tersimpan.</div>'; return; }
-      box.innerHTML = "";
-      data.forEach(r=>{
-        const thumb = (r.foto_url||"").split(",")[0] || "";
-        const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
-        const div = document.createElement("div");
-        div.className = "list-item " + (isMayor ? "mayor" : "minor");
-        div.dataset.row = encodeURIComponent(JSON.stringify(r));
-        div.innerHTML = `${thumb ? `<img src="${thumb}">` : ""}
-          <div class="meta">
-            <b>${escapeHtml(r.kode)} · ${escapeHtml(r.area||"-")}</b><br>
-            ${escapeHtml(r.uraian||"")}<br>
-            <span class="badge ${isMayor?'mayor':'minor'}" style="margin-top:4px;display:inline-block;">${isMayor?'MAYOR':'MINOR'}</span>
-            ${r.penanggung_jawab? " · PJ: "+escapeHtml(r.penanggung_jawab):""}${r.kepala_regu? " · Karu: "+escapeHtml(r.kepala_regu):""} · ${escapeHtml(r.tanggal||"")}
-          </div>
-          ${currentSession ? `<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
-            <button class="editBtn" data-row="${encodeURIComponent(JSON.stringify(r))}" title="Edit temuan">✎</button>
-            <button class="delBtn" data-id="${r.id}" data-fotos="${escapeHtml(r.foto_url||"")}" title="Hapus temuan">✕</button>
-          </div>` : ""}`;
-        box.appendChild(div);
-      });
-      box.querySelectorAll(".delBtn").forEach(btn=>{
-        btn.addEventListener("click", ()=> deleteTemuan(btn.dataset.id, btn.dataset.fotos, btn));
-      });
-      box.querySelectorAll(".editBtn").forEach(btn=>{
-        btn.addEventListener("click", ()=> openEditTemuan(JSON.parse(decodeURIComponent(btn.dataset.row))));
-      });
+      let data;
+      if(tgl){
+        data = await fetchByDate(sb, tgl);
+        $("rInfo").textContent = data.length + " temuan pada " + fmtTgl(tgl);
+      } else {
+        const r = await sb.from(CFG.sbTable).select("*").order("created_at",{ascending:false}).limit(20);
+        if(r.error) throw r.error;
+        data = r.data || [];
+        $("rInfo").textContent = "Menampilkan 20 temuan terbaru. Pilih tanggal untuk melihat semuanya.";
+      }
+      if(!data.length){ box.innerHTML = '<div class="hint">' + (tgl ? "Tidak ada temuan pada tanggal ini." : "Belum ada temuan tersimpan.") + '</div>'; return; }
+      box.innerHTML = data.map(itemHtml).join("");
+      bindListActions(box);
     }catch(e){
       box.innerHTML = '<div class="hint">Gagal memuat riwayat: '+escapeHtml(e.message||String(e))+'</div>';
     }
   }
+  $("rTanggal").addEventListener("change", loadRecent);
+  $("rReset").addEventListener("click", ()=>{ $("rTanggal").value = ""; loadRecent(); });
 
   async function deleteTemuan(id, fotoUrls, btn){
     if(!currentSession){ alert("Anda harus login sebagai admin untuk menghapus temuan."); return; }
@@ -2275,15 +2331,7 @@
     try{ const [a,b,c] = await Promise.all([cnt(), cnt("MINOR"), cnt("MAYOR")]); $("stTotal").textContent=a; $("stMinor").textContent=b; $("stMayor").textContent=c; }catch(e){}
   }
   let homeT = null;
-  new MutationObserver(()=>{
-    clearTimeout(homeT);
-    homeT = setTimeout(()=>{
-      const box = $("homeRecent"); box.innerHTML = "";
-      Array.from($("recentList").querySelectorAll(".list-item")).forEach(n=> box.appendChild(n.cloneNode(true)));
-      if(!box.children.length) box.innerHTML = '<div class="hint">Belum ada temuan.</div>';
-      loadStats();
-    }, 150);
-  }).observe($("recentList"), {childList:true});
+  new MutationObserver(()=>{ clearTimeout(homeT); homeT = setTimeout(loadStats, 150); }).observe($("recentList"), {childList:true});
 
   /* ---------------- MASTER DATA EDITOR (ADMIN) ---------------- */
   let mTab = "kode", mEditKey = null;
