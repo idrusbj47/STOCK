@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Temuan 5R5S - SBJApp</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -167,11 +167,11 @@
   .m-form .m-btns button{flex:1;padding:10px;border-radius:10px;border:none;font-weight:700;font-size:13px;cursor:pointer;}
 
   /* modal generic */
-  .modal-overlay{position:fixed;inset:0;background:rgba(10,14,26,.55);display:none;
+  .modal-overlay{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(10,14,26,.55);display:none;overscroll-behavior:contain;
     align-items:flex-end;justify-content:center;z-index:50;}
   .modal-overlay.show{display:flex;}
   .modal-sheet{background:#fff;width:100%;max-width:640px;border-top-left-radius:20px;border-top-right-radius:20px;
-    max-height:92vh;overflow-y:auto;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));}
+    max-height:92%;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));}
   .modal-sheet h3{margin:0 0 14px;font-size:16px;}
   .modal-close{float:right;background:#f0f1f6;border:none;width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;}
 
@@ -379,6 +379,38 @@
   body.dark .navItem{color:#8e9bb8;} body.dark .navItem.on{color:#0d1b36;}
   body.dark header.topbar .ttl h1,body.dark .mLogo small{color:var(--text);}
   body.dark .dRow{border-color:var(--border);}
+  /* ===== REVISI: mobile, keyboard, scroll, tombol gelap ===== */
+  html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;}
+  @media (pointer:coarse){
+    input:not([type=checkbox]):not([type=range]):not([type=file]),select,textarea{font-size:16px !important;}
+  }
+  body.modal-open{overflow:hidden;}
+
+  /* Cek kode: judul atas, daftar scroll di tengah, kolom cari SELALU di atas keyboard */
+  .cek-sheet{display:flex;flex-direction:column;height:92%;max-height:92%;overflow:hidden;padding-top:14px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));}
+  .cek-head{display:flex;justify-content:space-between;align-items:center;flex:none;margin-bottom:8px;}
+  .cek-head h3{margin:0;}
+  .cek-head .modal-close{float:none;}
+  .cek-list{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:8px;}
+  .cek-search{flex:none;padding-top:10px;border-top:1px solid var(--border);}
+  .cek-search input{margin:0;}
+
+  /* Beranda: hanya isi daftar yang scroll, kartu & halaman diam */
+  #homeRecent{max-height:clamp(240px,52vh,480px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-right:2px;}
+
+  /* Tema gelap: perbaikan keterbacaan tombol */
+  body.dark .photo-actions button{background:#14203a;color:#dbe5fb;border-color:#3a4f7a;}
+  body.dark .photo-actions button:active{background:#1b2a47;}
+  body.dark .goldBtn{color:#0d1b36;}
+  body.dark #mfCancel{background:#1b2a47 !important;color:var(--text) !important;border:1px solid #2a3b5e !important;}
+  body.dark #mfSave,body.dark #mAddBtn,body.dark .save-settings{border:1px solid #2a3b5e;}
+  body.dark #btnDoLogout{background:#b3243f;color:#fff;}
+  body.dark .pj-chip button{background:rgba(255,255,255,.14);color:#dbe5fb;}
+  body.dark .lookup-result.ok{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.35);color:var(--text);}
+  body.dark .lookup-result.notfound{background:rgba(244,63,94,.12);border-color:rgba(244,63,94,.35);color:#fda4af;}
+  body.dark .m-row .m-sub{color:#8e9bb8;}
+  body.dark .photo-preview .thumb{border-color:var(--border);}
+  body.dark ::placeholder{color:#6f7d9c;opacity:1;}
 </style>
 </head>
 <body>
@@ -615,11 +647,10 @@
 
 <!-- CEK KODE MODAL -->
 <div class="modal-overlay" id="cekKodeOverlay">
-  <div class="modal-sheet">
-    <button class="modal-close" id="closeCekKode">✕</button>
-    <h3>Cari Kode Temuan</h3>
-    <input type="text" id="cekKodeSearch" placeholder="Ketik kata kunci: kode atau uraian…" style="margin-bottom:10px;">
-    <div id="cekKodeList" style="max-height:60vh;overflow-y:auto;"></div>
+  <div class="modal-sheet cek-sheet">
+    <div class="cek-head"><h3>Cari Kode Temuan</h3><button class="modal-close" id="closeCekKode">✕</button></div>
+    <div id="cekKodeList" class="cek-list"></div>
+    <div class="cek-search"><input type="text" id="cekKodeSearch" placeholder="Ketik kode atau uraian…" autocomplete="off" enterkeyhint="search"></div>
   </div>
 </div>
 
@@ -800,7 +831,6 @@
 
   $("btnLogin").addEventListener("click", ()=> openLogin());
   $("closeLogin").addEventListener("click", closeLoginModal);
-  loginOverlay.addEventListener("click", (e)=>{ if(e.target===loginOverlay) closeLoginModal(); });
 
   $("btnDoLogin").addEventListener("click", async ()=>{
     const sb = getSupabase();
@@ -851,6 +881,13 @@
     return data || [];
   }
 
+  // urut: angka dulu (1,2,3...10), lalu huruf (1E, 1O, 1S ...) -> kode sekelompok selalu berkumpul
+  function kodeCompare(a, b){
+    const p = k => { const m = /^(\d+)\s*([A-Z]*)/i.exec(k); return m ? [parseInt(m[1],10), m[2].toUpperCase()] : [99999, k]; };
+    const x = p(a.kode), y = p(b.kode);
+    return (x[0]-y[0]) || x[1].localeCompare(y[1]) || a.kode.localeCompare(b.kode);
+  }
+
   async function loadAllDb(){
     setStatus("Memuat database…","");
     try{
@@ -868,6 +905,7 @@
         poin: pick(r,["poin"]),
         kategori: pick(r,["kategori"])
       })).filter(x=>x.kode);
+      kodeDB.sort(kodeCompare);
       zonaDB = zRows.map(r=>({
         id: r.id, no: pick(r,["no"]),
         zona: pick(r,["zona","kode_area"]),
@@ -885,34 +923,81 @@
   }
 
   /* ---------------- EFEK SUKSES SIMPAN (centang + suara ting) ---------------- */
-  let audioCtx = null, okTimer = null;
-  function playTing(){
+  let audioCtx = null, okTimer = null, tingEl = null, tingReady = false;
+  // bunyi "ting" dibuat sendiri (WAV) -> diputar lewat elemen <audio>, lebih andal di PWA HP
+  function buildTingUrl(){
+    const sr = 22050, n = Math.floor(sr*0.9);
+    const buf = new ArrayBuffer(44 + n*2), v = new DataView(buf);
+    const w = (o,t)=>{ for(let i=0;i<t.length;i++) v.setUint8(o+i, t.charCodeAt(i)); };
+    w(0,"RIFF"); v.setUint32(4,36+n*2,true); w(8,"WAVE"); w(12,"fmt ");
+    v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+    v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+    w(36,"data"); v.setUint32(40,n*2,true);
+    const tones = [[1318.5,0],[1760,0.09]];
+    for(let i=0;i<n;i++){
+      const t = i/sr; let x = 0;
+      for(const [f,d] of tones){
+        const tt = t-d; if(tt<0) continue;
+        x += Math.sin(2*Math.PI*f*tt) * Math.min(1,tt/0.012) * Math.exp(-tt*9) * 0.45;
+      }
+      v.setInt16(44+i*2, Math.max(-1,Math.min(1,x))*32767, true);
+    }
+    return URL.createObjectURL(new Blob([buf], {type:"audio/wav"}));
+  }
+  function getTing(){
+    if(!tingEl){
+      try{ tingEl = new Audio(buildTingUrl()); tingEl.preload = "auto"; tingEl.setAttribute("playsinline",""); }catch(e){ tingEl = null; }
+    }
+    return tingEl;
+  }
+  function playWebAudio(){
     try{
       const AC = window.AudioContext || window.webkitAudioContext;
       if(!AC) return;
       audioCtx = audioCtx || new AC();
-      if(audioCtx.state === "suspended") audioCtx.resume();
-      const t0 = audioCtx.currentTime;
-      // dua nada tinggi bertumpuk, peluruhan cepat seperti notifikasi iPhone
-      [[1318.5,0],[1760,0.09]].forEach(([f,d])=>{
-        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-        o.type = "sine"; o.frequency.value = f;
-        g.gain.setValueAtTime(0.0001, t0+d);
-        g.gain.exponentialRampToValueAtTime(0.35, t0+d+0.012);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0+d+0.7);
-        o.connect(g); g.connect(audioCtx.destination);
-        o.start(t0+d); o.stop(t0+d+0.75);
-      });
+      const go = ()=>{
+        const t0 = audioCtx.currentTime;
+        [[1318.5,0],[1760,0.09]].forEach(([f,d])=>{
+          const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+          o.type = "sine"; o.frequency.value = f;
+          g.gain.setValueAtTime(0.0001, t0+d);
+          g.gain.exponentialRampToValueAtTime(0.35, t0+d+0.012);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0+d+0.7);
+          o.connect(g); g.connect(audioCtx.destination);
+          o.start(t0+d); o.stop(t0+d+0.75);
+        });
+      };
+      if(audioCtx.state !== "running"){ audioCtx.resume().then(go).catch(()=>{}); } else go();
     }catch(e){}
   }
-  // iOS/Safari hanya mengizinkan audio setelah sentuhan pertama -> "buka kunci" di interaksi pertama
-  ["pointerdown","touchstart","click"].forEach(ev=> document.addEventListener(ev, function unlock(){
+  function playTing(){
+    const a = getTing();
+    if(!a){ playWebAudio(); return; }
+    try{
+      a.muted = false; a.volume = 1; a.currentTime = 0;
+      const p = a.play();
+      if(p && p.catch) p.catch(()=> playWebAudio());
+    }catch(e){ playWebAudio(); }
+  }
+  // "buka kunci" audio di sentuhan pengguna (HP/PWA memblokir suara sebelum ada interaksi)
+  function unlockAudio(){
     try{
       const AC = window.AudioContext || window.webkitAudioContext;
-      if(AC){ audioCtx = audioCtx || new AC(); if(audioCtx.state==="suspended") audioCtx.resume(); }
+      if(AC){ audioCtx = audioCtx || new AC(); if(audioCtx.state !== "running") audioCtx.resume().catch(()=>{}); }
     }catch(e){}
-    document.removeEventListener(ev, unlock);
-  }, {passive:true}));
+    const a = getTing();
+    if(a && !tingReady){
+      try{
+        a.muted = true;
+        const p = a.play();
+        if(p && p.then) p.then(()=>{ a.pause(); a.currentTime = 0; a.muted = false; tingReady = true; }).catch(()=>{ a.muted = false; });
+        else a.muted = false;
+      }catch(e){ a.muted = false; }
+    }
+  }
+  ["pointerdown","touchend","click","keydown"].forEach(ev=> document.addEventListener(ev, unlockAudio, {passive:true, capture:true}));
+  // kembali dari background (PWA) -> kunci audio perlu dibuka ulang
+  document.addEventListener("visibilitychange", ()=>{ if(document.hidden) tingReady = false; else unlockAudio(); });
   function successFx(){
     const el = $("okFx");
     el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
@@ -968,7 +1053,10 @@
   }
   function escapeHtml(s){ return (s||"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
-  $("fKode").addEventListener("input", ()=>{ $("fKode").value = $("fKode").value.toUpperCase(); doLookup(); });
+  $("fKode").addEventListener("input", ()=>{
+    $("fKode").value = $("fKode").value.toUpperCase(); doLookup();
+    if($("statusMsg").classList.contains("ok")) setStatus("","");
+  });
 
   /* ---------------- CEK KODE (referensi kode & uraian) ---------------- */
   const cekKodeOverlay = $("cekKodeOverlay");
@@ -982,6 +1070,7 @@
       box.innerHTML = '<div class="hint" style="padding:10px 8px;">Tidak ada kode yang cocok.</div>';
       return;
     }
+    box.scrollTop = 0;
     box.innerHTML = items.map(r=>{
       const isMayor = (r.klasifikasi||"").toUpperCase().includes("MAYOR");
       return `<div class="kode-ref-item" data-kode="${escapeHtml(r.kode)}">
@@ -1004,7 +1093,7 @@
     $("cekKodeSearch").value = "";
     renderKodeRefList("");
     cekKodeOverlay.classList.add("show");
-    setTimeout(()=> $("cekKodeSearch").focus(), 50);
+    $("cekKodeSearch").focus();
   });
   $("closeCekKode").addEventListener("click", ()=> cekKodeOverlay.classList.remove("show"));
   $("cekKodeSearch").addEventListener("input", ()=> renderKodeRefList($("cekKodeSearch").value));
@@ -1373,10 +1462,16 @@
   $("btnHome").addEventListener("click", ()=>{ window.location.href = "index.html"; });
 
   /* ---------------- SUBMIT ---------------- */
+  let statusT = null;
   function setStatus(msg, cls){
     const el = $("statusMsg");
+    clearTimeout(statusT);
     el.textContent = msg;
     el.className = "status-msg" + (cls ? " "+cls : "");
+    // pesan sukses hilang sendiri (6 dtk), pesan error (10 dtk) supaya tidak menyesatkan saat input baru
+    if(msg && (cls==="ok" || cls==="err")){
+      statusT = setTimeout(()=>{ el.textContent = ""; el.className = "status-msg"; }, cls==="ok" ? 6000 : 10000);
+    }
   }
 
   $("btnSubmit").addEventListener("click", async ()=>{
@@ -1443,7 +1538,7 @@
     const box = $("recentList");
     if(!sb){ box.innerHTML = '<div class="hint">Konfigurasikan Supabase di Pengaturan untuk melihat riwayat.</div>'; return; }
     try{
-      const { data, error } = await sb.from(CFG.sbTable).select("*").order("created_at",{ascending:false}).limit(10);
+      const { data, error } = await sb.from(CFG.sbTable).select("*").order("created_at",{ascending:false}).limit(20);
       if(error) throw error;
       if(!data || !data.length){ box.innerHTML = '<div class="hint">Belum ada temuan tersimpan.</div>'; return; }
       box.innerHTML = "";
@@ -2153,7 +2248,6 @@
     }
   });
   $("closeDetail").addEventListener("click", ()=> $("detailOverlay").classList.remove("show"));
-  $("detailOverlay").addEventListener("click", e=>{ if(e.target===$("detailOverlay")) $("detailOverlay").classList.remove("show"); });
   $("dPrev").addEventListener("click", e=>{ e.stopPropagation(); dIdx = (dIdx-1+dFotos.length)%dFotos.length; dShow(); });
   $("dNext").addEventListener("click", e=>{ e.stopPropagation(); dIdx = (dIdx+1)%dFotos.length; dShow(); });
   $("dThumbs").addEventListener("click", e=>{ const t = e.target.closest("img"); if(t){ dIdx = +t.dataset.i; dShow(); } });
@@ -2185,7 +2279,7 @@
     clearTimeout(homeT);
     homeT = setTimeout(()=>{
       const box = $("homeRecent"); box.innerHTML = "";
-      Array.from($("recentList").querySelectorAll(".list-item")).slice(0,3).forEach(n=> box.appendChild(n.cloneNode(true)));
+      Array.from($("recentList").querySelectorAll(".list-item")).forEach(n=> box.appendChild(n.cloneNode(true)));
       if(!box.children.length) box.innerHTML = '<div class="hint">Belum ada temuan.</div>';
       loadStats();
     }, 150);
@@ -2212,6 +2306,14 @@
       </div>`).join("") : '<div class="hint">Tidak ada data.</div>';
   }
 
+  function katField(cur){
+    const set = new Set(kodeDB.map(x=>x.kategori).filter(Boolean));
+    if(cur) set.add(cur);
+    const list = Array.from(set).sort((a,b)=> a.localeCompare(b, "id", {numeric:true}));
+    if(!list.length) return `<input id="mfKat" value="" placeholder="mis. 2. Rapi">`;
+    return `<select id="mfKat"><option value="">Pilih kategori…</option>` +
+      list.map(k=>`<option value="${escapeHtml(k)}"${k===cur?" selected":""}>${escapeHtml(k)}</option>`).join("") + `</select>`;
+  }
   function mOpenForm(key){
     mEditKey = key;
     const f = $("mForm");
@@ -2225,7 +2327,7 @@
     let body = "";
     if(mTab==="kode") body = `
       <label>Kode (mis. 2O)</label><input id="mfKode" value="${v(r.kode)}" ${key!==null?"disabled":""}>
-      <label>Kategori</label><input id="mfKat" value="${v(r.kategori)}" placeholder="mis. 2. Rapi">
+      <label>Kategori</label>${katField(r.kategori)}
       <label>Uraian</label><textarea id="mfUraian" rows="3">${v(r.uraian)}</textarea>
       <label>Klasifikasi</label><select id="mfKlas"><option value="MINOR">MINOR</option><option value="MAYOR">MAYOR</option></select>
       <label>Poin</label><input id="mfPoin" type="number" value="${v(r.poin)}" placeholder="-3 / -5">`;
@@ -2258,6 +2360,7 @@
         const kode = val("mfKode").toUpperCase(), uraian = val("mfUraian");
         const poin = parseInt($("mfPoin").value);
         if(!/^[0-9]+[A-Z]$/.test(kode)) throw new Error("Format kode harus angka+huruf, mis. 2O.");
+        if(!val("mfKat")) throw new Error("Pilih kategori dulu.");
         if(!uraian) throw new Error("Uraian wajib diisi.");
         if(isNaN(poin)) throw new Error("Poin wajib angka.");
         const row = { kode, kategori: val("mfKat"), uraian, klasifikasi: $("mfKlas").value, poin };
@@ -2312,7 +2415,6 @@
 
   $("btnMaster").addEventListener("click", ()=>{ mCloseForm(); mMsg(""); $("mSearch").value=""; mRenderList(); masterOverlay.classList.add("show"); });
   $("closeMaster").addEventListener("click", ()=> masterOverlay.classList.remove("show"));
-  masterOverlay.addEventListener("click", e=>{ if(e.target===masterOverlay) masterOverlay.classList.remove("show"); });
   document.querySelectorAll(".m-tab").forEach(b=> b.addEventListener("click", ()=>{
     document.querySelectorAll(".m-tab").forEach(x=>x.classList.toggle("on", x===b));
     mTab = b.dataset.mt; mCloseForm(); mMsg(""); $("mSearch").value=""; mRenderList();
@@ -2328,6 +2430,37 @@
     if(e.target.classList.contains("mEdit")) mOpenForm(row.dataset.key);
     if(e.target.classList.contains("mDel")) mDelete(row.dataset.key);
   });
+
+  /* ---------------- KEYBOARD HP & KUNCI SCROLL LATAR ---------------- */
+  // jendela mengikuti area yang benar-benar terlihat -> selalu di atas keyboard
+  (function(){
+    const vv = window.visualViewport, root = document.documentElement;
+    function sync(){
+      if(!vv) return;
+      root.style.setProperty("--vvh", vv.height + "px");
+      root.style.setProperty("--vvt", vv.offsetTop + "px");
+    }
+    if(vv){ vv.addEventListener("resize", sync); vv.addEventListener("scroll", sync); sync(); }
+
+    const lockEls = Array.from(document.querySelectorAll(".modal-overlay, #zoomView"));
+    let locked = false, lockY = 0;
+    function updateLock(){
+      const any = lockEls.some(e=> e.classList.contains("show"));
+      const b = document.body;
+      if(any && !locked){
+        lockY = window.scrollY; locked = true;
+        b.classList.add("modal-open");
+        b.style.position = "fixed"; b.style.top = (-lockY) + "px"; b.style.left = "0"; b.style.right = "0";
+      } else if(!any && locked){
+        locked = false;
+        b.classList.remove("modal-open");
+        b.style.position = b.style.top = b.style.left = b.style.right = "";
+        window.scrollTo(0, lockY);
+      }
+    }
+    const mo = new MutationObserver(updateLock);
+    lockEls.forEach(e=> mo.observe(e, {attributes:true, attributeFilter:["class"]}));
+  })();
 
   if(!CFG.sbUrl || !CFG.sbKey){ openSettings(); }
   loadAllDb();
