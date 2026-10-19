@@ -1962,6 +1962,49 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
 .sheet.big{max-width:none;width:100%;height:100%;max-height:100%;border-radius:0}
 @media print{.fsb{display:none!important}}
 </style>
+<style id="gd-style">
+/* ===== TAB ANALISA GUDANG ===== */
+.gd-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex:none}
+.gd-top .qview-field{flex:none;min-width:230px}
+.gd-h{display:flex;align-items:center;gap:10px}
+.gd-h small{font:500 12px var(--font-body);color:var(--muted)}
+.gd-h .seg{margin-left:6px}
+#gd-section .hero .card,#gd-section .gd-bot .card{overflow:hidden}
+.gd-stripe{background:repeating-linear-gradient(135deg,var(--st-siap) 0 7px,color-mix(in srgb,var(--st-siap) 55%,#000) 7px 14px)}
+.gd-brk{display:flex;gap:2px;margin-top:6px;flex:none}
+.gd-brk>div{border-top:3px solid var(--c);padding-top:4px;font-size:11.5px;font-weight:700;color:var(--c);min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.gd-tbox{flex:1;min-height:130px;display:flex;flex-direction:column}
+.gd-th{display:flex;align-items:center;font-weight:700;font-size:13px;margin-bottom:4px}
+.gd-trend{position:relative;flex:1;min-height:0}
+button.gd-run{border:0;cursor:pointer;font-family:inherit}button.gd-run:hover{filter:brightness(.92);text-decoration:underline}
+.fs-on .chart-canvas-wrap,.fs-on .chart-canvas-wrap.tall{height:auto!important;flex:1;min-height:0}
+.fs-on .gd-tbox{min-height:0}
+.gd-bot{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.gd-scr{flex:1;min-height:0;overflow:auto}
+th.gd-sort{cursor:pointer;user-select:none}th.gd-sort:hover{color:var(--text)}
+.gd-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+.gd-sub{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);margin:10px 0 2px;padding-left:6px}
+.gd-run{display:inline-block;min-width:34px;text-align:center;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;background:color-mix(in srgb,var(--st-kosong) 14%,transparent);color:var(--st-kosong)}
+.gd-empty{padding:22px 10px;text-align:center;color:var(--muted);font-size:13px}
+.gd-name{font-weight:700;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:999px){.gd-tbox{flex:none}.gd-bot{display:flex;flex-direction:column}.gd-trend{flex:none;min-height:230px}.gd-top{flex-wrap:wrap}.gd-bot .card{min-height:320px}}
+/* ===== PERATAAN TABEL: judul kolom selalu sejajar dengan isinya ===== */
+table.rank-table th,table.rank-table td{text-align:right}
+table.rank-table th:first-child,table.rank-table td:first-child{text-align:left}
+table.rank-table.qv-t th:nth-child(2),table.rank-table.qv-t td:nth-child(2){text-align:left}
+table.rank-table.qv-t th:nth-child(6),table.rank-table.qv-t td:nth-child(6),table.rank-table.qv-t th:nth-child(7),table.rank-table.qv-t td:nth-child(7){text-align:center}
+table.rank-table.qvd-table th:nth-child(2),table.rank-table.qvd-table td:nth-child(2),table.rank-table.qvd-table th:nth-child(3),table.rank-table.qvd-table td:nth-child(3){text-align:left}
+table.rank-table.qvd-table th:nth-child(10),table.rank-table.qvd-table td:nth-child(10){text-align:center}
+table.rank-table th.tl,table.rank-table td.tl{text-align:left}
+table.rank-table th.tc,table.rank-table td.tc{text-align:center}
+table.rank-table td.empty-note,table.rank-table td.gd-empty{text-align:center}
+/* canvas grafik tidak boleh ikut menentukan tinggi wadahnya (penyebab grafik hilang setelah layar penuh) */
+.chart-card .chart-canvas-wrap>canvas,.gd-trend>canvas,#qv-body .card canvas{position:absolute;left:0;top:0}
+#gd-section{overflow-y:auto;overflow-x:hidden}
+#gd-section .hero{min-height:340px}
+#gd-section .gd-bot{min-height:260px}
+</style>
+
 </head>
 <body>
 
@@ -1981,6 +2024,7 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
   </div>
   <nav class="view-tabs" id="view-tabs">
     <button data-view="overview" class="active">Overview</button>
+    <button data-view="gudang">Analisa Gudang</button>
     <button data-view="summary">Pergerakan</button>
     <button data-view="date">Data Harian</button>
     <button data-view="qview">Qview</button>
@@ -2015,6 +2059,41 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
     <div class="hero">
       <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h2 style="margin:0" id="ov-comp-t">Komposisi Status &amp; Fulfillment</h2><div class="seg" id="ov-seg"><button data-m="line" class="on">Line</button><button data-m="ton">Tonase</button></div></div><div id="ov-comp"></div></div>
       <div class="card"><h2>Insight</h2><div class="ins" id="ov-ins"></div></div>
+    </div>
+  </section>
+
+  <!-- 1b ANALISA GUDANG -->
+  <section id="gd-section" class="pg hidden">
+    <div class="gd-top">
+      <div class="ptitle" style="flex:1"><b>ANALISA GUDANG vs MEMO</b><span id="gd-per"></span></div>
+      <label class="qview-field"><span>Periode</span><select id="gd-date"></select></label>
+    </div>
+    <div class="kp" id="gd-kpi"></div>
+    <div class="hero">
+      <div class="card">
+        <h2 class="gd-h"><span id="gd-t0">Ke mana tonase memo pergi?</span></h2>
+        <div id="gd-bar"></div>
+        <div class="gd-brk" id="gd-brk"></div>
+        <div class="lgd" id="gd-lgd"></div>
+        <div class="gd-tbox" id="gd-tbox">
+          <div class="gd-th" id="gd-th"><span>Tren per tanggal <span class="muted" style="font-weight:500;font-size:11.5px">(% dari tonase memo · klik batang untuk memilih tanggal)</span></span></div>
+          <div class="gd-trend"><canvas id="gd-chart"></canvas></div>
+        </div>
+      </div>
+      <div class="card" id="gd-find-card">
+        <h2 class="gd-h"><span>Temuan &amp; Rekomendasi</span></h2>
+        <div class="ins" id="gd-ins"></div>
+      </div>
+    </div>
+    <div class="gd-bot">
+      <div class="card" id="gd-c1">
+        <h2 class="gd-h"><span id="gd-t1">Stok siap per Internal</span><span class="seg" id="gd-seg"><button data-m="int" class="on">Per Internal</button><button data-m="age">Tertahan Berulang</button></span></h2>
+        <div class="scr gd-scr"><table class="rank-table" id="gd-tbl1"></table></div>
+      </div>
+      <div class="card" id="gd-c2">
+        <h2 class="gd-h"><span>Kebutuhan produksi</span><small id="gd-c2n"></small></h2>
+        <div class="scr gd-scr"><table class="rank-table" id="gd-tbl2"></table></div>
+      </div>
     </div>
   </section>
 
@@ -2135,7 +2214,7 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
   </div>
 
 </main>
-<div id="pn"><button id="pn-prev" aria-label="Sebelumnya">‹</button><span id="pn-c">1 / 4</span><button id="pn-next" aria-label="Berikutnya">›</button></div>
+<div id="pn"><button id="pn-prev" aria-label="Sebelumnya">‹</button><span id="pn-c">1 / 5</span><button id="pn-next" aria-label="Berikutnya">›</button></div>
 
 <div id="print-area"></div>
 
@@ -2216,6 +2295,14 @@ body.pres #results-section,body.pres #sm-more,body.pres .search-panel,body.pres 
       <button class="btn-primary" id="btn-save-settings">Simpan &amp; Muat Ulang</button>
       <p class="muted" style="font-size:12px;margin-top:14px;">Publish sheet sebagai CSV lewat File &gt; Share &gt; Publish to web, lalu tempel link-nya di sini.</p>
     </div>
+  </div>
+</div>
+
+<div id="gd-run-overlay" class="sheet-overlay">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div><div class="sheet-eyebrow" id="gd-run-eyebrow">TERTAHAN BERULANG</div><h2 class="sheet-title" id="gd-run-title">—</h2></div><button class="icon-btn" id="gd-run-close">✕</button></div>
+    <div class="sheet-body" id="gd-run-body"></div>
   </div>
 </div>
 
@@ -4704,7 +4791,7 @@ function hideSplash(){
 }
 
 /* ================= REDESIGN SHELL (UI saja; logika bisnis di atas tidak diubah) ================= */
-const FULFILL_TARGET = 90;                    // target fulfillment (%) untuk insight — ubah di sini
+const FULFILL_TARGET = 100;                    // target fulfillment (%) untuk insight — ubah di sini
 const QV_TOL = { ok: 0.5, warn: 2 };          // selisih Qview vs Memo DO (% dari Memo): <=ok hijau, <=warn amber, selebihnya merah
 const UI_ID = id => document.getElementById(id);
 const UI_SV = p => `<svg class="i" viewBox="0 0 24 24">${p}</svg>`;
@@ -4827,7 +4914,7 @@ function qvAfter(){
 { const _q=renderQviewTable; renderQviewTable=function(){ _q.apply(this,arguments); qvAfter(); }; }
 
 /* navigasi halaman + presentasi */
-const UI_PAGES = ['overview','summary','date','qview'];
+const UI_PAGES = ['overview','gudang','summary','date','qview'];
 function uiResize(){ Object.values(charts).forEach(c=>c&&c.resize&&c.resize()); if(UI_QC) UI_QC.resize(); }
 function uiPage(){ const b=document.querySelector('#view-tabs .active'); return Math.max(0,UI_PAGES.indexOf(b&&b.dataset.view)); }
 function uiGo(i){ i=(i+UI_PAGES.length)%UI_PAGES.length; document.querySelector('#view-tabs [data-view="'+UI_PAGES[i]+'"]').click(); }
@@ -4835,14 +4922,14 @@ el.viewTabs.addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return; const ov=b.dataset.view==='overview';
   UI_ID('ov-section').classList.toggle('hidden',!ov);
   if(ov){ state.view='date'; el.dateView.classList.add('hidden'); ovRender(); }   // AI/cetak/Excel memakai data tanggal aktif
-  UI_ID('pn-c').textContent=(uiPage()+1)+' / 4'; setTimeout(uiResize,60);
+  UI_ID('pn-c').textContent=(uiPage()+1)+' / '+UI_PAGES.length; setTimeout(uiResize,60);
 });
 function uiPres(on){
   if(on===undefined) on=!document.body.classList.contains('pres');
   document.body.classList.toggle('pres',on);
   if(on){ UI_ID('summary-section').classList.remove('open'); if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{}); }
   else if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(()=>{});
-  UI_ID('pn-c').textContent=(uiPage()+1)+' / 4'; setTimeout(uiResize,250);
+  UI_ID('pn-c').textContent=(uiPage()+1)+' / '+UI_PAGES.length; setTimeout(uiResize,250);
 }
 UI_ID('btn-pres').addEventListener('click',()=>uiPres());
 UI_ID('pn-prev').addEventListener('click',()=>uiGo(uiPage()-1)); UI_ID('pn-next').addEventListener('click',()=>uiGo(uiPage()+1));
@@ -4881,6 +4968,327 @@ document.getElementById('view-tabs').addEventListener('click', closeAllFS);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('.fs-on')) closeAllFS(); }, true);
 document.getElementById('res-sort').addEventListener('change', () => renderResults());
 el.rankTbody.closest('table').tHead.addEventListener('click', e => { const th = e.target.closest('th[data-sort]'); if (!th) return; const k = th.dataset.sort; if (RK.k === k) RK.d *= -1; else { RK.k = k; RK.d = k === 'name' ? 1 : -1; } renderRankTable(); });
+
+
+/* ================= TAB ANALISA GUDANG vs MEMO =================
+   Memecah tonase memo menjadi: Terkirim (DO) | Stok siap tapi belum di-DO (bola di Internal) |
+   Stok belum ada (bola di PPIC/Produksi). Stok CPS yang dipakai bersama oleh beberapa baris memo
+   dengan MCS + Comp yang sama dialokasikan proporsional, supaya stok tidak terhitung dobel. */
+const GD = { sel:'all', view:'int', sig:'', sort:{ int:{ k:'rdy', d:-1 }, age:{ k:'run', d:-1 }, ppic:{ k:'kg', d:-1 } } };
+const GD_UNIT = 'kg';
+
+function gdCalcDate(d){
+  const out = d.records.map(r => {
+    const memoQty = r.memoQty || 0;
+    const w = memoQty > 0 ? (r.tonase || 0) / memoQty : (r.beratPerPcs || 0);
+    const sisaQty = Math.max(0, (r.memoAK != null ? r.memoAK : memoQty) - (r.doAK || 0));
+    const comp = nrm(String(r.compModel || '').split('/')[0]);
+    return { r, w, sisaQty, key: nrm(r.mcsNum) + '|' + comp, readyQty: 0, gapQty: 0 };
+  });
+  const grp = new Map();
+  out.forEach(o => { if (o.sisaQty > 0){ if (!grp.has(o.key)) grp.set(o.key, []); grp.get(o.key).push(o); } });
+  grp.forEach(arr => {
+    const need = arr.reduce((a, o) => a + o.sisaQty, 0);
+    const avail = Math.max(0, arr[0].r.cps || 0);
+    const f = need > 0 ? Math.min(1, avail / need) : 0;
+    arr.forEach(o => { o.readyQty = o.sisaQty * f; o.gapQty = o.sisaQty - o.readyQty; });
+  });
+  out.forEach(o => {
+    o.t = o.r.tonase || 0; o.d = o.r.tonaseDO || 0;
+    o.readyKg = o.readyQty * o.w; o.gapKg = o.gapQty * o.w;
+    o.cpsZero = !(o.r.cps > 0);
+  });
+  return out;
+}
+function gdTot(arr){
+  const t = { M:0, D:0, rF:0, rP:0, gK:0, gZ:0, rLines:0, gLines:0 };
+  arr.forEach(o => {
+    t.M += o.t; t.D += o.d;
+    if (o.sisaQty > 0){
+      if (o.readyQty > 0.0001){
+        if (o.readyQty >= o.sisaQty * 0.995) t.rF += o.readyKg; else t.rP += o.readyKg;
+        if (o.readyQty >= 0.5) t.rLines++;
+      }
+      if (o.gapQty > 0.0001){
+        if (o.cpsZero) t.gZ += o.gapKg; else t.gK += o.gapKg;
+        if (o.gapQty >= 0.5) t.gLines++;
+      }
+    }
+  });
+  return t;
+}
+function gdAdd(a, b){ for (const k in b) a[k] = (a[k] || 0) + b[k]; return a; }
+function gdScopeIdx(){
+  const L = state.dateList;
+  if (GD.sel === 'all') return L.map((_, i) => i);
+  const i = L.findIndex(d => d.label === GD.sel);
+  return [i < 0 ? L.length - 1 : i];
+}
+// Line yang stok siapnya masih ada di beberapa memo berturut-turut sampai tanggal e
+function gdAging(per, e){
+  const maps = per.map(arr => {
+    const m = new Map();
+    arr.forEach(o => {
+      if (!(o.sisaQty > 0 && o.readyQty >= 0.5)) return;
+      const k = normKey(o.r.sales) + '|' + normKey(o.r.customer) + '|' + nrm(o.r.soNum) + '|' + o.key;
+      const x = m.get(k) || { kg:0, qty:0, sisa:0, doQty:0, cps:o.r.cps || 0, o };
+      x.kg += o.readyKg; x.qty += o.readyQty; x.sisa += o.sisaQty; x.doQty += (o.r.doAK || 0); m.set(k, x);
+    });
+    return m;
+  });
+  const res = [];
+  maps[e].forEach((x, k) => {
+    const dates = [{ i:e, x }];
+    for (let i = e - 1; i >= 0 && maps[i].has(k); i--) dates.push({ i, x:maps[i].get(k) });
+    if (dates.length >= 2) res.push({ run:dates.length, kg:x.kg, o:x.o, dates:dates.reverse() });
+  });
+  return res.sort((a, b) => b.run - a.run || b.kg - a.kg);
+}
+function gdQview(idxs){
+  const q = state.qview;
+  if (!q || !q.loaded || !q.dateColumns || !q.dateColumns.length) return null;
+  let qt = 0, md = 0, ok = 0;
+  idxs.forEach(i => {
+    const d = state.dateList[i];
+    const qi = guessQviewIdxFromLabel(d.label, q.dateColumns);
+    if (qi < 0) return;
+    ok++;
+    qt += q.rows.reduce((a, r) => a + ((r.values && r.values[qi]) || 0), 0);
+    md += d.records.reduce((a, r) => a + (r.tonaseDO || 0), 0);
+  });
+  return ok ? { qt, md, ok } : null;
+}
+
+let GD_CH = null, GD_AGE = [];
+function gdRender(){
+  const sec = UI_ID('gd-section');
+  if (!sec || sec.classList.contains('hidden')) return;
+  const L = state.dateList, selEl = UI_ID('gd-date');
+  if (!L.length){
+    UI_ID('gd-kpi').innerHTML = ''; UI_ID('gd-bar').innerHTML = '<div class="gd-empty">Belum ada data.</div>';
+    ['gd-brk','gd-lgd','gd-ins','gd-tbl1','gd-tbl2'].forEach(id => UI_ID(id).innerHTML = '');
+    return;
+  }
+  const sig = L.map(d => d.label).join('|');
+  if (sig !== GD.sig){
+    GD.sig = sig;
+    selEl.innerHTML = '<option value="all">Semua tanggal (rata-rata)</option>' + L.map(d => '<option value="' + escapeHtml(d.label) + '">' + escapeHtml(d.label) + '</option>').join('');
+    if (GD.sel !== 'all' && !L.some(d => d.label === GD.sel)) GD.sel = 'all';
+  }
+  selEl.value = GD.sel;
+
+  const per = L.map(gdCalcDate), tots = per.map(gdTot);
+  const idxs = gdScopeIdx(), n = idxs.length, e = idxs[idxs.length - 1];
+  const T = idxs.reduce((a, i) => gdAdd(a, tots[i]), {});
+  const flat = idxs.flatMap(i => per[i]);
+  const sc = 1 / n, M = T.M || 0;
+  const pc = v => M > 0 ? v / M * 100 : 0;
+  const R = v => Math.round(v);
+  const ready = T.rF + T.rP, gap = T.gK + T.gZ;
+  const ful = pc(T.D), kes = Math.min(100, pc(T.D + ready));
+  const serap = (T.D + ready) > 0 ? T.D / (T.D + ready) * 100 : 0;
+  const pInt = pc(ready), pPpic = pc(gap);
+  const tgt = FULFILL_TARGET;
+
+  UI_ID('gd-per').textContent = n > 1 ? 'Rata-rata per tanggal · ' + n + ' tanggal (' + L[0].label + ' – ' + L[L.length - 1].label + ')' : 'Tanggal memo ' + L[e].label;
+  UI_ID('gd-t0').textContent = 'Ke mana tonase memo pergi? ' + (n > 1 ? '(rata-rata per tanggal)' : '(' + L[e].label + ')');
+
+  /* KPI */
+  const pg = (v, col) => '<div class="pgbar"><i style="width:' + Math.min(v, 100) + '%;background:' + col + '"></i></div>';
+  UI_ID('gd-kpi').innerHTML =
+    uiKc('in', 'truck', 'Fulfillment Aktual', R(ful) + '%', '', 'DO ' + fmtNum(T.D * sc) + ' dari Memo ' + fmtNum(M * sc) + ' ' + GD_UNIT + (ful >= tgt ? ' · target tercapai' : ' · target ≥ ' + tgt + '%'), pg(ful, ful >= tgt ? 'var(--st-lunas)' : 'var(--st-kurang)')) +
+    uiKc('out', 'check', 'Kesiapan Stok Gudang', R(kes) + '%', '', 'Potensi bila semua stok siap terkirim · serapan ' + R(serap) + '%', pg(kes, 'var(--st-siap)')) +
+    uiKc('bl', 'bolt', 'Stok Siap, Belum DO · Internal', fmtNum(ready * sc), GD_UNIT, R(pInt) + '% dari memo · ' + fmtInt(T.rLines * sc) + ' line') +
+    uiKc('rd', 'warn', 'Stok Belum Ada · PPIC/Produksi', fmtNum(gap * sc), GD_UNIT, R(pPpic) + '% dari memo · ' + fmtInt(T.gLines * sc) + ' line');
+
+  /* Bar komposisi + kepemilikan */
+  const segs = [
+    ['Terkirim (DO)', T.D, 'var(--st-lunas)', ''],
+    ['Stok siap penuh, belum DO', T.rF, 'var(--st-siap)', ''],
+    ['Stok siap sebagian, belum DO', T.rP, '', 'gd-stripe'],
+    ['Stok kurang', T.gK, 'var(--st-kurang)', ''],
+    ['Stok kosong', T.gZ, 'var(--st-kosong)', ''],
+  ];
+  UI_ID('gd-bar').innerHTML = M > 0
+    ? '<div class="barx">' + segs.filter(s => s[1] > 0).map(s => { const p = pc(s[1]);
+        return '<div class="' + s[3] + '" style="flex:' + s[1] + ';' + (s[2] ? 'background:' + s[2] : '') + '" title="' + s[0] + ': ' + fmtNum(s[1] * sc) + ' ' + GD_UNIT + ' (' + p.toFixed(1) + '%)">' + (p >= 7 ? R(p) + '%<small>' + fmtNum(s[1] * sc) + ' ' + GD_UNIT + '</small>' : '') + '</div>'; }).join('') + '</div>'
+    : '<div class="gd-empty">Tidak ada tonase memo pada periode ini.</div>';
+  const grp = [
+    ['✓ Terkirim ' + R(ful) + '%', T.D, 'var(--st-lunas)'],
+    ['Bola di Internal ' + R(pInt) + '% · terbitkan DO', ready, 'var(--st-siap)'],
+    ['Bola di PPIC/Produksi ' + R(pPpic) + '% · stok belum ada', gap, 'var(--st-kosong)'],
+  ];
+  UI_ID('gd-brk').innerHTML = M > 0 ? grp.filter(g => g[1] > 0).map(g => '<div style="flex:' + g[1] + ';--c:' + g[2] + '" title="' + g[0] + '">' + g[0] + '</div>').join('') : '';
+  UI_ID('gd-lgd').innerHTML = segs.map(s => '<span><i class="' + s[3] + '" style="' + (s[2] ? 'background:' + s[2] : '') + '"></i>' + s[0] + '</span>').join('');
+
+  /* Tren per tanggal */
+  if (typeof Chart !== 'undefined' && UI_ID('gd-chart')){
+    const c = chartColors(), labels = L.map(d => d.label);
+    const pv = (i, v) => tots[i].M > 0 ? v / tots[i].M * 100 : null;
+    const dim = col => ctx => idxs.includes(ctx.dataIndex) ? col : col + '55';
+    const mk = (label, col, f) => ({ type:'bar', label, data: tots.map((t, i) => pv(i, f(t))), backgroundColor: dim(col), borderRadius: 3, stack:'s', datalabels:{ display:false } });
+    if (GD_CH) GD_CH.destroy();
+    GD_CH = charts.gudang = new Chart(UI_ID('gd-chart'), {
+      type: 'bar',
+      data: { labels, datasets: [
+        mk('Terkirim', c.stLunas, t => t.D),
+        mk('Stok siap, belum DO (Internal)', c.stSiap, t => t.rF + t.rP),
+        mk('Stok belum ada (PPIC/Produksi)', c.stKosong, t => t.gK + t.gZ),
+        { type:'line', label:'Target ' + tgt + '%', data: labels.map(() => tgt), borderColor: c.text, borderDash:[6, 4], borderWidth:1.5, pointRadius:0, datalabels:{ display:false } },
+      ] },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        interaction:{ mode:'index', intersect:false },
+        onClick:(evt, els, chart) => { if (!els || !els.length) return; GD.sel = chart.data.labels[els[0].index]; gdRender(); },
+        onHover:(evt, els, chart) => { chart.canvas.style.cursor = els.length ? 'pointer' : 'default'; },
+        plugins:{
+          datalabels:{ display:false },
+          legend:{ position:'bottom', labels:{ color:c.muted, boxWidth:10, boxHeight:10, padding:12, font:{ size:11 } } },
+          tooltip:{ backgroundColor:c.surface, titleColor:c.text, bodyColor:c.text, borderColor:c.border, borderWidth:1, padding:10,
+            callbacks:{ label: it => it.dataset.label + ': ' + (it.parsed.y == null ? '-' : it.parsed.y.toFixed(0) + '%') } },
+        },
+        scales:{
+          x:{ stacked:true, grid:{ display:false }, ticks:{ color:c.muted, font:{ size:10.5 }, callback: xTickCallback(labels) } },
+          y:{ stacked:true, min:0, suggestedMax:100, ticks:{ color:c.muted, callback: v => v + '%' }, grid:{ color: getCurrentTheme() === 'light' ? 'rgba(0,0,0,.06)' : 'rgba(255,255,255,.08)' } },
+        },
+      },
+    });
+  }
+
+  /* Tabel (kolom bisa diurutkan A–Z / Z–A lewat klik judul kolom) */
+  const U = GD_UNIT;
+  const arrow = (tbl, k) => { const s = GD.sort[tbl]; return s.k === k ? (s.d > 0 ? ' ▲' : ' ▼') : ''; };
+  const head = (tbl, cols) => '<thead><tr>' + cols.map(c => '<th class="gd-sort ' + (c.c || '') + '" data-t="' + tbl + '" data-k="' + c.k + '" title="Klik untuk urutkan A–Z / Z–A">' + c.l + arrow(tbl, c.k) + '</th>').join('') + '</tr></thead>';
+  const sortBy = (rows, tbl, cols) => { const s = GD.sort[tbl], col = cols.find(c => c.k === s.k) || cols[0];
+    return rows.slice().sort((a, b) => { const x = a[col.k], y = b[col.k]; return (col.s ? String(x).localeCompare(String(y), 'id', { numeric:true, sensitivity:'base' }) : (x - y)) * s.d; }); };
+  const t1 = UI_ID('gd-tbl1');
+  UI_ID('gd-seg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === GD.view));
+  const ag = gdAging(per, e);
+  if (GD.view === 'int'){
+    UI_ID('gd-t1').textContent = 'Stok siap per Internal';
+    const g = new Map();
+    flat.forEach(o => {
+      const k = o.r.internal || '(Kosong)'; let x = g.get(k);
+      if (!x){ x = { name:k, M:0, D:0, rdy:0, gap:0 }; g.set(k, x); }
+      x.M += o.t; x.D += o.d; x.rdy += o.readyKg; x.gap += o.gapKg;
+    });
+    const all = [...g.values()].map(r => ({ ...r, ful: r.M > 0 ? r.D / r.M * 100 : 0, kes: r.M > 0 ? Math.min(100, (r.D + r.rdy) / r.M * 100) : 0 }));
+    const cols = [{ k:'name', l:'Internal', s:1 }, { k:'M', l:'Memo (' + U + ')' }, { k:'ful', l:'Fulfillment' }, { k:'rdy', l:'Stok siap, belum DO (' + U + ')' }, { k:'gap', l:'Stok belum ada (' + U + ')' }, { k:'kes', l:'Kesiapan' }];
+    const rows = sortBy(all, 'int', cols), mx = Math.max(1, ...all.map(r => r.rdy));
+    t1.innerHTML = head('int', cols) + '<tbody>' +
+      (rows.map(r => '<tr><td><div class="gd-name" title="' + escapeHtml(r.name) + '">' + escapeHtml(r.name) + '</div></td><td>' + fmtNum(r.M * sc) + '</td><td><span class="rank-cell ' + (r.ful >= tgt ? 'rc-lunas' : r.ful >= 60 ? 'rc-kurang' : 'rc-kosong') + '">' + R(r.ful) + '%</span></td><td><span class="bar-track"><i class="bar-fill" style="width:' + (r.rdy / mx * 100) + '%;background:var(--st-siap)"></i></span>' + fmtNum(r.rdy * sc) + '</td><td>' + fmtNum(r.gap * sc) + '</td><td>' + R(r.kes) + '%</td></tr>').join('') || '<tr><td colspan="6" class="gd-empty">Tidak ada data.</td></tr>') + '</tbody>';
+  } else {
+    UI_ID('gd-t1').textContent = 'Stok siap, belum dikirim berulang';
+    const all = ag.map(a => ({ a, customer:a.o.r.customer, model:a.o.r.compModel, mcs:a.o.r.mcsNum, internal:a.o.r.internal, run:a.run, kg:a.kg }));
+    const cols = [{ k:'customer', l:'Customer', s:1 }, { k:'model', l:'Model', s:1, c:'tl' }, { k:'mcs', l:'MC / MCS', s:1, c:'tl' }, { k:'internal', l:'Internal', s:1, c:'tl' }, { k:'run', l:'Berulang (klik angka)', c:'tc' }, { k:'kg', l:'Stok siap (' + U + ')' }];
+    const rows = sortBy(all, 'age', cols).slice(0, 150);
+    GD_AGE = rows.map(x => x.a);
+    t1.innerHTML = head('age', cols) + '<tbody>' +
+      (rows.length ? rows.map((x, ix) => '<tr><td><div class="gd-name" title="' + escapeHtml(x.customer) + '">' + escapeHtml(x.customer) + '</div></td><td class="tl">' + escapeHtml(x.model) + '</td><td class="tl">' + escapeHtml(x.mcs) + '</td><td class="tl">' + escapeHtml(x.internal) + '</td><td class="tc"><button type="button" class="gd-run" data-i="' + ix + '" title="Klik untuk melihat tanggal memo-nya">' + x.run + '×</button></td><td>' + fmtNum(x.kg) + '</td></tr>').join('')
+        : '<tr><td colspan="6" class="gd-empty">Belum ada line yang stoknya siap tapi tetap belum dikirim di ≥ 2 memo berturut-turut (sampai ' + escapeHtml(L[e].label) + ').</td></tr>') + '</tbody>';
+  }
+
+  /* Tabel kebutuhan produksi (per item MCS + Comp) */
+  const it = new Map();
+  flat.forEach(o => {
+    if (!(o.gapQty >= 0.5)) return;
+    let x = it.get(o.key);
+    if (!x){ x = { model:o.r.compModel, mcs:o.r.mcsNum, qty:0, kg:0, cust:new Set(), cps:0 }; it.set(o.key, x); }
+    x.qty += o.gapQty; x.kg += o.gapKg; x.cust.add(normKey(o.r.customer)); x.cps = o.r.cps || 0;
+  });
+  const items = [...it.values()].sort((a, b) => b.kg - a.kg);
+  UI_ID('gd-c2n').textContent = items.length + ' item' + (n > 1 ? ' · rata-rata per tanggal' : '');
+  const pcols = [{ k:'model', l:'Model / Comp', s:1 }, { k:'mcs', l:'MC / MCS', s:1, c:'tl' }, { k:'qty', l:'Kurang (pcs)' }, { k:'kg', l:'Kurang (' + U + ')' }, { k:'custN', l:'Customer' }, { k:'cps', l:'Stok gudang (pcs)' }, { k:'kond', l:'Kondisi', s:1, c:'tc' }];
+  const prow = sortBy(items.map(x => ({ ...x, custN:x.cust.size, kond:x.cps > 0 ? 'Kurang' : 'Kosong' })), 'ppic', pcols).slice(0, 200);
+  UI_ID('gd-tbl2').innerHTML = head('ppic', pcols) + '<tbody>' +
+    (prow.map(x => '<tr><td><div class="gd-name" title="' + escapeHtml(x.model) + '">' + escapeHtml(x.model) + '</div></td><td class="tl">' + escapeHtml(x.mcs) + '</td><td>' + fmtInt(x.qty * sc) + '</td><td>' + fmtNum(x.kg * sc) + '</td><td>' + x.custN + '</td><td>' + fmtInt(x.cps) + '</td><td class="tc"><span class="status-badge ' + (x.cps > 0 ? 'sb-kurang' : 'sb-kosong') + '">' + x.kond + '</span></td></tr>').join('')
+      || '<tr><td colspan="7" class="gd-empty">Tidak ada kebutuhan produksi pada periode ini.</td></tr>') + '</tbody>';
+
+  /* Temuan & rekomendasi (berbasis aturan dari data yang sama) */
+  const topInt = (() => { const g = new Map(); flat.forEach(o => g.set(o.r.internal || '(Kosong)', (g.get(o.r.internal || '(Kosong)') || 0) + o.readyKg));
+    return [...g.entries()].filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 3); })();
+  const qv = gdQview(idxs);
+  const F = [];
+  F.push(['pct', 'bl', 'KESENJANGAN', R(ful) + '% terkirim vs target ' + tgt + '%',
+    'Memo yang belum terkirim ≈ ' + R(100 - ful) + '%: ' + R(pInt) + '% stok sudah siap di gudang (menunggu DO Internal), ' + R(pPpic) + '% stok belum ada (butuh produksi/PPIC).']);
+  F.push(['users', 'am', 'PENYEBAB TERBESAR', ready >= gap ? 'Dominan di sisi Internal — DO belum terbit' : 'Dominan di sisi PPIC/Produksi — stok belum ada',
+    'Stok siap yang belum di-DO ' + fmtNum(ready * sc) + ' ' + GD_UNIT + ' vs kekurangan stok ' + fmtNum(gap * sc) + ' ' + GD_UNIT + '.']);
+  F.push(['bolt', 'in', 'POTENSI TANPA PRODUKSI', R(kes) + '% fulfillment',
+    'Jika seluruh stok siap dikirim, fulfillment naik ' + R(ful) + '% → ' + R(kes) + '% (+' + R(kes - ful) + ' poin) tanpa menunggu produksi.' + (kes < tgt ? ' Sisa ' + R(tgt - kes) + ' poin ke target hanya bisa ditutup lewat produksi.' : ' Target ' + tgt + '% bisa dicapai dari stok yang ada.')]);
+  if (topInt.length) F.push(['users', 'out', 'STOK SIAP TERBANYAK MENUNGGU DO', topInt.map(x => x[0]).join(', '),
+    topInt.map(x => x[0] + ' ' + fmtNum(x[1] * sc) + ' ' + GD_UNIT).join(' · ')]);
+  if (ag.length) F.push(['flag', 'rd', 'TERTAHAN BERULANG', fmtInt(ag.length) + ' line, terlama ' + ag[0].run + ' memo berturut-turut',
+    'Stok sudah siap tapi tetap belum dikirim (' + fmtNum(ag.reduce((a, x) => a + x.kg, 0)) + ' ' + GD_UNIT + ' per ' + L[e].label + '). Lihat tab "Tertahan Berulang".']);
+  if (pc(T.gZ) >= 1) F.push(['warn', 'rd', 'MEMO ATAS BARANG KOSONG', R(pc(T.gZ)) + '% tonase memo',
+    'Stok gudang nol saat memo terbit (' + fmtNum(T.gZ * sc) + ' ' + GD_UNIT + '). Indikasi memo terbit sebelum barang diproduksi/masuk gudang.']);
+  if (qv){
+    const out = qv.qt - qv.md, op = qv.qt > 0 ? out / qv.qt * 100 : 0;
+    F.push(['truck', 'bl', 'PENGIRIMAN DI LUAR MEMO', out > 0 && op >= 1 ? fmtNum(out * sc) + ' ' + GD_UNIT + ' (' + R(op) + '% dari Qview)' : 'Selaras dengan Qview',
+      'Qview ' + fmtNum(qv.qt * sc) + ' vs DO tercatat di memo ' + fmtNum(qv.md * sc) + ' ' + GD_UNIT + '.' + (out > 0 && op >= 1 ? ' Sebagian pengiriman tidak terbaca di baris memo, sehingga fulfillment memo bisa terlihat lebih rendah.' : '')]);
+  }
+  const topItem = items.slice(0, 2).map(x => x.model).filter(Boolean).join(', ');
+  const Rk = [
+    ['INTERNAL', 'Terbitkan DO untuk ' + fmtInt(T.rLines * sc) + ' line / ' + fmtNum(ready * sc) + ' ' + GD_UNIT + ' stok siap' + (topInt.length ? ', prioritas ' + topInt[0][0] : '') + '.'],
+    ['PPIC / PRODUKSI', 'Jadwalkan produksi untuk ' + items.length + ' item (' + fmtNum(gap * sc) + ' ' + GD_UNIT + ')' + (topItem ? ', terbesar: ' + topItem : '') + '.'],
+    ['PROSES MEMO', 'Cek stok CPS sebelum memo terbit; pisahkan memo siap kirim dari memo yang butuh produksi.'],
+  ];
+  const row = (i, c, t, b, d) => '<div class="it"><div class="kic ' + c + '">' + UI_SV(UI_IC[i]) + '</div><div><div class="t">' + t + '</div><div class="b">' + escapeHtml(b) + '</div><div class="d">' + escapeHtml(d) + '</div></div></div>';
+  UI_ID('gd-ins').innerHTML = F.map(f => row(f[0], f[1], f[2], f[3], f[4])).join('') +
+    '<div class="gd-sub">REKOMENDASI</div>' + Rk.map(r => row('check', 'in', r[0], r[1], '')).join('').replace(/<div class="d"><\/div>/g, '') ;
+  setTimeout(uiResize, 30);
+}
+
+UI_ID('gd-date').addEventListener('change', e => { GD.sel = e.target.value; gdRender(); });
+UI_ID('gd-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; GD.view = b.dataset.m; gdRender(); });
+el.viewTabs.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const g = b.dataset.view === 'gudang';
+  UI_ID('gd-section').classList.toggle('hidden', !g);
+  if (g){
+    state.view = 'date';                       // AI / cetak / Excel memakai data tanggal aktif, sama seperti Overview
+    el.dateView.classList.add('hidden'); UI_ID('ov-section').classList.add('hidden');
+    if (el.cutoffBadge) el.cutoffBadge.classList.add('hidden');
+    gdRender(); setTimeout(() => { gdRender(); uiResize(); }, 80);
+  }
+});
+el.btnThemeToggle.addEventListener('click', () => gdRender());
+{ const _rg = render; render = function(){ _rg.apply(this, arguments); gdRender(); }; }
+['gd-c1', 'gd-c2', 'gd-find-card'].forEach(id => { const c = UI_ID(id), h = c && c.querySelector('h2'); if (h) addFS(h, c); });
+
+/* popup tanggal "tertahan berulang" */
+UI_ID('gd-tbl1').addEventListener('click', e => {
+  const b = e.target.closest('.gd-run[data-i]'); if (!b) return;
+  const a = GD_AGE[+b.dataset.i]; if (!a) return;
+  const r = a.o.r, L = state.dateList;
+  UI_ID('gd-run-eyebrow').textContent = 'TERTAHAN BERULANG · ' + a.run + ' memo berturut-turut';
+  UI_ID('gd-run-title').textContent = r.customer;
+  UI_ID('gd-run-body').innerHTML =
+    '<div class="muted" style="font-size:12.5px;line-height:1.6;margin-bottom:10px">' + escapeHtml(r.compModel) + '<br>MC/MCS <b>' + escapeHtml(r.mcsNum) + '</b> · SO ' + escapeHtml(r.soNum || '-') + ' · Internal <b>' + escapeHtml(r.internal) + '</b></div>' +
+    '<div style="font-size:12.5px;margin-bottom:6px">Stok sudah siap tapi belum terkirim pada tanggal memo:</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">' + a.dates.map(d => '<span class="gd-run" style="cursor:default">' + escapeHtml(L[d.i].label) + '</span>').join('') + '</div>' +
+    '<div class="rank-table-wrap"><table class="rank-table" style="min-width:0"><thead><tr><th>Tanggal memo</th><th>Sisa memo (pcs)</th><th>Stok gudang (pcs)</th><th>Stok siap (pcs)</th><th>Stok siap (' + GD_UNIT + ')</th><th>DO hari itu (pcs)</th></tr></thead><tbody>' +
+    a.dates.map(d => '<tr><td>' + escapeHtml(L[d.i].label) + '</td><td>' + fmtInt(d.x.sisa) + '</td><td>' + fmtInt(d.x.cps) + '</td><td>' + fmtInt(d.x.qty) + '</td><td>' + fmtNum(d.x.kg) + '</td><td>' + fmtInt(d.x.doQty) + '</td></tr>').join('') + '</tbody></table></div>';
+  showOverlay(UI_ID('gd-run-overlay'));
+});
+UI_ID('gd-run-close').addEventListener('click', () => hideOverlay(UI_ID('gd-run-overlay')));
+UI_ID('gd-run-overlay').addEventListener('click', e => { if (e.target === UI_ID('gd-run-overlay')) hideOverlay(UI_ID('gd-run-overlay')); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && UI_ID('gd-run-overlay').classList.contains('show')) hideOverlay(UI_ID('gd-run-overlay')); });
+
+/* tombol layar penuh untuk SEMUA grafik */
+addFS(UI_ID('gd-th'), UI_ID('gd-tbox'));
+document.querySelectorAll('#summary-section .chart-card').forEach(c => { const t = c.querySelector('.chart-card-title'); if (t){ t.style.display = 'flex'; t.style.alignItems = 'center'; addFS(t, c); } });
+(function(){ const c = document.querySelector('#qv-body > .card:nth-child(1)'); if (c){ const h = c.querySelector('h2'); if (h){ h.style.display = 'flex'; h.style.alignItems = 'center'; addFS(h, c); } } })();
+{ const _ft = fsToggle; fsToggle = function(){ _ft.apply(this, arguments); setTimeout(uiResize, 60); setTimeout(uiResize, 300); }; }
+{ const _ca = closeAllFS; closeAllFS = function(){ _ca.apply(this, arguments); setTimeout(uiResize, 60); }; }
+
+/* klik judul kolom = urutkan A–Z / Z–A */
+['gd-tbl1', 'gd-tbl2'].forEach(id => UI_ID(id).addEventListener('click', e => {
+  const th = e.target.closest('th.gd-sort'); if (!th) return;
+  const s = GD.sort[th.dataset.t], k = th.dataset.k;
+  if (s.k === k) s.d *= -1;
+  else { s.k = k; s.d = /^(name|customer|model|mcs|internal|kond)$/.test(k) ? 1 : -1; }
+  gdRender();
+}));
 
 </script>
 </body>
