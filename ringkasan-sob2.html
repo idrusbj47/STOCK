@@ -1981,14 +1981,12 @@ button.gd-run{border:0;cursor:pointer;font-family:inherit}button.gd-run:hover{fi
 .fs-on .gd-tbox{min-height:0}
 .gd-bot{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .gd-scr{flex:1;min-height:0;overflow:auto}
+th.gd-sort{cursor:pointer;user-select:none}th.gd-sort:hover{color:var(--text)}
 .gd-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
 .gd-sub{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);margin:10px 0 2px;padding-left:6px}
 .gd-run{display:inline-block;min-width:34px;text-align:center;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;background:color-mix(in srgb,var(--st-kosong) 14%,transparent);color:var(--st-kosong)}
 .gd-empty{padding:22px 10px;text-align:center;color:var(--muted);font-size:13px}
 .gd-name{font-weight:700;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#gd-section{overflow-y:auto;overflow-x:hidden}
-#gd-section .hero{min-height:340px}
-#gd-section .gd-bot{min-height:260px}
 @media(max-width:999px){.gd-tbox{flex:none}.gd-bot{display:flex;flex-direction:column}.gd-trend{flex:none;min-height:230px}.gd-top{flex-wrap:wrap}.gd-bot .card{min-height:320px}}
 /* ===== PERATAAN TABEL: judul kolom selalu sejajar dengan isinya ===== */
 table.rank-table th,table.rank-table td{text-align:right}
@@ -2000,6 +1998,11 @@ table.rank-table.qvd-table th:nth-child(10),table.rank-table.qvd-table td:nth-ch
 table.rank-table th.tl,table.rank-table td.tl{text-align:left}
 table.rank-table th.tc,table.rank-table td.tc{text-align:center}
 table.rank-table td.empty-note,table.rank-table td.gd-empty{text-align:center}
+/* canvas grafik tidak boleh ikut menentukan tinggi wadahnya (penyebab grafik hilang setelah layar penuh) */
+.chart-card .chart-canvas-wrap>canvas,.gd-trend>canvas,#qv-body .card canvas{position:absolute;left:0;top:0}
+#gd-section{overflow-y:auto;overflow-x:hidden}
+#gd-section .hero{min-height:340px}
+#gd-section .gd-bot{min-height:260px}
 </style>
 
 </head>
@@ -2088,7 +2091,7 @@ table.rank-table td.empty-note,table.rank-table td.gd-empty{text-align:center}
         <div class="scr gd-scr"><table class="rank-table" id="gd-tbl1"></table></div>
       </div>
       <div class="card" id="gd-c2">
-        <h2 class="gd-h"><span>Kebutuhan produksi ke PPIC</span><small id="gd-c2n"></small></h2>
+        <h2 class="gd-h"><span>Kebutuhan produksi</span><small id="gd-c2n"></small></h2>
         <div class="scr gd-scr"><table class="rank-table" id="gd-tbl2"></table></div>
       </div>
     </div>
@@ -4971,7 +4974,7 @@ el.rankTbody.closest('table').tHead.addEventListener('click', e => { const th = 
    Memecah tonase memo menjadi: Terkirim (DO) | Stok siap tapi belum di-DO (bola di Internal) |
    Stok belum ada (bola di PPIC/Produksi). Stok CPS yang dipakai bersama oleh beberapa baris memo
    dengan MCS + Comp yang sama dialokasikan proporsional, supaya stok tidak terhitung dobel. */
-const GD = { sel:'all', view:'int', sig:'' };
+const GD = { sel:'all', view:'int', sig:'', sort:{ int:{ k:'rdy', d:-1 }, age:{ k:'run', d:-1 }, ppic:{ k:'kg', d:-1 } } };
 const GD_UNIT = 'kg';
 
 function gdCalcDate(d){
@@ -5152,10 +5155,15 @@ function gdRender(){
     });
   }
 
-  /* Tabel 1: per Internal / tertahan berulang */
+  /* Tabel (kolom bisa diurutkan A–Z / Z–A lewat klik judul kolom) */
+  const U = GD_UNIT;
+  const arrow = (tbl, k) => { const s = GD.sort[tbl]; return s.k === k ? (s.d > 0 ? ' ▲' : ' ▼') : ''; };
+  const head = (tbl, cols) => '<thead><tr>' + cols.map(c => '<th class="gd-sort ' + (c.c || '') + '" data-t="' + tbl + '" data-k="' + c.k + '" title="Klik untuk urutkan A–Z / Z–A">' + c.l + arrow(tbl, c.k) + '</th>').join('') + '</tr></thead>';
+  const sortBy = (rows, tbl, cols) => { const s = GD.sort[tbl], col = cols.find(c => c.k === s.k) || cols[0];
+    return rows.slice().sort((a, b) => { const x = a[col.k], y = b[col.k]; return (col.s ? String(x).localeCompare(String(y), 'id', { numeric:true, sensitivity:'base' }) : (x - y)) * s.d; }); };
   const t1 = UI_ID('gd-tbl1');
   UI_ID('gd-seg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === GD.view));
-  const ag = n >= 1 ? gdAging(per, e) : [];
+  const ag = gdAging(per, e);
   if (GD.view === 'int'){
     UI_ID('gd-t1').textContent = 'Stok siap per Internal';
     const g = new Map();
@@ -5164,19 +5172,23 @@ function gdRender(){
       if (!x){ x = { name:k, M:0, D:0, rdy:0, gap:0 }; g.set(k, x); }
       x.M += o.t; x.D += o.d; x.rdy += o.readyKg; x.gap += o.gapKg;
     });
-    const rows = [...g.values()].sort((a, b) => b.rdy - a.rdy), mx = Math.max(1, ...rows.map(r => r.rdy));
-    t1.innerHTML = '<thead><tr><th>Internal</th><th>Memo (' + GD_UNIT + ')</th><th>Fulfillment</th><th>Stok siap, belum DO (' + GD_UNIT + ')</th><th>Stok belum ada (' + GD_UNIT + ')</th><th>Kesiapan</th></tr></thead><tbody>' +
-      (rows.map(r => { const f = r.M > 0 ? r.D / r.M * 100 : 0, k = r.M > 0 ? Math.min(100, (r.D + r.rdy) / r.M * 100) : 0;
-        return '<tr><td><div class="gd-name" title="' + escapeHtml(r.name) + '">' + escapeHtml(r.name) + '</div></td><td>' + fmtNum(r.M * sc) + '</td><td><span class="rank-cell ' + (f >= tgt ? 'rc-lunas' : f >= 60 ? 'rc-kurang' : 'rc-kosong') + '">' + R(f) + '%</span></td><td><span class="bar-track"><i class="bar-fill" style="width:' + (r.rdy / mx * 100) + '%;background:var(--st-siap)"></i></span>' + fmtNum(r.rdy * sc) + '</td><td>' + fmtNum(r.gap * sc) + '</td><td>' + R(k) + '%</td></tr>'; }).join('') || '<tr><td colspan="6" class="gd-empty">Tidak ada data.</td></tr>') + '</tbody>';
+    const all = [...g.values()].map(r => ({ ...r, ful: r.M > 0 ? r.D / r.M * 100 : 0, kes: r.M > 0 ? Math.min(100, (r.D + r.rdy) / r.M * 100) : 0 }));
+    const cols = [{ k:'name', l:'Internal', s:1 }, { k:'M', l:'Memo (' + U + ')' }, { k:'ful', l:'Fulfillment' }, { k:'rdy', l:'Stok siap, belum DO (' + U + ')' }, { k:'gap', l:'Stok belum ada (' + U + ')' }, { k:'kes', l:'Kesiapan' }];
+    const rows = sortBy(all, 'int', cols), mx = Math.max(1, ...all.map(r => r.rdy));
+    t1.innerHTML = head('int', cols) + '<tbody>' +
+      (rows.map(r => '<tr><td><div class="gd-name" title="' + escapeHtml(r.name) + '">' + escapeHtml(r.name) + '</div></td><td>' + fmtNum(r.M * sc) + '</td><td><span class="rank-cell ' + (r.ful >= tgt ? 'rc-lunas' : r.ful >= 60 ? 'rc-kurang' : 'rc-kosong') + '">' + R(r.ful) + '%</span></td><td><span class="bar-track"><i class="bar-fill" style="width:' + (r.rdy / mx * 100) + '%;background:var(--st-siap)"></i></span>' + fmtNum(r.rdy * sc) + '</td><td>' + fmtNum(r.gap * sc) + '</td><td>' + R(r.kes) + '%</td></tr>').join('') || '<tr><td colspan="6" class="gd-empty">Tidak ada data.</td></tr>') + '</tbody>';
   } else {
     UI_ID('gd-t1').textContent = 'Stok siap, belum dikirim berulang';
-    GD_AGE = ag.slice(0, 150);
-    t1.innerHTML = '<thead><tr><th>Customer</th><th class="tl">Model</th><th class="tl">MC / MCS</th><th class="tl">Internal</th><th class="tc">Berulang (klik)</th><th>Stok siap (' + GD_UNIT + ')</th></tr></thead><tbody>' +
-      (GD_AGE.length ? GD_AGE.map((a, ix) => '<tr><td><div class="gd-name" title="' + escapeHtml(a.o.r.customer) + '">' + escapeHtml(a.o.r.customer) + '</div></td><td class="tl">' + escapeHtml(a.o.r.compModel) + '</td><td class="tl">' + escapeHtml(a.o.r.mcsNum) + '</td><td class="tl">' + escapeHtml(a.o.r.internal) + '</td><td class="tc"><button type="button" class="gd-run" data-i="' + ix + '" title="Klik untuk melihat tanggal memo-nya">' + a.run + '×</button></td><td>' + fmtNum(a.kg) + '</td></tr>').join('')
+    const all = ag.map(a => ({ a, customer:a.o.r.customer, model:a.o.r.compModel, mcs:a.o.r.mcsNum, internal:a.o.r.internal, run:a.run, kg:a.kg }));
+    const cols = [{ k:'customer', l:'Customer', s:1 }, { k:'model', l:'Model', s:1, c:'tl' }, { k:'mcs', l:'MC / MCS', s:1, c:'tl' }, { k:'internal', l:'Internal', s:1, c:'tl' }, { k:'run', l:'Berulang (klik angka)', c:'tc' }, { k:'kg', l:'Stok siap (' + U + ')' }];
+    const rows = sortBy(all, 'age', cols).slice(0, 150);
+    GD_AGE = rows.map(x => x.a);
+    t1.innerHTML = head('age', cols) + '<tbody>' +
+      (rows.length ? rows.map((x, ix) => '<tr><td><div class="gd-name" title="' + escapeHtml(x.customer) + '">' + escapeHtml(x.customer) + '</div></td><td class="tl">' + escapeHtml(x.model) + '</td><td class="tl">' + escapeHtml(x.mcs) + '</td><td class="tl">' + escapeHtml(x.internal) + '</td><td class="tc"><button type="button" class="gd-run" data-i="' + ix + '" title="Klik untuk melihat tanggal memo-nya">' + x.run + '×</button></td><td>' + fmtNum(x.kg) + '</td></tr>').join('')
         : '<tr><td colspan="6" class="gd-empty">Belum ada line yang stoknya siap tapi tetap belum dikirim di ≥ 2 memo berturut-turut (sampai ' + escapeHtml(L[e].label) + ').</td></tr>') + '</tbody>';
   }
 
-  /* Tabel 2: kebutuhan produksi ke PPIC (per item MCS + Comp) */
+  /* Tabel kebutuhan produksi (per item MCS + Comp) */
   const it = new Map();
   flat.forEach(o => {
     if (!(o.gapQty >= 0.5)) return;
@@ -5186,8 +5198,10 @@ function gdRender(){
   });
   const items = [...it.values()].sort((a, b) => b.kg - a.kg);
   UI_ID('gd-c2n').textContent = items.length + ' item' + (n > 1 ? ' · rata-rata per tanggal' : '');
-  UI_ID('gd-tbl2').innerHTML = '<thead><tr><th>Model / Comp</th><th class="tl">MC / MCS</th><th>Kurang (pcs)</th><th>Kurang (' + GD_UNIT + ')</th><th>Customer</th><th>Stok gudang (pcs)</th><th class="tc">Kondisi</th></tr></thead><tbody>' +
-    (items.slice(0, 200).map(x => '<tr><td><div class="gd-name" title="' + escapeHtml(x.model) + '">' + escapeHtml(x.model) + '</div></td><td class="tl">' + escapeHtml(x.mcs) + '</td><td>' + fmtInt(x.qty * sc) + '</td><td>' + fmtNum(x.kg * sc) + '</td><td>' + x.cust.size + '</td><td>' + fmtInt(x.cps) + '</td><td class="tc"><span class="status-badge ' + (x.cps > 0 ? 'sb-kurang' : 'sb-kosong') + '">' + (x.cps > 0 ? 'Kurang' : 'Kosong') + '</span></td></tr>').join('')
+  const pcols = [{ k:'model', l:'Model / Comp', s:1 }, { k:'mcs', l:'MC / MCS', s:1, c:'tl' }, { k:'qty', l:'Kurang (pcs)' }, { k:'kg', l:'Kurang (' + U + ')' }, { k:'custN', l:'Customer' }, { k:'cps', l:'Stok gudang (pcs)' }, { k:'kond', l:'Kondisi', s:1, c:'tc' }];
+  const prow = sortBy(items.map(x => ({ ...x, custN:x.cust.size, kond:x.cps > 0 ? 'Kurang' : 'Kosong' })), 'ppic', pcols).slice(0, 200);
+  UI_ID('gd-tbl2').innerHTML = head('ppic', pcols) + '<tbody>' +
+    (prow.map(x => '<tr><td><div class="gd-name" title="' + escapeHtml(x.model) + '">' + escapeHtml(x.model) + '</div></td><td class="tl">' + escapeHtml(x.mcs) + '</td><td>' + fmtInt(x.qty * sc) + '</td><td>' + fmtNum(x.kg * sc) + '</td><td>' + x.custN + '</td><td>' + fmtInt(x.cps) + '</td><td class="tc"><span class="status-badge ' + (x.cps > 0 ? 'sb-kurang' : 'sb-kosong') + '">' + x.kond + '</span></td></tr>').join('')
       || '<tr><td colspan="7" class="gd-empty">Tidak ada kebutuhan produksi pada periode ini.</td></tr>') + '</tbody>';
 
   /* Temuan & rekomendasi (berbasis aturan dari data yang sama) */
@@ -5220,8 +5234,7 @@ function gdRender(){
   ];
   const row = (i, c, t, b, d) => '<div class="it"><div class="kic ' + c + '">' + UI_SV(UI_IC[i]) + '</div><div><div class="t">' + t + '</div><div class="b">' + escapeHtml(b) + '</div><div class="d">' + escapeHtml(d) + '</div></div></div>';
   UI_ID('gd-ins').innerHTML = F.map(f => row(f[0], f[1], f[2], f[3], f[4])).join('') +
-    '<div class="gd-sub">REKOMENDASI</div>' + Rk.map(r => row('check', 'in', r[0], r[1], '')).join('').replace(/<div class="d"><\/div>/g, '') +
-    '<div class="gd-note">Catatan metode: DO dihitung pada tanggal memo yang sama; stok CPS = snapshot tanggal memo; stok yang dipakai beberapa baris memo (MCS + Comp sama) dialokasikan proporsional. Angka ini indikatif — lead time DO dan jam keluar gudang belum ada di data.</div>';
+    '<div class="gd-sub">REKOMENDASI</div>' + Rk.map(r => row('check', 'in', r[0], r[1], '')).join('').replace(/<div class="d"><\/div>/g, '') ;
   setTimeout(uiResize, 30);
 }
 
@@ -5267,6 +5280,15 @@ document.querySelectorAll('#summary-section .chart-card').forEach(c => { const t
 (function(){ const c = document.querySelector('#qv-body > .card:nth-child(1)'); if (c){ const h = c.querySelector('h2'); if (h){ h.style.display = 'flex'; h.style.alignItems = 'center'; addFS(h, c); } } })();
 { const _ft = fsToggle; fsToggle = function(){ _ft.apply(this, arguments); setTimeout(uiResize, 60); setTimeout(uiResize, 300); }; }
 { const _ca = closeAllFS; closeAllFS = function(){ _ca.apply(this, arguments); setTimeout(uiResize, 60); }; }
+
+/* klik judul kolom = urutkan A–Z / Z–A */
+['gd-tbl1', 'gd-tbl2'].forEach(id => UI_ID(id).addEventListener('click', e => {
+  const th = e.target.closest('th.gd-sort'); if (!th) return;
+  const s = GD.sort[th.dataset.t], k = th.dataset.k;
+  if (s.k === k) s.d *= -1;
+  else { s.k = k; s.d = /^(name|customer|model|mcs|internal|kond)$/.test(k) ? 1 : -1; }
+  gdRender();
+}));
 
 </script>
 </body>
