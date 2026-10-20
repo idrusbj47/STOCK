@@ -2079,6 +2079,58 @@ body.fs-open{overflow:hidden}
   .mvg .chart-card.tbl{max-height:420px}
   .sum-filter .sf-seg{width:100%;overflow-x:auto}
 }
+
+/* ===== PERGERAKAN: tampilan ringkas (kartu + peringkat) ===== */
+.mvk{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.mvh{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.mvr{display:grid;grid-template-columns:1.2fr 1fr;gap:12px;align-items:start}
+.mvq{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.mvkk{position:relative;overflow:hidden;padding:14px 16px 13px}
+.mvkk::after{content:"";position:absolute;top:-30px;right:-24px;width:92px;height:92px;border-radius:50%;background:color-mix(in srgb,var(--c) 18%,transparent)}
+.mvkk .l{font:700 12.5px var(--font-body);color:var(--muted);position:relative;z-index:1}
+.mvkk .v{font:800 clamp(26px,2.6vw,34px)/1.15 var(--font-body);letter-spacing:-.02em;margin:4px 0 2px;position:relative;z-index:1}
+.mvkk .n{font-size:12px;color:var(--muted);position:relative;z-index:1}
+.mvhh{display:flex;flex-direction:row;align-items:center;gap:12px;padding:12px 14px;min-width:0}
+.mvhi-ic{flex:none;width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--c) 18%,transparent)}
+.mvhi-ic svg{width:21px;height:21px;stroke:var(--c)}
+.mvhi-t{min-width:0}.mvhi-l{font:700 11px var(--font-body);color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.mvhi-v{font:800 18px/1.25 var(--font-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mvhi-n{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mvc{position:relative;overflow:hidden;padding:18px 18px 16px;margin:0}
+.mvc::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--ac,var(--border))}
+.mvc-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.mvc-t{font:700 16px var(--font-body);color:var(--text)}.mvc-s{font-size:12px;color:var(--muted);margin:2px 0 10px}
+.mvt{display:flex;align-items:flex-end;gap:6px;height:230px;padding-top:6px;border-bottom:1px solid var(--border);background-image:linear-gradient(to top,var(--grid) 1px,transparent 1px);background-size:100% 25%}
+.mvb{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:0;border:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mvs{display:flex;flex-direction:column;width:100%;border-radius:8px 8px 0 0;overflow:hidden;transition:height .4s cubic-bezier(.32,.72,0,1),opacity .2s,filter .15s}
+.mvs.z{background:var(--border)}
+.mvy{background:linear-gradient(#fb7185,#e11d48)}.mvn{background:linear-gradient(#fcd34d,#f59e0b)}
+.mvb:hover .mvs{filter:brightness(1.07)}.mvb:focus-visible{outline:2px solid var(--text);outline-offset:2px;border-radius:6px}
+.mvt.hs .mvb:not(.sel) .mvs{opacity:.4}
+.mvb.sel .mvs{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--text)}
+.mvx{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);padding:7px 2px 0}
+.mvd{margin-top:10px;font-size:13px;color:var(--text)}
+.mvd.on{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;background:var(--surface-2);border-radius:10px;padding:9px 12px}
+.mvd.on span{color:var(--muted)}.mvd .btn{margin-left:auto}
+.mvlg{display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--muted)}.mvlg i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px}
+.mvli{display:grid;grid-template-columns:26px 1fr auto;column-gap:10px;row-gap:5px;align-items:start;padding:7px 0}
+.mvrk{width:24px;height:24px;border-radius:50%;background:var(--surface-2);color:var(--muted);font:700 11px var(--font-body);display:flex;align-items:center;justify-content:center;margin-top:1px}
+.mvrk.g{background:#d4b062;color:#fff}
+.mvrn{min-width:0;font-size:13.5px;line-height:1.3}.mvrn b{font-weight:800}
+.mvrs{font-size:12px;color:var(--muted);line-height:1.35;margin-top:1px}
+.mvrc{font-size:15px;white-space:nowrap;text-align:right}.mvrc b{font-weight:800}.mvrc small{color:var(--muted);margin-left:2px}
+.mvrb{grid-column:2/4;height:6px;border-radius:4px;background:var(--surface-2);overflow:hidden}.mvrb i{display:block;height:100%;border-radius:4px;transition:width .5s cubic-bezier(.32,.72,0,1)}
+.mvbd{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:999px;font:800 9.5px/1.5 var(--font-body);color:#fff;letter-spacing:.03em;vertical-align:middle}
+.mvbd.mn{background:#f59e0b}.mvbd.my{background:#e11d48}
+.mvdn{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.mvdn-c{position:relative;width:170px;height:170px;flex:none}
+.mvdn-m{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.mvdn-m b{font:800 28px/1 var(--font-body)}.mvdn-m small{font-size:12px;color:var(--muted);margin-top:3px}
+.mvdn-l{flex:1;min-width:190px}
+.mvdl{display:grid;grid-template-columns:12px 1fr auto 42px;gap:8px;align-items:center;padding:5px 0;font-size:13px}
+.mvdl i{width:11px;height:11px;border-radius:3px}.mvdl b{font-weight:800}.mvdl em{font-style:normal;color:var(--muted);text-align:right}
+@media(max-width:999px){.mvk{grid-template-columns:1fr 1fr}.mvh,.mvr,.mvq{grid-template-columns:1fr}.mvt{height:190px}.mvdn{justify-content:center}}
+@media(prefers-reduced-motion:reduce){.mvs,.mvrb i{transition:none}}
 </style>
 </head>
 <body>
@@ -2133,23 +2185,38 @@ body.fs-open{overflow:hidden}
       <label class="qview-field">Periode akhir<select id="mv-to"></select></label>
       <span class="sum-filter-info" id="mv-info"></span>
     </div>
-    <div class="mk mk5" id="mv-kpi"></div>
+    <div class="mvk" id="mv-kpi"></div>
+    <div class="mvh" id="mv-hi"></div>
+
+    <div class="card mvc" id="mc-mv1" style="--ac:#f59e0b">
+      <div class="mvc-t">Tren Temuan</div><p class="mvc-s" id="mv1-s"></p>
+      <div class="mvt" id="mv-bars"></div>
+      <div class="mvx" id="mv-bx"></div>
+      <div class="mvd" id="mv-bd"></div>
+      <div class="mvlg"><span><i style="background:#f59e0b"></i>Minor</span><span><i style="background:#e11d48"></i>Mayor</span></div>
+    </div>
+
+    <div class="mvr">
+      <div class="card mvc" id="mc-mv4" style="--ac:#6366f1">
+        <div class="mvc-hd"><div><div class="mvc-t">Kode Temuan Terbanyak</div><p class="mvc-s" id="mv4-s"></p></div>
+          <div class="sf-seg" id="mv-kode-seg"><button data-k="all" class="on">Semua</button><button data-k="MAYOR">Mayor</button><button data-k="MINOR">Minor</button></div></div>
+        <div id="mv-kode"></div>
+      </div>
+      <div class="card mvc" id="mc-mv7" style="--ac:#10b981">
+        <div class="mvc-t" id="mv7-t">Sebaran Kategori</div><p class="mvc-s" id="mv7-s"></p>
+        <div class="mvdn"><div class="mvdn-c"><canvas id="ch-mv7"></canvas><div class="mvdn-m" id="mv7-c"></div></div><div class="mvdn-l" id="mv7-l"></div></div>
+      </div>
+    </div>
+
+    <div class="mvq">
+      <div class="card mvc" style="--ac:#0ea5a4"><div class="mvc-t">Zona Terbanyak</div><p class="mvc-s">Top 8 zona dengan temuan terbanyak</p><div id="mv-zona"></div></div>
+      <div class="card mvc" style="--ac:#f59e0b"><div class="mvc-t">Area Gudang Terbanyak</div><p class="mvc-s">Top 8 area dengan temuan terbanyak</p><div id="mv-area"></div></div>
+      <div class="card mvc" style="--ac:#8b5cf6"><div class="mvc-t">Penanggung Jawab</div><p class="mvc-s">Top 5 penjaga area dengan temuan terbanyak</p><div id="mv-pj"></div></div>
+      <div class="card mvc" style="--ac:#f43f5e"><div class="mvc-t">Kepala Regu / Karu</div><p class="mvc-s">Top 5 karu dengan temuan terbanyak</p><div id="mv-karu"></div></div>
+    </div>
+
     <div class="mvg">
-<div class="chart-card wide" id="mc-mv1"><div class="chd"><div><div class="chart-card-title" id="mv1-t">Temuan per Bulan</div><p class="chart-card-sub" id="mv1-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv1"></canvas></div></div>
-<div class="chart-card" id="mc-mv2"><div class="chd"><div><div class="chart-card-title" id="mv2-t">Porsi Mayor per Bulan</div><p class="chart-card-sub" id="mv2-s">Persentase temuan mayor terhadap total bulan tersebut</p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv2"></canvas></div></div>
-<div class="chart-card" id="mc-mv5"><div class="chd"><div><div class="chart-card-title" id="mv5-t">Akumulasi Temuan</div><p class="chart-card-sub" id="mv5-s">Total temuan berjalan (kumulatif) sejak awal rentang</p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv5"></canvas></div></div>
-<div class="chart-card wide" id="mc-mv6"><div class="chd"><div><div class="chart-card-title" id="mv6-t">Tren Zona Teratas</div><p class="chart-card-sub" id="mv6-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv6"></canvas></div></div>
-<div class="chart-card" id="mc-mv8"><div class="chd"><div><div class="chart-card-title" id="mv8-t">Zona Terbanyak</div><p class="chart-card-sub" id="mv8-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv8"></canvas></div></div>
-<div class="chart-card" id="mc-mv3"><div class="chd"><div><div class="chart-card-title" id="mv3-t">Perubahan Temuan per Zona</div><p class="chart-card-sub" id="mv3-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv3"></canvas></div></div>
-<div class="chart-card" id="mc-mv4"><div class="chd"><div><div class="chart-card-title" id="mv4-t">Kode Temuan Terbanyak</div><p class="chart-card-sub" id="mv4-s"></p></div><div class="chtools"><div class="sf-seg" id="mv-kode-seg"><button data-k="all" class="on">Semua</button><button data-k="MAYOR">Mayor</button><button data-k="MINOR">Minor</button></div><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv4"></canvas></div></div>
-<div class="chart-card" id="mc-mv7"><div class="chd"><div><div class="chart-card-title" id="mv7-t">Sebaran Kategori</div><p class="chart-card-sub" id="mv7-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv7"></canvas></div></div>
-<div class="chart-card" id="mc-mv9"><div class="chd"><div><div class="chart-card-title" id="mv9-t">Area Terbanyak</div><p class="chart-card-sub" id="mv9-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv9"></canvas></div></div>
-<div class="chart-card" id="mc-mv10"><div class="chd"><div><div class="chart-card-title" id="mv10-t">Temuan per Hari</div><p class="chart-card-sub" id="mv10-s">Hari pemeriksaan dengan temuan terbanyak (Senin – Minggu)</p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv10"></canvas></div></div>
-<div class="chart-card" id="mc-mv11"><div class="chd"><div><div class="chart-card-title" id="mv11-t">Penanggung Jawab</div><p class="chart-card-sub" id="mv11-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv11"></canvas></div></div>
-<div class="chart-card" id="mc-mv12"><div class="chd"><div><div class="chart-card-title" id="mv12-t">Kepala Regu / Karu</div><p class="chart-card-sub" id="mv12-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="chart-canvas-wrap"><canvas id="ch-mv12"></canvas></div></div>
 <div class="chart-card tbl wide" id="mc-hm"><div class="chd"><div><div class="chart-card-title">Peta Zona × Bulan</div><p class="chart-card-sub" id="mv-hm-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="scr rank-table-wrap" id="mv-hm"></div></div>
-<div class="chart-card tbl" id="mc-t1"><div class="chd"><div><div class="chart-card-title">Ringkasan per Periode</div><p class="chart-card-sub" id="mv-t1-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="scr rank-table-wrap"><table class="rank-table"><thead><tr><th>Periode</th><th>Temuan</th><th>Δ</th><th>Mayor</th><th>Minor</th><th>% Mayor</th><th>Total Poin</th><th>Zona</th></tr></thead><tbody id="mv-tbody1"></tbody><tfoot id="mv-tfoot1"></tfoot></table></div></div>
-<div class="chart-card tbl" id="mc-t2"><div class="chd"><div><div class="chart-card-title">Perubahan per Zona</div><p class="chart-card-sub" id="mv-t2-s"></p></div><div class="chtools"><button class="btn fsb" data-fs title="Layar penuh" aria-label="Layar penuh"><svg class="i ic-exp" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><svg class="i ic-cmp" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg></button></div></div><div class="scr rank-table-wrap"><table class="rank-table"><thead id="mv-thead2"></thead><tbody id="mv-tbody2"></tbody></table></div></div>
     </div>
   </div>
 
@@ -2318,80 +2385,61 @@ function renderMove(){const Ps=state.periods,opts=Ps.map((p,i)=>`<option value="
   const MS=ms.map(k=>{const p=pm.get(k),rows=p?p.rows:[];return{key:k,name:perName(k),short:BLN[+k.slice(5)-1]+(multi?' '+k.slice(2,4):''),rows,s:sum(rows)};});
   const nm=MS.length,all=MS.flatMap(m=>m.rows),T=sum(all),f=MS[0].s,l=MS[nm-1].s,pk=MS.reduce((x,y)=>y.s.n>x.s.n?y:x,MS[0]),lb=MS.map(m=>m.short);
   $('mv-info').textContent=(state.mvPreset==='ytd'?'Tahun berjalan '+ms[nm-1].slice(0,4)+' · ':'')+nm+' bulan · '+perName(ms[0])+' – '+perName(ms[nm-1]);
-  $('mv-kpi').innerHTML=kpi(I.all,'bl','Total Temuan',f0(T.n)+'<small>temuan</small>',nm+' bulan · '+f0(T.zona)+' zona')
-    +kpi(I.pts,'out','Rata-rata / Bulan',(T.n/nm).toFixed(1),'Tertinggi: '+pk.name+' ('+pk.s.n+')')
-    +kpi(I.warn,'rd','Total Mayor',f0(T.my),pct(T.my,T.n)+'% dari total')
-    +kpi(I.pts,l.n>f.n?'rd':'in','Perubahan',sgn(l.n-f.n),MS[0].short+' → '+MS[nm-1].short)
-    +kpi(I.minor,'am','Total Poin',f0(T.poin),'Minor '+f0(T.mn)+' · '+pct(T.mn,T.n)+'%');
-  const hb=(id,G,aft)=>mk(id,{type:'bar',dl:'bar',data:{labels:G.map(g=>cut(g.name,26)),datasets:[{label:'Mayor',data:G.map(g=>g.my),backgroundColor:cv('--st-kosong')},{label:'Minor',data:G.map(g=>g.mn),backgroundColor:cv('--st-kurang')}]},
-    options:{indexAxis:'y',plugins:{tooltip:{callbacks:{title:it=>G[it[0].dataIndex].name,afterTitle:it=>aft?aft(G[it[0].dataIndex]):''}}},scales:{x:ax(1),y:Object.assign(ax(1,false),{ticks:{color:cv('--muted'),autoSkip:false}})}}});
-  /* 1. tren per bulan */
-  $('mv1-s').textContent='Mayor & minor (batang), total poin (garis) · '+nm+' bulan';
-  mk('ch-mv1',{type:'bar',dl:'bar',data:{labels:lb,datasets:[{type:'bar',label:'Mayor',data:MS.map(m=>m.s.my),backgroundColor:cv('--st-kosong'),stack:'a'},{type:'bar',label:'Minor',data:MS.map(m=>m.s.mn),backgroundColor:cv('--st-kurang'),stack:'a'},{type:'line',label:'Total poin',data:MS.map(m=>m.s.poin),borderColor:cv('--primary'),backgroundColor:cv('--primary'),yAxisID:'y1',tension:.3,datalabels:{color:cv('--primary'),anchor:'end',align:'top'}}]},
-    options:{scales:{x:ax(1,false),y:ax(1),y1:{position:'right',grid:{display:false},ticks:{color:cv('--muted')}}}}});
-  /* 2. porsi mayor */
-  mk('ch-mv2',{type:'line',dl:'line',data:{labels:lb,datasets:[{label:'% Mayor',data:MS.map(m=>m.s.n?pct(m.s.my,m.s.n):null),borderColor:cv('--st-kosong'),backgroundColor:cv('--st-kosong'),tension:.3,spanGaps:true,datalabels:{formatter:v=>v+'%'}}]},
-    options:{plugins:{legend:{display:false}},scales:{x:ax(0,false),y:Object.assign(ax(),{min:0,max:100})}}});
-  /* 3. akumulasi */
-  let c1=0,c2=0;const cu=MS.map(m=>{c1+=m.s.n;c2+=m.s.my;return[c1,c2];});
-  mk('ch-mv5',{type:'line',dl:'line',data:{labels:lb,datasets:[{label:'Total temuan',data:cu.map(x=>x[0]),borderColor:cv('--st-siap'),backgroundColor:rgba(cv('--st-siap'),.14),fill:true,tension:.25},{label:'Mayor',data:cu.map(x=>x[1]),borderColor:cv('--st-kosong'),backgroundColor:cv('--st-kosong'),tension:.25}]},
-    options:{scales:{x:ax(0,false),y:ax()}}});
-  /* 4. tren 5 zona teratas */
-  const zAll=group(all,'zona').sort((a,b)=>b.n-a.n||b.my-a.my),z5=zAll.slice(0,5);
-  $('mv6-s').textContent='Jumlah temuan per bulan untuk '+z5.length+' zona dengan temuan terbanyak';
-  mk('ch-mv6',{type:'line',dl:'line',data:{labels:lb,datasets:z5.map((z,i)=>({label:z.name,data:MS.map(m=>m.rows.filter(r=>r.zona===z.name).length),borderColor:PAL[i],backgroundColor:PAL[i],tension:.3,pointRadius:3}))},
-    options:{scales:{x:ax(0,false),y:Object.assign(ax(),{beginAtZero:true,ticks:{color:cv('--muted'),precision:0}})}}});
-  /* 5. zona terbanyak (total rentang) */
-  $('mv8-s').textContent='Top '+Math.min(10,zAll.length)+' dari '+zAll.length+' zona · mayor & minor';
-  hb('ch-mv8',zAll.slice(0,10));
-  /* 6. perubahan per zona awal -> akhir */
-  const ga=new Map(group(MS[0].rows,'zona').map(g=>[g.name,g])),gb=new Map(group(MS[nm-1].rows,'zona').map(g=>[g.name,g])),
-    zs=[...new Set([...ga.keys(),...gb.keys()])].map(z=>({z,a:(ga.get(z)||{n:0}).n,b:(gb.get(z)||{n:0}).n,my:(gb.get(z)||{my:0}).my})).map(o=>Object.assign(o,{d:o.b-o.a})).sort((x,y)=>Math.abs(y.d)-Math.abs(x.d)||y.b-x.b),
-    z10=zs.filter(o=>o.d).slice(0,10);
-  $('mv3-s').textContent='Selisih jumlah temuan '+MS[nm-1].name+' dibanding '+MS[0].name;
-  mk('ch-mv3',{type:'bar',dl:'bar',data:{labels:z10.map(o=>cut(o.z,26)),datasets:[{label:'Δ temuan',data:z10.map(o=>o.d),backgroundColor:z10.map(o=>o.d>0?cv('--st-kosong'):cv('--st-lunas'))}]},
-    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:ax(),y:Object.assign(ax(0,false),{ticks:{color:cv('--muted'),autoSkip:false}})}}});
-  /* 7. kode terbanyak (tab semua / mayor / minor) */
-  const KL=state.mvKode,rk=KL==='all'?all:all.filter(r=>r.kl===KL),k10=group(rk,'kode').sort((x,y)=>y.n-x.n||y.my-x.my).slice(0,10),ura=new Map();
-  all.forEach(r=>{if(r.uraian&&!ura.has(r.kode))ura.set(r.kode,r.uraian);});
-  $('mv4-s').textContent='Top 10 kode · '+(KL==='all'?'semua level':KL.toLowerCase())+' (arahkan kursor untuk uraian)';
-  hb('ch-mv4',k10,g=>wrapTxt(ura.get(g.name),48));
-  /* 8. sebaran kategori (atau area bila master kode belum tersedia) */
+  const fl=n=>f0(n).replace('-','\u2212'),sl=m=>BLN[+m.key.slice(5)-1]+' '+m.key.slice(2,4);
+  const dates=new Set(all.map(r=>r.tgl)).size;
+  const zAll=group(all,'zona').sort((a,b)=>b.n-a.n||b.my-a.my),aG=group(all,'area').sort((a,b)=>b.n-a.n||b.my-a.my),pG=group(all,'pj').sort((a,b)=>b.n-a.n||b.my-a.my),kG=group(all,'karu').sort((a,b)=>b.n-a.n||b.my-a.my),kAll=group(all,'kode');
+  const ura=new Map(),zAr=new Map();
+  all.forEach(r=>{if(r.uraian&&!ura.has(r.kode))ura.set(r.kode,r.uraian);let m=zAr.get(r.zona);if(!m)zAr.set(r.zona,m=new Map());m.set(r.area,(m.get(r.area)||0)+1);});
+  const zArea=z=>{const m=zAr.get(z);if(!m)return'';return[...m].sort((a,b)=>b[1]-a[1])[0][0];};
+  /* kartu ringkas */
+  const kc=(c,l,v,n)=>`<div class="card mvkk" style="--c:${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
+  $('mv-kpi').innerHTML=kc('#8b7df0','Total Temuan',f0(T.n),'\u2248 '+(dates?(T.n/dates).toFixed(1):'0')+' per hari input')+kc('#f43f5e','Mayor',f0(T.my),pct(T.my,T.n)+'% dari total')+kc('#f59e0b','Minor',f0(T.mn),pct(T.mn,T.n)+'% dari total')+kc('#0ea5a4','Total Poin',fl(T.poin),'akumulasi pengurangan');
+  const tK=[...kAll].sort((a,b)=>b.n-a.n||b.my-a.my)[0],tZ=zAll[0],tD=group(all,'tgl').sort((a,b)=>b.n-a.n||b.my-a.my)[0];
+  const hc=(c,ic,l,v,n)=>`<div class="card mvhh" style="--c:${c}"><div class="mvhi-ic">${ic}</div><div class="mvhi-t"><div class="mvhi-l">${l}</div><div class="mvhi-v">${esc(v)}</div><div class="mvhi-n">${n}</div></div></div>`;
+  const dLbl=t=>t?(+t.slice(8))+' '+BLN[+t.slice(5,7)-1]:'\u2013';
+  $('mv-hi').innerHTML=hc('#6366f1',IC('<path d="M12 19V5M5 12l7-7 7 7"/>'),'Kode terbanyak',tK?tK.name:'\u2013',tK?tK.n+'\u00d7 \u00b7 '+esc(ura.get(tK.name)||''):'')
+    +hc('#0ea5a4',I.pin,'Zona terbanyak',tZ?tZ.name:'\u2013',tZ?tZ.n+'\u00d7 \u00b7 '+esc(zArea(tZ.name)):'')
+    +hc('#f59e0b',IC('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'),'Hari tersibuk',dLbl(tD&&tD.name),tD?tD.n+' temuan \u00b7 '+tD.my+' mayor':'');
+  /* tren per bulan (ketuk batang untuk rincian) */
+  const mxN=Math.max(1,...MS.map(m=>m.s.n));
+  $('mv1-s').textContent='Per bulan \u00b7 puncak '+pk.s.n+' temuan';
+  $('mv-bars').className='mvt'+(state.mvSel&&MS.some(m=>m.key===state.mvSel)?' hs':'');
+  $('mv-bars').innerHTML=MS.map(m=>`<button class="mvb${state.mvSel===m.key?' sel':''}" data-m="${m.key}" title="${esc(m.name)}: ${m.s.n} temuan (${m.s.my} mayor \u00b7 ${m.s.mn} minor)" aria-label="${esc(m.name)}: ${m.s.n} temuan"><span class="mvs${m.s.n?'':' z'}" style="height:${m.s.n?Math.max(m.s.n/mxN*100,2):.8}%"><span class="mvy" style="flex:${m.s.my}"></span><span class="mvn" style="flex:${m.s.mn}"></span></span></button>`).join('');
+  const xi=[...new Set([0,Math.floor((nm-1)/2),nm-1])];
+  $('mv-bx').innerHTML=xi.map(i=>`<span>${sl(MS[i])}</span>`).join('');
+  const sel=MS.find(m=>m.key===state.mvSel),bd=$('mv-bd');
+  if(sel){const tk=group(sel.rows,'kode').sort((x,y)=>y.n-x.n).slice(0,3).map(g=>g.name+' '+g.n+'\u00d7').join(', '),hasP=state.periods.some(p=>p.key===sel.key);
+    bd.className='mvd on';bd.innerHTML=`<b>${esc(sel.name)}</b><span>${sel.s.n} temuan</span><span>${sel.s.my} mayor \u00b7 ${sel.s.mn} minor</span><span>poin ${fl(sel.s.poin)}</span>${tk?`<span>kode teratas: ${esc(tk)}</span>`:''}${hasP?`<button class="btn sm2" data-open="${sel.key}">Buka rincian</button>`:''}`;}
+  else{bd.className='mvd';bd.textContent='Ketuk batang untuk melihat rincian.';}
+  /* daftar peringkat */
+  const RL=(G,col,nameH,subH)=>{const mx=Math.max(1,...G.map(g=>g.n));return G.length?G.map((g,i)=>`<div class="mvli"><span class="mvrk${i?'':' g'}">${i+1}</span><div class="mvrn">${nameH(g)}<div class="mvrs">${subH(g)}</div></div><div class="mvrc"><b>${g.n}</b><small>\u00d7</small></div><div class="mvrb"><i style="width:${pct(g.n,mx)}%;background:${col}"></i></div></div>`).join(''):'<div class="empty-note">Belum ada data</div>';};
+  const KL=state.mvKode,rk=KL==='all'?all:all.filter(r=>r.kl===KL),k8=group(rk,'kode').sort((x,y)=>y.n-x.n||y.my-x.my).slice(0,8),kg=new Map(kAll.map(g=>[g.name,g]));
+  $('mv4-s').textContent='Top '+k8.length+' kode yang paling sering ditemukan';
+  $('mv-kode').innerHTML=RL(k8,'#6366f1',g=>{const a=kg.get(g.name),mj=a&&a.my>a.mn;return`<b>${esc(g.name)}</b><span class="mvbd ${mj?'my':'mn'}">${mj?'MAYOR':'MINOR'}</span>`;},g=>esc(ura.get(g.name)||''));
+  const mm=g=>g.my+' mayor \u00b7 '+g.mn+' minor',nb=g=>`<b>${esc(g.name)}</b>`;
+  $('mv-zona').innerHTML=RL(zAll.slice(0,8),'#0ea5a4',nb,g=>esc(zArea(g.name)));
+  $('mv-area').innerHTML=RL(aG.slice(0,8),'#f59e0b',nb,mm);
+  $('mv-pj').innerHTML=RL(pG.slice(0,5),'#8b5cf6',nb,mm);
+  $('mv-karu').innerHTML=RL(kG.slice(0,5),'#f43f5e',nb,mm);
+  /* sebaran kategori (atau area bila master kode belum tersedia) */
   let dn=[],dTitle,dSub;
   if(state.kat&&state.kat.size){const m=new Map();all.forEach(r=>{const k=state.kat.get(r.kode)||'Tanpa kategori';m.set(k,(m.get(k)||0)+1);});
     dn=[...m].map(([name,n])=>({name,n})).sort((a,b)=>b.n-a.n);dTitle='Sebaran Kategori';dSub='Proporsi temuan per kategori 5R5S';}
-  else{dn=group(all,'area').sort((a,b)=>b.n-a.n).map(g=>({name:g.name,n:g.n}));dTitle='Sebaran per Area';dSub='Kategori kode belum tersedia — menampilkan sebaran area';}
+  else{dn=aG.map(g=>({name:g.name,n:g.n}));dTitle='Sebaran per Area';dSub='Kategori kode belum tersedia \u2014 menampilkan sebaran area';}
   if(dn.length>7){const rest=dn.slice(6).reduce((s,x)=>s+x.n,0);dn=dn.slice(0,6).concat([{name:'Lainnya',n:rest}]);}
   $('mv7-t').textContent=dTitle;$('mv7-s').textContent=dSub;
-  let ci=0;const dcol=dn.map(d=>(d.name==='Tanpa kategori'||d.name==='Lainnya')?GRAY:PAL[ci++%PAL.length]);
-  mk('ch-mv7',{type:'doughnut',dl:'donut',data:{labels:dn.map(d=>d.name),datasets:[{data:dn.map(d=>d.n),backgroundColor:dcol,borderColor:cv('--surface'),borderWidth:2}]},
-    options:{cutout:'58%',plugins:{legend:{position:'right',labels:{color:cv('--muted'),boxWidth:10,font:{size:12}}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((x,y)=>x+y,0);return' '+c.label+': '+c.raw+' ('+pct(c.raw,t)+'%)';}}}}}});
-  /* 9. area, 10. hari, 11. PJ, 12. karu */
-  const aG=group(all,'area').sort((a,b)=>b.n-a.n||b.my-a.my);
-  $('mv9-s').textContent='Top '+Math.min(10,aG.length)+' dari '+aG.length+' area · mayor & minor';
-  hb('ch-mv9',aG.slice(0,10));
-  const hw=HRN.map(()=>({my:0,mn:0}));
-  all.forEach(r=>{const d=new Date(r.tgl+'T00:00:00');if(isNaN(d))return;const i=(d.getDay()+6)%7;r.kl==='MAYOR'?hw[i].my++:hw[i].mn++;});
-  mk('ch-mv10',{type:'bar',dl:'bar',data:{labels:HRN,datasets:[{label:'Mayor',data:hw.map(x=>x.my),backgroundColor:cv('--st-kosong'),stack:'a'},{label:'Minor',data:hw.map(x=>x.mn),backgroundColor:cv('--st-kurang'),stack:'a'}]},
-    options:{scales:{x:ax(1,false),y:ax(1)}}});
-  const pG=group(all,'pj').sort((a,b)=>b.n-a.n||b.my-a.my),kG=group(all,'karu').sort((a,b)=>b.n-a.n||b.my-a.my);
-  $('mv11-s').textContent='Top '+Math.min(8,pG.length)+' dari '+pG.length+' penanggung jawab';
-  hb('ch-mv11',pG.slice(0,8));
-  $('mv12-s').textContent='Top '+Math.min(8,kG.length)+' dari '+kG.length+' kepala regu';
-  hb('ch-mv12',kG.slice(0,8));
-  /* tabel: heatmap zona x bulan */
+  const CC={1:'#f59e0b',2:'#6366f1',3:'#0ea5a4',4:'#f43f5e',5:'#10b981'};let ci=0;
+  const dcol=dn.map(d=>{if(d.name==='Tanpa kategori'||d.name==='Lainnya')return GRAY;const q=/^\s*([1-5])\s*[.)]/.exec(d.name);return(q&&state.kat&&state.kat.size)?CC[q[1]]:PAL[ci++%PAL.length];});
+  $('mv7-c').innerHTML=`<b>${f0(T.n)}</b><small>temuan</small>`;
+  $('mv7-l').innerHTML=dn.map((d,i)=>`<div class="mvdl"><i style="background:${dcol[i]}"></i><span>${esc(d.name)}</span><b>${d.n}</b><em>${pct(d.n,T.n)}%</em></div>`).join('');
+  mk('ch-mv7',{type:'doughnut',dl:'none',data:{labels:dn.map(d=>d.name),datasets:[{data:dn.map(d=>d.n),backgroundColor:dcol,borderColor:cv('--surface'),borderWidth:2}]},
+    options:{cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.label+': '+c.raw+' ('+pct(c.raw,T.n)+'%)'}}}}});
+  /* heatmap zona x bulan */
   const zc=new Map();MS.forEach((m,i)=>m.rows.forEach(r=>{let a=zc.get(r.zona);if(!a)zc.set(r.zona,a=Array(nm).fill(0));a[i]++;}));
   const zH=zAll.slice(0,15),cmax=Math.max(1,...zH.flatMap(z=>zc.get(z.name)||[0]));
   $('mv-hm-s').textContent='Jumlah temuan tiap zona per bulan · '+zH.length+' dari '+zAll.length+' zona · makin pekat makin banyak';
   $('mv-hm').innerHTML=`<table class="rank-table hm"><thead><tr><th>Zona</th>${MS.map(m=>`<th>${m.short}</th>`).join('')}<th>Total</th></tr></thead><tbody>${zH.map(z=>{const a=zc.get(z.name)||[];return`<tr><td class="rank-name nm">${esc(z.name)}</td>${a.map(v=>`<td class="hc" style="background:${v?`color-mix(in srgb,var(--st-kosong) ${Math.round(8+v/cmax*52)}%,transparent)`:'transparent'}">${v?`<b>${v}</b>`:'<span class="muted">·</span>'}</td>`).join('')}<td class="tot"><b>${z.n}</b></td></tr>`;}).join('')||`<tr><td colspan="${nm+2}" class="empty-note">Tidak ada data</td></tr>`}</tbody><tfoot><tr><td>Total semua zona</td>${MS.map(m=>`<td>${m.s.n||'–'}</td>`).join('')}<td>${T.n}</td></tr></tfoot></table>`;
-  /* tabel: ringkasan per periode */
-  $('mv-t1-s').textContent=nm+' bulan · '+perName(ms[0])+' – '+perName(ms[nm-1]);
-  $('mv-tbody1').innerHTML=MS.map((m,i)=>{const s=m.s,dl=i?s.n-MS[i-1].s.n:null;return`<tr><td>${m.name}</td><td><b>${s.n}</b></td><td>${dl==null?'–':`<span class="dtag ${dl>0?'bad':dl<0?'good':'neu'}">${sgn(dl)}</span>`}</td><td>${s.my}</td><td>${s.mn}</td><td>${s.n?pct(s.my,s.n)+'%':'–'}</td><td>${s.poin}</td><td>${s.zona}</td></tr>`;}).join('');
-  $('mv-tfoot1').innerHTML=`<tr><td>Total</td><td>${T.n}</td><td>–</td><td>${T.my}</td><td>${T.mn}</td><td>${T.n?pct(T.my,T.n)+'%':'–'}</td><td>${T.poin}</td><td>${T.zona}</td></tr>`;
-  /* tabel: perubahan per zona */
-  $('mv-t2-s').textContent='Perbandingan '+MS[0].name+' → '+MS[nm-1].name+' · '+zs.length+' zona';
-  $('mv-thead2').innerHTML=`<tr><th>Zona</th><th>${MS[0].short}</th><th>${MS[nm-1].short}</th><th>Δ</th><th>Mayor ${MS[nm-1].short}</th></tr>`;
-  $('mv-tbody2').innerHTML=zs.map(o=>`<tr><td class="rank-name nm">${esc(o.z)}</td><td>${o.a}</td><td>${o.b}</td><td><span class="dtag ${o.d>0?'bad':o.d<0?'good':'neu'}">${sgn(o.d)}</span></td><td>${o.my}</td></tr>`).join('')||'<tr><td colspan="5" class="empty-note">Tidak ada data</td></tr>';}
+}
 /* ---------- LAPORAN ---------- */
 function repHTML(){const P=cur(),L=P.rows.slice().sort((a,b)=>a.tgl.localeCompare(b.tgl)),S=sum(L);
   const tb=(h,rows)=>`<table class="pr-table"><thead><tr>${h.map(x=>`<th class="${x[1]?'num':''}">${x[0]}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
@@ -2444,6 +2492,8 @@ $('mv-from').addEventListener('change',e=>{state.mvA=+e.target.value;state.mvPre
 $('mv-to').addEventListener('change',e=>{state.mvB=+e.target.value;state.mvPreset=null;renderAll();});
 $('mv-preset').addEventListener('click',e=>{const b=tgt(e,'button');if(!b)return;mvApply(b.dataset.p);renderAll();});
 $('mv-kode-seg').addEventListener('click',e=>{const b=tgt(e,'button');if(!b)return;state.mvKode=b.dataset.k;renderAll();});
+$('mv-bars').addEventListener('click',e=>{const b=tgt(e,'.mvb');if(!b)return;state.mvSel=state.mvSel===b.dataset.m?null:b.dataset.m;renderMove();});
+$('mv-bd').addEventListener('click',e=>{const b=tgt(e,'[data-open]');if(!b)return;const i=state.periods.findIndex(p=>p.key===b.dataset.open);if(i>-1){state.pi=i;setView('detail');}});
 /* ---------- LAYAR PENUH (grafik & tabel) ---------- */
 let FS=null,FSY=0,FSW=0;
 function fsFit(){if(!FS)return;FS.querySelectorAll('table').forEach(t=>t.style.zoom='');
