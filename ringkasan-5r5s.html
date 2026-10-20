@@ -2301,7 +2301,7 @@ async function loadData(){try{const st=JSON.parse(localStorage.getItem(KEY)||'{}
   catch(e){let c=null;try{c=JSON.parse(localStorage.getItem(DKEY)||'null');}catch(_){}
     if(c&&c.raw){state.rows=c.raw.map(norm);state.source='cache';setBanner('Gagal memuat Supabase ('+esc(e.message)+'). Memakai data tersimpan '+new Date(c.at).toLocaleString('id-ID')+'. <button onclick="loadData().then(renderAll)">Coba lagi</button>');}
     else{state.rows=[];state.source='none';setBanner('Gagal memuat data dari Supabase: '+esc(e.message)+'. Periksa koneksi / pengaturan Sumber Data atau kebijakan akses (RLS) tabel. <button onclick="loadData().then(renderAll)">Coba lagi</button>');}}
-  buildPeriods();$('src-info').textContent=(state.source==='live'?'Live · Supabase':state.source==='cache'?'Data tersimpan':'Tidak ada data')+' · '+f0(state.rows.length)+' baris';renderAll();loadKode();}
+  buildPeriods();$('src-info').textContent=(state.source==='live'?'':state.source==='cache'?'Data tersimpan':'Tidak ada data')+' · '+f0(state.rows.length)+' baris';renderAll();loadKode();}
 /* master kode temuan -> kategori (untuk donut Sebaran Kategori); gagal = pakai cache / sebaran area */
 async function loadKode(){const c=state.cfg;
   try{const r=await fetch(`${c.url.replace(/\/$/,'')}/rest/v1/${encodeURIComponent(c.kodeTable||DEF.kodeTable)}?select=kode,kategori`,{headers:{apikey:c.key,Authorization:'Bearer '+c.key}});
