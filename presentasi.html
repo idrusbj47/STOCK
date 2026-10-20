@@ -165,6 +165,16 @@ setBox.addEventListener('click',function(e){if(e.target===setBox)closeSettings()
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.body.classList.contains('settings-open'))closeSettings()});
 document.getElementById('settings-reset').addEventListener('click',function(){cfg=order.map(function(k){return{key:k,show:true}});afterChange();toast('Urutan dan tampilan dikembalikan')});
 
+/* otomatis saat masuk: muat ulang semua tab, lalu layar penuh setelah 1 menit */
+var AUTO_FS_MS=60000;
+function autoReloadAll(){if(!reloading)reloadBtn.click()}
+function autoFullscreen(){if(inFullscreen())return;var el=document.documentElement,fn=el.requestFullscreen||el.webkitRequestFullscreen;if(!fn){return}
+var armed=false;function arm(){if(armed||inFullscreen())return;armed=true;toast('Ketuk layar sekali untuk masuk layar penuh');var docs=[document];document.querySelectorAll('iframe').forEach(function(f){try{if(f.contentDocument)docs.push(f.contentDocument)}catch(e){}});
+function go(){if(inFullscreen()){off();return}try{var r=fn.call(el);if(r&&r.then)r.then(off,function(){})}catch(e){}setTimeout(function(){if(inFullscreen())off()},400)}
+function off(){docs.forEach(function(d){['pointerdown','touchend','keydown'].forEach(function(t){d.removeEventListener(t,go,true)})})}
+docs.forEach(function(d){['pointerdown','touchend','keydown'].forEach(function(t){d.addEventListener(t,go,true)})})}
+try{var r=fn.call(el);if(r&&r.catch)r.catch(arm);else setTimeout(function(){if(!inFullscreen())arm()},400)}catch(e){arm()}}
+setTimeout(autoReloadAll,600);setTimeout(autoFullscreen,AUTO_FS_MS);
 if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(e){console.warn('SW gagal:',e)})})}
 })();
 
