@@ -20,8 +20,7 @@
 <link rel="apple-touch-icon" href="icons/icon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
@@ -160,7 +159,7 @@ body.overlay-open{ overflow:hidden; }
   display:flex; align-items:center; justify-content:space-between;
   padding:calc(12px + env(safe-area-inset-top)) 18px 12px;
   position: sticky; top:0; background: var(--bg); z-index:60;
-  transition: padding .25s ease, background-color .3s ease;
+  transition: background-color .3s ease;
   /* PENTING: JANGAN taruh `transform` atau `isolation` di elemen yang
      position:sticky ini sendiri. Sebelumnya di sini ada
      `transform: translateZ(0); isolation: isolate;` dengan niat memaksa
@@ -191,7 +190,9 @@ body.overlay-open{ overflow:hidden; }
 .topbar.scrolled::before{ opacity:1; }
 .topbar.scrolled{
   background: transparent;
-  padding-top:calc(9px + env(safe-area-inset-top)); padding-bottom:9px;
+  /* tinggi header SENGAJA tidak diubah saat discroll: perubahan padding dulu
+     menggeser isi halaman -> scroll ikut bergeser -> melewati ambang lagi ->
+     header bolak-balik (getar). */
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
   .topbar.scrolled::before{ background: color-mix(in srgb, var(--surface) 96%, transparent); }
@@ -499,9 +500,9 @@ html,body{ overflow-x:hidden; }
    Hanya override tampilan. HTML & JavaScript asli tidak diubah.
    ========================================================= */
 :root{
-  --font-display:'Cormorant Garamond',Georgia,serif;
-  --font-body:'Manrope',system-ui,sans-serif;
-  --font-mono:'Manrope',system-ui,sans-serif;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Inter',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
   --gold-grad:linear-gradient(135deg,#ecd08c 0%,#c9993f 55%,#e0bd74 100%);
   --radius:18px;
   --bg:#08111f; --surface:#0f1b31; --surface-2:#15264a; --border:#22365a;
@@ -662,6 +663,50 @@ body{
 }
 .master-to-top.show{ opacity:1; pointer-events:auto; transform:none; }
 @media (min-width:1000px){ .nav-item[data-nav="search"]{ order:-1; } .nav-items{ } }
+
+/* =========================================================
+   PERBAIKAN: getar, kunci scroll, font = index, koreksi 2 opsi
+   ========================================================= */
+html{ overflow-anchor:none; scrollbar-gutter:stable; }
+body{ overflow-anchor:none; }
+/* kartu: tanpa transform saat hover (transform 1px bikin hover berkedip & halaman terasa bergetar) */
+.item-card{ transition:border-color .18s ease; scroll-margin-top:110px; scroll-margin-bottom:120px; }
+@media (hover:hover){ .item-card:hover{ transform:none; } }
+
+/* kunci scroll: hanya jendela yang terbuka yang bisa discroll */
+html.overlay-open, html.overlay-open body{ overflow:hidden !important; }
+.sheet-overlay, .sheet{ overscroll-behavior:contain; }
+
+/* font sama seperti index (SBJ APPS) */
+.brand-eyebrow{ font-family:var(--font-mono); font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); font-weight:500; }
+.brand-title{ font-family:var(--font-display); font-weight:700; font-size:34px; letter-spacing:.01em; text-transform:uppercase; line-height:1.05; }
+.brand-title .accent{ margin-left:.16em; }
+@media (max-width:560px){ .brand-title{ font-size:28px; } }
+.sheet-header h2{ font-family:var(--font-display); font-weight:700; font-size:26px; letter-spacing:.01em; text-transform:uppercase; }
+.sheet-eyebrow{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:.2em; font-weight:500; }
+.bal-num{ font-weight:700; }
+.nav-tag{ font-weight:600; }
+#app-splash .splash-title{ font-weight:700; font-size:32px; letter-spacing:.02em; text-transform:uppercase; }
+#app-splash .splash-sub{ font-family:var(--font-mono); letter-spacing:.2em; }
+
+/* petunjuk shortcut (hanya tampil di desktop berkeyboard) */
+.kbd-hint{ display:none; margin:2px 2px 10px; font-size:11.5px; line-height:1.6; font-family:var(--font-mono); }
+.kbd-hint kbd{ font-family:var(--font-mono); font-size:10.5px; padding:1px 6px; border:1px solid var(--border); border-bottom-width:2px; border-radius:6px; background:var(--surface-2); color:var(--text); }
+@media (hover:hover) and (pointer:fine){ .kbd-hint{ display:block; } }
+
+/* Koreksi: 2 opsi */
+.koreksi-mode{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:2px 0 14px; }
+.kmode{
+  text-align:left; display:flex; flex-direction:column; gap:3px; padding:11px 13px; cursor:pointer;
+  background:var(--surface); border:1px solid var(--border); border-radius:14px; color:var(--text);
+  font-family:var(--font-body);
+}
+.kmode b{ font-family:var(--font-display); font-weight:700; font-size:17px; letter-spacing:.02em; text-transform:uppercase; }
+.kmode small{ font-size:11.5px; color:var(--muted); }
+.kmode.active{ border-color:var(--amber); background:color-mix(in srgb,var(--amber) 10%,var(--surface)); box-shadow:0 0 0 3px color-mix(in srgb,var(--amber) 16%,transparent); }
+.kmode.active b{ color:var(--amber); }
+@media (max-width:420px){ .koreksi-mode{ grid-template-columns:1fr; } }
+.load-more-btn{ grid-column:1 / -1; }
 </style>
 </head>
 <body>
@@ -1062,6 +1107,7 @@ body{
       <button id="btn-master-search" class="btn-primary">Cari</button>
     </div>
 
+    <div class="kbd-hint muted"><kbd>Alt</kbd>+<kbd>Q</kbd> cari · <kbd>Alt</kbd>+<kbd>W</kbd> pilih hasil · <kbd>↑</kbd><kbd>↓</kbd> geser · <kbd>Enter</kbd> pakai &amp; isi REF#</div>
     <div class="status-row"><span id="master-summary" class="muted">Ketik kata kunci lalu tekan Cari</span></div>
     <div id="master-results" class="results"></div>
   </div>
@@ -1080,6 +1126,15 @@ body{
       <button id="btn-close-koreksi" class="icon-btn" aria-label="Tutup">✕</button>
     </div>
 
+    <div class="koreksi-mode" id="koreksi-mode" role="tablist" aria-label="Cara memilih koreksi">
+      <button type="button" class="kmode active" data-kmode="search" role="tab" aria-selected="true">
+        <b>Cari pakai MC#</b><small>Ketik MC#, SO#, REF#, LOC#, dll</small>
+      </button>
+      <button type="button" class="kmode" data-kmode="browse" role="tab" aria-selected="false">
+        <b>Lihat barang yang sudah diinput</b><small>Daftar langsung tampil, tanpa cari dulu</small>
+      </button>
+    </div>
+
     <div class="search-row master-search-row">
       <div class="search-input-wrap">
         <input id="koreksi-search-input" type="text" inputmode="search" placeholder="Cari MCS#, NO, SO#, REF#, LOC#, model, customer, internal, sales, admin…" autocomplete="off" />
@@ -1088,6 +1143,7 @@ body{
       <button id="btn-koreksi-search" class="btn-primary">Cari</button>
     </div>
 
+    <div class="kbd-hint muted"><kbd>Alt</kbd>+<kbd>W</kbd> pilih hasil · <kbd>↑</kbd><kbd>↓</kbd> geser · <kbd>Enter</kbd> buka</div>
     <div class="status-row"><span id="koreksi-summary" class="muted">Ketik kata kunci lalu tekan Cari</span></div>
     <div id="koreksi-results" class="results"></div>
   </div>
@@ -1190,7 +1246,10 @@ const state = {
   settings: loadSettings(),
   masterRows: [],      // data Master MC, dimuat lazy saat tombol "Cari di Master MC" pertama kali dipakai
   masterLoaded: false,
-  koreksiRows: [],      // hasil KOREKSI yang sudah tersimpan, dimuat ulang tiap kali overlay dibuka
+  koreksiRows: [],
+  koreksiLoaded: false,
+  koreksiMode: 'search', // 'search' = cari pakai MC#/kata kunci, 'browse' = lihat semua barang yang sudah diinput
+  koreksiLimit: 200,      // hasil KOREKSI yang sudah tersimpan, dimuat ulang tiap kali overlay dibuka
   user: null,           // sesi Supabase Auth yang sedang login (null = belum login = mode cari saja)
 };
 
@@ -1811,9 +1870,13 @@ el.changePasswordForm.addEventListener('submit', async (e) => {
 const SCROLL_GLASS_THRESHOLD = 8;
 const SCROLL_TOP_THRESHOLD = 360;
 
+let glassOn = false;
 function onWindowScroll() {
   const y = window.scrollY || document.documentElement.scrollTop || 0;
-  el.topbar.classList.toggle('scrolled', y > SCROLL_GLASS_THRESHOLD);
+  // hysteresis: nyala setelah > 12px, mati hanya kalau kembali ke < 2px (anti berkedip)
+  if (!glassOn && y > 12) glassOn = true;
+  else if (glassOn && y < 2) glassOn = false;
+  el.topbar.classList.toggle('scrolled', glassOn);
   el.btnScrollTop.classList.toggle('show', y > SCROLL_TOP_THRESHOLD);
 }
 window.addEventListener('scroll', onWindowScroll, { passive: true });
@@ -1868,20 +1931,39 @@ function refreshClearButtons(scopeEl) {
 //    di CSS) supaya address bar Chrome tidak ikut collapse/expand saat overlay
 //    dibuka, yang sebelumnya bikin bagian atas sheet kepotong/tidak terbaca.
 let openOverlayCount = 0;
+// Kunci scroll dihitung langsung dari DOM (overlay mana pun yang tampil), jadi
+// tidak bisa meleset walau closeXxx() terpanggil berkali-kali. Yang dikunci
+// html + body (sebelumnya hanya body, padahal html punya overflow-x:hidden
+// sehingga halaman belakang tetap bisa discroll).
+function syncScrollLock() {
+  const any = !!document.querySelector('.sheet-overlay:not(.hidden)');
+  openOverlayCount = any ? 1 : 0;
+  document.documentElement.classList.toggle('overlay-open', any);
+  document.body.classList.toggle('overlay-open', any);
+}
 function showOverlay(overlayEl) {
   if (!overlayEl) return;
   overlayEl.classList.remove('hidden');
   const sheetEl = overlayEl.querySelector('.sheet');
   if (sheetEl) sheetEl.scrollTop = 0;
-  openOverlayCount++;
-  document.body.classList.add('overlay-open');
+  syncScrollLock();
 }
 function hideOverlay(overlayEl) {
   if (!overlayEl) return;
   overlayEl.classList.add('hidden');
-  openOverlayCount = Math.max(0, openOverlayCount - 1);
-  if (openOverlayCount === 0) document.body.classList.remove('overlay-open');
+  syncScrollLock();
 }
+document.querySelectorAll('.sheet-overlay').forEach((ov) => {
+  new MutationObserver(syncScrollLock).observe(ov, { attributes: true, attributeFilter: ['class'] });
+});
+// roda mouse / sentuh di luar jendela (area gelap) tidak boleh menggulung halaman belakang
+function blockBackdropScroll(e) {
+  if (!openOverlayCount) return;
+  if (e.target && e.target.closest && e.target.closest('.sheet')) return;
+  e.preventDefault();
+}
+document.addEventListener('wheel', blockBackdropScroll, { passive: false });
+document.addEventListener('touchmove', blockBackdropScroll, { passive: false });
 
 // ---------- tombol tunggal mengambang ABC/123 (mirip GSheet) ----------
 // Tiap field REF#/SO#/C#/LOC# sebenarnya punya 2 input yang saling
@@ -2066,15 +2148,52 @@ el.searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSe
 //  Alt+1 → kolom pencarian utama
 //  Alt+2 → daftar hasil (↑ ↓ pilih kartu, Enter buka dialog input)
 //  Alt+3 → di dalam dialog input: mulai isi field (↑ ↓ pindah field, Enter simpan)
-function closeAllPanels() {
+//  Alt+Q → buka pencarian Master MC (kalau sudah terbuka: fokus ke kolom cari)
+//  Alt+W → pilih hasil pencarian Master MC (↑ ↓ geser, Enter pakai → langsung masuk field REF#)
+function closeAllPanels(exceptEl) {
   // hanya tutup overlay yang memang sedang terbuka (biar penghitung overlay tidak keliru)
   const pairs = [
     [el.sheetOverlay, closeEditSheet], [el.masterOverlay, closeMaster], [el.koreksiOverlay, closeKoreksi],
     [el.settingsOverlay, closeSettings], [el.loginOverlay, closeLogin], [el.changePasswordOverlay, closeChangePassword],
   ];
   pairs.forEach(([ov, fn]) => {
+    if (ov === exceptEl) return;
     if (ov && !ov.classList.contains('hidden')) { try { fn(); } catch (err) {} }
   });
+}
+function shortcutOpenMaster() {
+  closeAllPanels(el.masterOverlay);
+  if (el.masterOverlay.classList.contains('hidden')) openMaster();
+  el.masterSearchInput.focus({ preventScroll: true });
+  el.masterSearchInput.select();
+}
+// overlay daftar yang sedang terbuka (Master MC / Koreksi) beserta kolom cari & wadah hasilnya
+function activeListOverlay() {
+  if (!el.masterOverlay.classList.contains('hidden')) {
+    return { results: el.masterResults, input: el.masterSearchInput, run: runMasterSearch };
+  }
+  if (!el.koreksiOverlay.classList.contains('hidden')) {
+    return { results: el.koreksiResults, input: el.koreksiSearchInput, run: runKoreksiSearch };
+  }
+  return null;
+}
+function shortcutFocusOverlayResults() {
+  const ov = activeListOverlay();
+  if (!ov) { showToast('Buka Master MC dulu (Alt+Q)'); return; }
+  let cards = ov.results.querySelectorAll('.item-card');
+  if (!cards.length && ov.input.value.trim().length >= 2) {
+    ov.run();
+    cards = ov.results.querySelectorAll('.item-card');
+  }
+  if (!cards.length) { showToast('Belum ada hasil, ketik kata kunci lalu Enter'); return; }
+  focusCard(cards[0]);
+}
+// fokus ke field paling atas di form input (REF#)
+function focusTopFormField() {
+  const list = formFocusables();
+  if (!list.length) return;
+  list[0].focus();
+  if (list[0].select) list[0].select();
 }
 function focusMainSearch() {
   closeAllPanels();
@@ -2086,7 +2205,8 @@ function resultCards() { return Array.from(el.results.querySelectorAll('.item-ca
 function focusCard(card) {
   if (!card) return;
   card.focus({ preventScroll: true });
-  card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  // scroll instan & seminimal mungkin (smooth + header yang berubah tinggi dulu bikin getar)
+  card.scrollIntoView({ block: 'nearest', behavior: 'auto' });
 }
 function focusResults() {
   closeAllPanels();
@@ -2116,6 +2236,8 @@ document.addEventListener('keydown', (e) => {
       if (sheetOpen()) focusFirstFormField(); else showToast('Buka dulu kartu hasil (Alt+2 lalu Enter)');
       return;
     }
+    if (e.code === 'KeyQ') { e.preventDefault(); shortcutOpenMaster(); return; }
+    if (e.code === 'KeyW') { e.preventDefault(); shortcutFocusOverlayResults(); return; }
   }
   if (e.ctrlKey || e.metaKey || e.altKey) return;
 
@@ -2129,6 +2251,27 @@ document.addEventListener('keydown', (e) => {
     next.focus();
     if (next.select) next.select();
     return;
+  }
+
+  // 2b) Panah di daftar hasil Master MC / Koreksi (jendela yang sedang terbuka)
+  if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !sheetOpen()) {
+    const ov = activeListOverlay();
+    if (ov) {
+      const cards = Array.from(ov.results.querySelectorAll('.item-card'));
+      if (!cards.length) return;
+      const card = e.target.closest && e.target.closest('.item-card');
+      if (card && cards.includes(card)) {
+        e.preventDefault();
+        const i = cards.indexOf(card);
+        if (e.key === 'ArrowDown') focusCard(cards[Math.min(i + 1, cards.length - 1)]);
+        else if (i === 0) ov.input.focus({ preventScroll: true });
+        else focusCard(cards[i - 1]);
+      } else if (e.target === ov.input && e.key === 'ArrowDown') {
+        e.preventDefault();
+        focusCard(cards[0]);
+      }
+      return;
+    }
   }
 
   // 3) Panah di daftar hasil: pilih kartu; ↓ dari kolom pencarian masuk ke hasil
@@ -2676,13 +2819,17 @@ function runMasterSearch() {
 
     const card = node.querySelector('.item-card');
     card.addEventListener('click', () => useMasterRecord(rec));
-    card.addEventListener('keydown', (e) => { if (e.key === 'Enter') useMasterRecord(rec); });
+    card.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault(); // cegah Enter yang sama ikut "menekan" field baru lalu menyimpan form
+      useMasterRecord(rec, true);
+    });
 
     el.masterResults.appendChild(node);
   });
 }
 
-function useMasterRecord(rec) {
+function useMasterRecord(rec, viaKeyboard) {
   if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk input barang baru'); return; }
   closeMaster();
   const newItem = {
@@ -2691,6 +2838,9 @@ function useMasterRecord(rec) {
     internal: rec.internal, sales: rec.sales,
   };
   openEditSheet(newItem, true);
+  // lewat keyboard: langsung masuk field paling atas (REF#); ↑ ↓ pindah field.
+  // Jeda singkat supaya event Enter tadi selesai dulu (tidak ikut men-submit form).
+  if (viaKeyboard) setTimeout(focusTopFormField, 80);
 }
 
 // ---------- Edit Koreksi Tersimpan ----------
@@ -2701,14 +2851,15 @@ el.btnCloseKoreksi.addEventListener('click', closeKoreksi);
 // keluar pakai tombol ✕ (btnCloseKoreksi) di atas.
 el.btnKoreksiSearch.addEventListener('click', runKoreksiSearch);
 el.koreksiSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runKoreksiSearch(); });
-el.koreksiSearchInput.addEventListener('input', () => updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch));
+el.koreksiSearchInput.addEventListener('input', () => {
+  updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch);
+  if (state.koreksiMode === 'browse' && state.koreksiLoaded) runKoreksiSearch(); // saring langsung
+});
 el.btnClearKoreksiSearch.addEventListener('click', () => {
   el.koreksiSearchInput.value = '';
   updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch);
-  el.koreksiResults.innerHTML = '';
-  el.koreksiSummary.textContent = state.koreksiRows.length
-    ? state.koreksiRows.length + ' data koreksi siap dicari.'
-    : 'Ketik kata kunci lalu tekan Cari';
+  if (state.koreksiLoaded) runKoreksiSearch();
+  else { el.koreksiResults.innerHTML = ''; el.koreksiSummary.textContent = 'Ketik kata kunci lalu tekan Cari'; }
   el.koreksiSearchInput.focus();
 });
 
@@ -2735,10 +2886,41 @@ function mapKoreksiRowFromSupabase(r) {
   };
 }
 
+const KOREKSI_PLACEHOLDER = {
+  search: 'Cari MCS#, NO, SO#, REF#, LOC#, model, customer, internal, sales, admin…',
+  browse: 'Saring daftar (boleh kosong): MCS#, SO#, REF#, LOC#, model…',
+};
+function setKoreksiMode(mode, opts) {
+  state.koreksiMode = mode === 'browse' ? 'browse' : 'search';
+  document.querySelectorAll('#koreksi-mode .kmode').forEach((b) => {
+    const on = b.dataset.kmode === state.koreksiMode;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  el.koreksiSearchInput.placeholder = KOREKSI_PLACEHOLDER[state.koreksiMode];
+  if (!(opts && opts.keepInput)) {
+    // mode "lihat semua" mulai dari daftar penuh; mode cari mulai dari kolom kosong
+    el.koreksiSearchInput.value = '';
+    updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch);
+  }
+  if (state.koreksiLoaded) runKoreksiSearch();
+  if (!(opts && opts.noFocus)) el.koreksiSearchInput.focus({ preventScroll: true });
+}
+document.querySelectorAll('#koreksi-mode .kmode').forEach((b) => {
+  b.addEventListener('click', () => setKoreksiMode(b.dataset.kmode));
+});
+
 async function openKoreksi() {
   if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk edit koreksi'); return; }
   showOverlay(el.koreksiOverlay);
-  el.koreksiSearchInput.value = el.searchInput.value.trim();
+  state.koreksiLoaded = false;
+  el.koreksiSearchInput.value = state.koreksiMode === 'search' ? el.searchInput.value.trim() : '';
+  el.koreksiSearchInput.placeholder = KOREKSI_PLACEHOLDER[state.koreksiMode];
+  document.querySelectorAll('#koreksi-mode .kmode').forEach((b) => {
+    const on = b.dataset.kmode === state.koreksiMode;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
   updateClearBtn(el.koreksiSearchInput, el.btnClearKoreksiSearch);
   el.koreksiSummary.textContent = 'Memuat data koreksi terbaru…';
   el.koreksiResults.innerHTML = '';
@@ -2752,8 +2934,8 @@ async function openKoreksi() {
     if (error) throw error;
 
     state.koreksiRows = (data || []).map(mapKoreksiRowFromSupabase);
-    el.koreksiSummary.textContent = state.koreksiRows.length + ' data koreksi siap dicari.';
-    if (el.koreksiSearchInput.value.trim().length >= 2) runKoreksiSearch();
+    state.koreksiLoaded = true;
+    runKoreksiSearch();
   } catch (err) {
     console.error(err);
     el.koreksiSummary.textContent = 'Gagal memuat data koreksi: ' + err.message;
@@ -2764,20 +2946,30 @@ function closeKoreksi() {
   hideOverlay(el.koreksiOverlay);
 }
 
-function runKoreksiSearch() {
+function runKoreksiSearch(keepLimit) {
+  if (keepLimit !== true) state.koreksiLimit = 200;
   const q = el.koreksiSearchInput.value.trim().toLowerCase();
-  if (q.length < 2) {
-    el.koreksiSummary.textContent = 'Ketik minimal 2 karakter';
+  const browse = state.koreksiMode === 'browse';
+
+  // opsi 1 (cari): minimal 2 karakter. Opsi 2 (lihat semua): kolom kosong = tampilkan semua.
+  if (!browse && q.length < 2) {
+    el.koreksiSummary.textContent = (q.length === 0 && state.koreksiLoaded)
+      ? state.koreksiRows.length + ' data koreksi siap dicari.'
+      : 'Ketik minimal 2 karakter';
     el.koreksiResults.innerHTML = '';
     return;
   }
-  if (!state.koreksiRows.length) {
+  if (!state.koreksiLoaded) {
     el.koreksiSummary.textContent = 'Data koreksi belum siap, tunggu sebentar.';
     return;
   }
+  if (!state.koreksiRows.length) {
+    el.koreksiSummary.textContent = 'Belum ada barang yang diinput.';
+    el.koreksiResults.innerHTML = '';
+    return;
+  }
 
-  const MAX_RESULTS = 200;
-  const matches = state.koreksiRows.filter((r) =>
+  const matches = q ? state.koreksiRows.filter((r) =>
     String(r.mcs).toLowerCase().includes(q)
     || String(r.no).toLowerCase().includes(q)
     || String(r.editor).toLowerCase().includes(q)
@@ -2792,17 +2984,19 @@ function runKoreksiSearch() {
     || String(r.internal).toLowerCase().includes(q)
     || String(r.sales).toLowerCase().includes(q)
     || String(r.editedBy).toLowerCase().includes(q)
-  );
+  ) : state.koreksiRows;
 
-  const truncated = matches.length > MAX_RESULTS;
-  const shown = matches.slice(0, MAX_RESULTS);
+  const shown = matches.slice(0, state.koreksiLimit);
+  const truncated = matches.length > shown.length;
 
   el.koreksiResults.innerHTML = '';
   if (shown.length === 0) {
     el.koreksiSummary.textContent = 'Tidak ada hasil';
     return;
   }
-  el.koreksiSummary.textContent = matches.length + ' hasil ditemukan' + (truncated ? ' (ditampilkan 200 pertama)' : '');
+  el.koreksiSummary.textContent = browse && !q
+    ? matches.length + ' barang sudah diinput (terbaru di atas)'
+    : matches.length + ' hasil ditemukan';
 
   shown.forEach((rec) => {
     const node = el.koreksiCardTemplate.content.cloneNode(true);
@@ -2826,6 +3020,15 @@ function runKoreksiSearch() {
 
     el.koreksiResults.appendChild(node);
   });
+
+  if (truncated) {
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'btn-secondary btn-full load-more-btn';
+    more.textContent = 'Tampilkan ' + Math.min(200, matches.length - shown.length) + ' lagi (sisa ' + (matches.length - shown.length) + ')';
+    more.addEventListener('click', () => { state.koreksiLimit += 200; runKoreksiSearch(true); });
+    el.koreksiResults.appendChild(more);
+  }
 }
 
 function useKoreksiRecord(rec) {
