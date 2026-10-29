@@ -1793,7 +1793,7 @@
         $("rInfo").textContent = "Menampilkan 20 temuan terbaru. Pilih tanggal untuk melihat semuanya.";
       }
       if(!data.length){ box.innerHTML = '<div class="hint">' + (tgl ? "Tidak ada temuan pada tanggal ini." : "Belum ada temuan tersimpan.") + '</div>'; return; }
-      box.innerHTML = tgl ? groupedListHtml(data) : data.map(itemHtml).join("");
+      box.innerHTML = groupedListHtml(data);
       bindListActions(box);
     }catch(e){
       box.innerHTML = '<div class="hint">Gagal memuat riwayat: '+escapeHtml(e.message||String(e))+'</div>';
