@@ -124,6 +124,12 @@
   /* recent list */
   .list-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
   .list-item:last-child{border-bottom:none;}
+  .grp-zona{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:14px 0 2px;padding:8px 10px;border-radius:10px;background:#e8ecfa;color:#14213d;font-size:13px;font-weight:800;}
+  .grp-zona:first-child{margin-top:0;}
+  .grp-zona em{font-style:normal;font-size:11px;font-weight:700;background:#14213d;color:#fff;border-radius:20px;padding:2px 9px;flex-shrink:0;}
+  .grp-karu{margin:6px 0 0 4px;padding-left:8px;border-left:3px solid var(--orange-2);font-size:12px;font-weight:700;color:var(--muted);}
+  body.dark .grp-zona{background:#1a2848;color:#e6ecf8;}
+  body.dark .grp-zona em{background:#2c4a8a;}
   .list-item img{width:54px;height:54px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#eee;}
   .list-item .meta{font-size:12.5px;color:var(--muted);flex:1;}
   .list-item .meta b{color:var(--text);font-size:13.5px;}
@@ -1675,6 +1681,39 @@
     }
   });
 
+  /* ---------------- URUTAN TAMPILAN: Zona/Lokasi → Karu ---------------- */
+  const natCmp = (a,b)=> String(a||"").localeCompare(String(b||""), "id", {numeric:true, sensitivity:"base"});
+  const _kodeKey = k => { const m = /^(\d+)\s*([A-Z]*)/i.exec(k||""); return m ? [parseInt(m[1],10), m[2].toUpperCase()] : [99999, String(k||"")]; };
+  function sortTemuan(rows){
+    return [...(rows||[])].sort((a,b)=>{
+      const za=(a.zona||"").trim(), zb=(b.zona||"").trim();
+      if(!za !== !zb) return za ? -1 : 1;                 // tanpa zona di paling bawah
+      let c = natCmp(za,zb); if(c) return c;
+      c = natCmp((a.area||"").trim(), (b.area||"").trim()); if(c) return c;
+      const ka=(a.kepala_regu||"").trim(), kb=(b.kepala_regu||"").trim();
+      if(!ka !== !kb) return ka ? -1 : 1;                 // tanpa karu di bawah
+      c = natCmp(ka,kb); if(c) return c;
+      const x=_kodeKey(a.kode), y=_kodeKey(b.kode);
+      c = (x[0]-y[0]) || String(x[1]).localeCompare(String(y[1])); if(c) return c;
+      return natCmp(a.tanggal,b.tanggal) || natCmp(a.created_at,b.created_at);
+    });
+  }
+  const grpZonaKey = r => (r.zona||"").trim()+"|"+(r.area||"").trim();
+  const grpZonaLabel = r => { const z=(r.zona||"").trim(), a=(r.area||"").trim(); return (z||"Tanpa zona") + (a ? " — "+a : ""); };
+  function grpCounts(rows){ const m=new Map(); rows.forEach(r=>{ const k=grpZonaKey(r); m.set(k,(m.get(k)||0)+1); }); return m; }
+  // list ber-grup (layar): header zona/lokasi, lalu sub-header karu
+  function groupedListHtml(rows){
+    const sorted = sortTemuan(rows), cnt = grpCounts(sorted);
+    let h="", lz=null, lk=null;
+    sorted.forEach(r=>{
+      const zk=grpZonaKey(r), k=(r.kepala_regu||"").trim();
+      if(zk!==lz){ h+=`<div class="grp-zona"><span>${escapeHtml(grpZonaLabel(r))}</span><em>${cnt.get(zk)}</em></div>`; lz=zk; lk=null; }
+      if(k!==lk){ h+=`<div class="grp-karu">Karu: ${escapeHtml(k||"-")}</div>`; lk=k; }
+      h+=itemHtml(r);
+    });
+    return h;
+  }
+
   /* ---------------- RECENT LIST ---------------- */
   function itemHtml(r){
     const thumb = (r.foto_url||"").split(",")[0] || "";
@@ -1728,7 +1767,7 @@
       const tgl = last[0].tanggal;
       const rows = await fetchByDate(sb, tgl);
       $("homeDate").textContent = "· " + fmtTgl(tgl) + " (" + rows.length + ")";
-      box.innerHTML = rows.map(itemHtml).join("");
+      box.innerHTML = groupedListHtml(rows);
       box.scrollTop = 0;
     }catch(e){
       box.innerHTML = '<div class="hint">Gagal memuat: '+escapeHtml(e.message||String(e))+'</div>';
@@ -1754,7 +1793,7 @@
         $("rInfo").textContent = "Menampilkan 20 temuan terbaru. Pilih tanggal untuk melihat semuanya.";
       }
       if(!data.length){ box.innerHTML = '<div class="hint">' + (tgl ? "Tidak ada temuan pada tanggal ini." : "Belum ada temuan tersimpan.") + '</div>'; return; }
-      box.innerHTML = data.map(itemHtml).join("");
+      box.innerHTML = tgl ? groupedListHtml(data) : data.map(itemHtml).join("");
       bindListActions(box);
     }catch(e){
       box.innerHTML = '<div class="hint">Gagal memuat riwayat: '+escapeHtml(e.message||String(e))+'</div>';
@@ -2013,6 +2052,13 @@
     .p-doc-meta span{ white-space:normal; word-break:break-word; }
     .p-doc-meta span:not(:last-child)::after{ content:" | "; color:#999; font-weight:normal; }
     .p-section-break{ page-break-before:always; }
+    table.p-table thead{ display:table-header-group; }
+    table.p-table tr{ page-break-inside:avoid; break-inside:avoid; }
+    table.p-table tr.grp td{ background:#dfe5f7; color:#14213d; font-weight:bold; font-size:12.5px; text-align:left; border-top:2px solid #14213d; }
+    table.p-table tr.grp-k td{ background:#f3f5fb; color:#333; font-weight:bold; font-size:11.5px; padding:4px 7px 4px 18px; }
+    table.p-table tr.grp, table.p-table tr.grp-k{ page-break-after:avoid; break-after:avoid; }
+    .p-doc-zona{ background:#dfe5f7; color:#14213d; font-weight:bold; font-size:14px; padding:7px 10px; margin:14px 0 6px; border-radius:4px; page-break-after:avoid; break-after:avoid; }
+    .p-doc-karu{ font-weight:bold; font-size:12.5px; color:#444; margin:2px 0 8px 6px; padding-left:8px; border-left:3px solid #b8720c; page-break-after:avoid; break-after:avoid; }
   `;
 
   $("btnCetak").addEventListener("click", ()=>{
@@ -2058,10 +2104,11 @@
     const sb = getSupabase();
     if(!sb) throw new Error("Supabase belum dikonfigurasi.");
 
-    const { data, error } = await sb.from(CFG.sbTable).select("*")
+    const { data: rawData, error } = await sb.from(CFG.sbTable).select("*")
       .gte("tanggal", dari).lte("tanggal", sampai)
       .order("tanggal", {ascending:true}).order("created_at",{ascending:true});
     if(error) throw error;
+    const data = sortTemuan(rawData);   // urut: zona/lokasi → karu → kode
     if(!data || !data.length) throw new Error("Tidak ada temuan pada rentang tanggal ini.");
 
     const rangeLabel = dari === sampai ? fmtTanggalID(dari) : `${fmtTanggalID(dari)} — ${fmtTanggalID(sampai)}`;
@@ -2089,8 +2136,13 @@
           <th>Jenis Temuan</th><th>Level</th><th>Paraf<br>(Closed)</th>
         </tr></thead>
         <tbody>`;
+    const _cnt = grpCounts(data);
+    let _lz=null, _lk=null;
     data.forEach((r,i)=>{
       const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+      const _zk = grpZonaKey(r), _k = (r.kepala_regu||"").trim();
+      if(_zk!==_lz){ html += `<tr class="grp"><td colspan="8">${escapeHtml(grpZonaLabel(r))} &nbsp;(${_cnt.get(_zk)} temuan)</td></tr>`; _lz=_zk; _lk=null; }
+      if(_k!==_lk){ html += `<tr class="grp-k"><td colspan="8">Karu: ${escapeHtml(_k||"-")}</td></tr>`; _lk=_k; }
       html += `<tr>
         <td class="center">${i+1}</td>
         <td>${escapeHtml(r.area||"-")}</td>
@@ -2109,10 +2161,14 @@
       html += `<div class="p-page p-section-break">
         <h3>PT. KARYA INDAH MULTIGUNA</h3>
         <h2 class="p-docs-title">Dokumentasi Hasil Pemeriksaan ${rangeLabel}</h2>`;
+      let _dlz=null, _dlk=null;
       for(let i=0;i<data.length;i++){
         const r = data[i];
         const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
         const firstUrl = (r.foto_url||"").split(",")[0];
+        const _dzk = grpZonaKey(r), _dk = (r.kepala_regu||"").trim();
+        if(_dzk!==_dlz){ html += `<div class="p-doc-zona">${escapeHtml(grpZonaLabel(r))}</div>`; _dlz=_dzk; _dlk=null; }
+        if(_dk!==_dlk){ html += `<div class="p-doc-karu">Karu: ${escapeHtml(_dk||"-")}</div>`; _dlk=_dk; }
         html += `<div class="p-doc-card">
           ${firstUrl?`<img src="${firstUrl}" crossorigin="anonymous">`:""}
           <div class="p-doc-text">
@@ -2147,7 +2203,7 @@
       const { html } = await buildLaporanHtml();
 
       const PRINT_CSS = `
-        *{box-sizing:border-box;}
+        *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
         body{margin:0;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif;padding:12mm;}
         ${PRINT_STYLES}
         @page{ size:A4; margin:12mm; }
@@ -2229,28 +2285,58 @@
 
       for(const pageEl of pageEls){
         const canvas = await html2canvas(pageEl, { scale:2, useCORS:true, backgroundColor:"#ffffff" });
-        const pxPerIn = canvas.width / usableWIn;       // skala kanvas terhadap lebar halaman
-        const sliceHeightPx = Math.floor(usableHIn * pxPerIn);  // tinggi 1 halaman PDF dalam px kanvas
+        const pxPerIn = canvas.width / usableWIn;
+        const sliceHeightPx = Math.floor(usableHIn * pxPerIn);
+        const k = canvas.width / pageEl.offsetWidth;          // px kanvas per px CSS
+        const top0 = pageEl.getBoundingClientRect().top;
+
+        // titik potong aman = bawah tiap baris tabel / kartu foto (judul grup tidak boleh jadi baris terakhir halaman)
+        const cuts = [];
+        pageEl.querySelectorAll("tbody tr, .p-doc-card, .p-doc-zona, .p-doc-karu").forEach(el=>{
+          const keep = el.classList.contains("grp") || el.classList.contains("grp-k") || el.classList.contains("p-doc-zona") || el.classList.contains("p-doc-karu");
+          cuts.push({ b: Math.round((el.getBoundingClientRect().bottom - top0) * k), keep });
+        });
+        // header tabel diulang di tiap halaman lanjutan
+        const thead = pageEl.querySelector("thead");
+        let hTop = 0, hH = 0;
+        if(thead){
+          const hr = thead.getBoundingClientRect();
+          hTop = Math.round((hr.top - top0) * k);
+          hH = Math.round(hr.height * k);
+        }
+        const tol = Math.round(0.15 * pxPerIn);               // sisa padding bawah halaman jangan jadi halaman kosong
         let offsetPx = 0;
 
         while(offsetPx < canvas.height){
-          const thisSliceH = Math.min(sliceHeightPx, canvas.height - offsetPx);
+          const first = offsetPx === 0;
+          const headH = (first || !hH) ? 0 : hH;
+          const avail = sliceHeightPx - headH;
+          let endPx;
+          if(canvas.height - offsetPx <= avail + tol) endPx = canvas.height;
+          else {
+            const limit = offsetPx + avail;
+            let best = 0;
+            for(const c of cuts){ if(!c.keep && c.b > offsetPx + 8 && c.b <= limit) best = c.b; }
+            endPx = best || limit;
+          }
+          const thisSliceH = endPx - offsetPx;
+
           const sliceCanvas = document.createElement("canvas");
           sliceCanvas.width = canvas.width;
-          sliceCanvas.height = thisSliceH;
+          sliceCanvas.height = headH + thisSliceH;
           const sctx = sliceCanvas.getContext("2d");
           sctx.fillStyle = "#ffffff";
           sctx.fillRect(0,0,sliceCanvas.width, sliceCanvas.height);
-          sctx.drawImage(canvas, 0, offsetPx, canvas.width, thisSliceH, 0, 0, canvas.width, thisSliceH);
+          if(headH) sctx.drawImage(canvas, 0, hTop, canvas.width, hH, 0, 0, canvas.width, hH);
+          sctx.drawImage(canvas, 0, offsetPx, canvas.width, thisSliceH, 0, headH, canvas.width, thisSliceH);
 
           if(addedAnyPage) pdf.addPage([PAGE_W_IN, PAGE_H_IN], "portrait");
           addedAnyPage = true;
 
           const imgData = sliceCanvas.toDataURL("image/jpeg", 0.92);
-          const imgHIn = thisSliceH / pxPerIn;
-          pdf.addImage(imgData, "JPEG", MARGIN_IN, MARGIN_IN, usableWIn, imgHIn);
+          pdf.addImage(imgData, "JPEG", MARGIN_IN, MARGIN_IN, usableWIn, sliceCanvas.height / pxPerIn);
 
-          offsetPx += thisSliceH;
+          offsetPx = endPx;
         }
       }
 
@@ -2286,10 +2372,11 @@
       const sb = getSupabase();
       if(!sb) throw new Error("Supabase belum dikonfigurasi.");
 
-      const { data, error } = await sb.from(CFG.sbTable).select("*")
+      const { data: rawData, error } = await sb.from(CFG.sbTable).select("*")
         .gte("tanggal", dari).lte("tanggal", sampai)
         .order("tanggal", {ascending:true}).order("created_at",{ascending:true});
       if(error) throw error;
+      const data = sortTemuan(rawData);   // urut: zona/lokasi → karu → kode
       if(!data || !data.length) throw new Error("Tidak ada temuan pada rentang tanggal ini.");
 
       const wb = new ExcelJS.Workbook();
