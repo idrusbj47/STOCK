@@ -2053,6 +2053,8 @@
     .p-doc-meta span:not(:last-child)::after{ content:" | "; color:#999; font-weight:normal; }
     .p-section-break{ page-break-before:always; }
     table.p-table thead{ display:table-header-group; }
+    table.p-table tbody tr:not(.grp):not(.grp-k) td{ height:46px; vertical-align:middle; }
+    table.p-table tbody tr:not(.grp):not(.grp-k) td:last-child{ min-width:90px; }
     table.p-table tr{ page-break-inside:avoid; break-inside:avoid; }
     table.p-table tr.grp td{ background:#dfe5f7; color:#14213d; font-weight:bold; font-size:12.5px; text-align:left; border-top:2px solid #14213d; }
     table.p-table tr.grp-k td{ background:#f3f5fb; color:#333; font-weight:bold; font-size:11.5px; padding:4px 7px 4px 18px; }
@@ -2128,8 +2130,8 @@
       </div>
       <table class="p-table">
         <colgroup>
-          <col style="width:4%"><col style="width:13%"><col style="width:13%"><col style="width:9%">
-          <col style="width:6%"><col style="width:33%"><col style="width:10%"><col style="width:12%">
+          <col style="width:4%"><col style="width:13%"><col style="width:12%"><col style="width:9%">
+          <col style="width:5%"><col style="width:28%"><col style="width:9%"><col style="width:20%">
         </colgroup>
         <thead><tr>
           <th>No.</th><th>Lokasi</th><th>PJ</th><th>Karu</th><th>Kode</th>
