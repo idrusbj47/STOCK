@@ -3440,7 +3440,7 @@
   // cek otomatis: kalau ada versi lebih baru di server, tampilkan pita pemberitahuan
   setTimeout(async ()=>{
     try{
-      const r = await fetch(location.pathname, {cache:"no-store"});
+      const r = await fetch(location.pathname + "?chk=" + Date.now(), {cache:"no-store"});
       const t = await r.text();
       const m = /APP_VERSION\s*=\s*"([^"]+)"/.exec(t);
       if(m && m[1] !== APP_VERSION){
