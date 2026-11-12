@@ -759,7 +759,7 @@
     <button class="save-settings" id="saveSettingsBtn">Simpan Pengaturan &amp; Muat Data</button>
     <div class="hint" style="margin-top:10px;">
       Struktur tabel Supabase yang disarankan (SQL):<br>
-      <code style="font-size:11px;">create table "5r5s_temuan" (id uuid default gen_random_uuid() primary key, tanggal date, area text, zona text, kode text, uraian text, klasifikasi text, poin int, penanggung_jawab text, catatan text, foto_url text, created_at timestamptz default now());</code><br><br><b>Fitur tindak lanjut (jalankan sekali di SQL Editor):</b><br><code style="font-size:11px;">alter table "5r5s_temuan" add column if not exists tl_status text, add column if not exists tl_tanggal date, add column if not exists tl_catatan text, add column if not exists tl_foto_url text;</code>
+      <code style="font-size:11px;">create table "5r5s_temuan" (id uuid default gen_random_uuid() primary key, tanggal date, area text, zona text, kode text, uraian text, klasifikasi text, poin int, penanggung_jawab text, catatan text, foto_url text, created_at timestamptz default now());</code><br><br><b>Fitur tindak lanjut (jalankan sekali di SQL Editor):</b><br><code style="font-size:11px;">alter table "5r5s_temuan" add column if not exists tl_status text, add column if not exists tl_tanggal date, add column if not exists tl_catatan text, add column if not exists tl_foto_url text;<br>create or replace function public.tl_simpan(p_id text, p_tanggal date, p_catatan text, p_foto text) returns void language plpgsql security definer set search_path = public as $$ begin update "5r5s_temuan" set tl_status='SELESAI', tl_tanggal=p_tanggal, tl_catatan=nullif(p_catatan,''), tl_foto_url=p_foto where id::text = p_id; end $$;<br>grant execute on function public.tl_simpan(text,date,text,text) to anon, authenticated;</code>
     </div>
   </div>
 </div>
@@ -2706,7 +2706,7 @@
     ].filter(x=>x[1]);
     $("dInfo").innerHTML = rows.map(x=>`<div class="dRow"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
     $("dEdit").style.display = currentSession ? "" : "none";
-    $("dTL").style.display = currentSession ? "" : "none";
+    $("dTL").style.display = "";
     $("dTL").textContent = done ? "✎ Ubah Tindak Lanjut" : "✔ Tindak Lanjut (Sudah Diperbaiki)";
     dShow();
     $("detailOverlay").classList.add("show");
@@ -2724,13 +2724,13 @@
   let tlRow = null, tlKept = [], tlRemoved = [];
   function tlErr(e){
     const m = (e && e.message) || String(e);
-    return /tl_status|tl_tanggal|tl_foto|tl_catatan/.test(m) ? "Kolom tindak lanjut belum ada di database. Jalankan SQL migrasi dulu (lihat Pengaturan → Sumber Data)." : m;
+    return /tl_status|tl_tanggal|tl_foto|tl_catatan|tl_simpan|schema cache/.test(m) ? "Fitur tindak lanjut belum disiapkan di database. Jalankan SQL tindak lanjut dulu (lihat Pengaturan → Sumber Data)." : m;
   }
   function renderTlExisting(){
     const wrap = $("tExistingPhotos"); wrap.innerHTML = "";
     tlKept.forEach((url, idx)=>{
       const div = document.createElement("div"); div.className = "thumb";
-      div.innerHTML = `<img src="${escapeHtml(url)}"><button class="rm" data-idx="${idx}">✕</button>`;
+      div.innerHTML = `<img src="${escapeHtml(url)}">${currentSession ? `<button class="rm" data-idx="${idx}">✕</button>` : ""}`;
       wrap.appendChild(div);
     });
     wrap.querySelectorAll(".rm").forEach(btn=> btn.addEventListener("click", ()=>{
@@ -2748,12 +2748,11 @@
     wrap.querySelectorAll(".rm").forEach(btn=> btn.addEventListener("click", ()=>{ tlNewPhotos.splice(+btn.dataset.idx,1); renderTlNew(); }));
   }
   function openTL(row){
-    if(!currentSession){ alert("Anda harus login sebagai admin untuk mengisi tindak lanjut."); return; }
     tlRow = row; tlKept = splitUrls(row.tl_foto_url); tlRemoved = []; tlNewPhotos = [];
     $("tTanggal").value = row.tl_tanggal || ymd(new Date());
     $("tCatatan").value = row.tl_catatan || "";
     $("tlInfo").innerHTML = `<b>${escapeHtml(row.kode||"")} · ${escapeHtml(row.area||"-")}</b><br>${escapeHtml(row.uraian||"")}`;
-    $("btnTLUndo").style.display = row.tl_status ? "" : "none";
+    $("btnTLUndo").style.display = (row.tl_status && currentSession) ? "" : "none";
     $("tlStatus").textContent = ""; $("tlStatus").className = "status-msg";
     renderTlExisting(); renderTlNew();
     tlOverlay.classList.add("show");
@@ -2787,10 +2786,9 @@
         const { data: pub } = sb.storage.from(CFG.sbBucket).getPublicUrl(fname);
         uploaded.push(pub.publicUrl);
       }
-      const upd = { tl_status:"SELESAI", tl_tanggal:tanggal, tl_catatan:catatan || null, tl_foto_url:[...tlKept, ...uploaded].join(",") };
-      const { error } = await sb.from(CFG.sbTable).update(upd).eq("id", tlRow.id);
+      const { error } = await sb.rpc("tl_simpan", { p_id:String(tlRow.id), p_tanggal:tanggal, p_catatan:catatan || "", p_foto:[...tlKept, ...uploaded].join(",") });
       if(error) throw error;
-      if(tlRemoved.length) sb.storage.from(CFG.sbBucket).remove(tlRemoved.map(storagePath)).catch(()=>{});
+      if(tlRemoved.length && currentSession) sb.storage.from(CFG.sbBucket).remove(tlRemoved.map(storagePath)).catch(()=>{});
       successFx(); st("Tindak lanjut tersimpan ✔","ok");
       loadRecent();
       const id = tlRow.id;
