@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stock-opname-shell-v172';
+const CACHE_NAME = 'stock-opname-shell-v173';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -22,15 +22,12 @@ const SHELL_FILES = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      // Cache tiap file SATU-SATU (bukan cache.addAll) supaya kalau ada 1 file
-      // yang gagal/hilang (mis. 404), instalasi Service Worker tetap SUKSES.
-      // Sebelumnya pakai cache.addAll(): kalau 1 saja file di SHELL_FILES gagal
-      // diambil, seluruh install gagal -> SW tidak pernah aktif -> Chrome tidak
-      // pernah menganggap app ini installable -> tombol "Unduh Aplikasi (PWA)"
-      // tidak akan pernah muncul.
+      // Cache tiap file SATU-SATU supaya 1 file yang gagal tidak menggagalkan install SW.
+      // cache:'reload' = paksa ambil dari server (lewati cache HTTP browser/GitHub Pages),
+      // supaya cache baru tidak berisi file versi lama.
       Promise.all(
         SHELL_FILES.map((file) =>
-          cache.add(file).catch((err) => console.warn('SW: gagal cache', file, err))
+          cache.add(new Request(file, { cache: 'reload' })).catch((err) => console.warn('SW: gagal cache', file, err))
         )
       )
     )
@@ -47,6 +44,26 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Halaman (HTML / manifest): NETWORK-FIRST -> selalu ambil versi terbaru kalau online,
+// cache hanya cadangan saat offline atau koneksi lambat (> 5 detik).
+function networkFirst(request, url) {
+  const key = new Request(url.origin + url.pathname); // kunci cache tanpa ?query
+  const net = fetch(url.href, { cache: 'reload' }).then((res) => {
+    if (res && res.ok) {
+      const copy = res.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(key, copy));
+    }
+    return res;
+  });
+  const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+  return Promise.race([net, timeout]).catch(() =>
+    caches
+      .match(key)
+      .then((c) => c || caches.match(request, { ignoreSearch: true }))
+      .then((c) => c || net)
+  );
+}
+
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
@@ -60,14 +77,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Pengecekan versi dari aplikasi (?chk=...) langsung ke jaringan, jangan disentuh cache
+  if (url.searchParams.has('chk')) {
+    return;
+  }
+
+  const isPage =
+    event.request.mode === 'navigate' ||
+    url.pathname.endsWith('/') ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.json');
+
+  if (isPage) {
+    event.respondWith(networkFirst(event.request, url));
+    return;
+  }
+
+  // File lain (ikon, gambar, dll): cache-first
   event.respondWith(
     caches.match(event.request).then((cached) => {
       return (
         cached ||
         fetch(event.request)
           .then((res) => {
-            const resClone = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
+            if (res && res.ok) {
+              const resClone = res.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
+            }
             return res;
           })
           .catch(() => cached)
