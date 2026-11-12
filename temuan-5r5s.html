@@ -553,6 +553,34 @@
   .tl-prog-top span{flex:1;font-size:12.5px;color:var(--muted);}
   .tl-prog-top em{font-style:normal;font-weight:800;font-size:18px;color:#10b981;}
   .tl-sub{margin-top:8px;font-size:12px;color:var(--muted);}
+  /* progres tindak lanjut (area tangkapan layar: warna tetap, tidak ikut tema gelap) */
+  .tp-cap{background:#fff;color:#14213d;border-radius:14px;padding:16px 14px;border:1px solid #e2e5ee;margin-top:12px;font-family:Arial,Helvetica,sans-serif;}
+  .tp-h b{display:block;font-size:15px;line-height:1.3;}
+  .tp-h small{display:block;font-size:11px;color:#6b7488;margin-top:3px;}
+  .tp-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0 4px;}
+  .tp-k{border-radius:10px;padding:8px 4px;text-align:center;}
+  .tp-k b{display:block;font-size:20px;line-height:1.15;}
+  .tp-k span{font-size:10.5px;font-weight:700;}
+  .tp-k.t{background:#e6f0ff;color:#2f5bb7;} .tp-k.d{background:#e3f7ec;color:#0a7a4a;} .tp-k.o{background:#fff3d6;color:#a8650a;} .tp-k.l{background:#ffe6ea;color:#c0334d;}
+  .tp-sec{font-size:12.5px;font-weight:800;margin:14px 0 6px;color:#14213d;}
+  table.tp-t{width:100%;border-collapse:collapse;font-size:12px;}
+  table.tp-t th{background:#14213d;color:#fff;padding:6px 4px;font-size:10.5px;text-align:center;}
+  table.tp-t td{border-bottom:1px solid #e6e9f2;padding:6px 4px;vertical-align:middle;color:#14213d;}
+  table.tp-t tbody tr:nth-child(even) td{background:#f8f9fc;}
+  table.tp-t td.c{text-align:center;} table.tp-t td.num{text-align:center;font-weight:700;}
+  .tp-sub{font-size:10.5px;color:#6b7488;margin-top:1px;}
+  .tp-bad{color:#c0334d !important;font-weight:800;} .tp-ok{color:#0a7a4a !important;}
+  .tp-pct{font-weight:800;font-size:11.5px;}
+  .tp-bar{height:5px;background:#e6e9f2;border-radius:9px;overflow:hidden;margin-top:3px;} .tp-bar i{display:block;height:100%;background:#10b981;}
+  .tp-foot{font-size:10.5px;color:#7a8299;margin-top:12px;line-height:1.4;}
+  .tp-allok{text-align:center;padding:14px;font-size:12.5px;color:#0a7a4a;font-weight:700;}
+  .tp-act{display:flex;gap:8px;margin-top:10px;}
+  .tp-act button{flex:1;}
+  .b-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:12px;margin-top:8px;cursor:pointer;}
+  .b-row input{width:auto !important;flex:none;}
+  .b-row.off{opacity:.5;cursor:default;}
+  .b-row .b-t{flex:1;font-size:13.5px;font-weight:700;}
+  .b-row .b-t small{display:block;font-weight:600;font-size:12px;color:var(--muted);margin-top:1px;}
 </style>
 </head>
 <body>
@@ -645,7 +673,9 @@
         <button type="button" class="an-ref" id="anRefresh" title="Muat ulang analisa" aria-label="Muat ulang analisa">⟳</button>
       </div>
     </div>
+    <div class="an-seg" id="anSub" style="margin:12px 0 0;"><button type="button" data-sub="an" class="on">Analisa</button><button type="button" data-sub="tl">Progres Tindak Lanjut</button></div>
     <div id="anBody"><div class="an-skel"></div><div class="an-skel"></div></div>
+    <div id="tlBody" style="display:none;"></div>
   </section>
 
   <section class="view" id="v-set">
@@ -656,6 +686,7 @@
       <button class="setRow admin-only" data-click="btnMaster"><i>&#128451;</i><span>Kelola Data Master</span></button>
       <button class="setRow" data-click="btnSettings"><i>&#9881;</i><span>Sumber Data (Supabase)</span></button>
       <button class="setRow" data-click="btnRefresh"><i>&#10227;</i><span>Muat Ulang Database</span></button>
+      <button class="setRow admin-only" id="btnBulk" type="button"><i>&#9989;</i><span>Tandai Selesai Massal (Admin)</span></button>
       <button class="setRow" id="btnUpdateApp" type="button"><i>&#11014;</i><span>Perbarui Aplikasi (ambil versi terbaru)</span></button>
       <button class="setRow" data-click="btnHome"><i>&#8962;</i><span>Kembali ke Home</span></button>
       <div class="hint" id="appVer" style="text-align:center;margin-top:12px;"></div>
@@ -935,6 +966,26 @@
     <button class="save-settings btn-tl" id="btnTLSave" style="margin-top:16px;">✔ Simpan Tindak Lanjut</button>
     <button class="save-settings btn-tl-undo" id="btnTLUndo" style="display:none;">Batalkan Status Tindak Lanjut</button>
     <div class="status-msg" id="tlStatus"></div>
+  </div>
+</div>
+
+<!-- TANDAI SELESAI MASSAL (ADMIN) -->
+<div class="modal-overlay" id="bulkOverlay">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeBulk">✕</button>
+    <h3>Tandai Selesai Massal</h3>
+    <div class="hint" style="font-size:12.5px;line-height:1.5;margin:0 0 10px;">Pilih tanggal temuan. Semua temuan pada tanggal itu yang belum ditindaklanjuti akan ditandai <b>SUDAH DITINDAKLANJUTI</b>, walau tanpa foto. Temuan yang sudah selesai tidak diubah.</div>
+    <label>Tanggal Tindak Lanjut</label>
+    <input type="date" id="bTanggal">
+    <label>Keterangan (opsional)</label>
+    <input type="text" id="bCatatan" placeholder="mis. Sudah ditindaklanjuti di lapangan">
+    <label style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+      <input type="checkbox" id="bAll" style="width:auto;">
+      <span style="font-weight:700;color:var(--text);font-size:13.5px;">Pilih semua tanggal yang masih ada temuan belum selesai</span>
+    </label>
+    <div id="bList"><div class="hint">Memuat…</div></div>
+    <button class="save-settings btn-tl" id="btnBulkSave" style="margin-top:16px;">✔ Tandai Selesai</button>
+    <div class="status-msg" id="bulkStatus"></div>
   </div>
 </div>
 
@@ -3023,7 +3074,8 @@
       <div class="an-lgd">${items.map(it=>`<div><i style="background:${it.color}"></i><span title="${escapeHtml(it.label)}">${escapeHtml(it.label)}</span><em>${nfmt(it.n)}</em><small>${Math.round(it.n/total*100)}%</small></div>`).join("")}</div></div>`;
   }
 
-  function renderAn(animate){
+  function renderAn(animate){ renderAn0(animate); renderTLProg(); }
+  function renderAn0(animate){
     const body = $("anBody"); if(!body || !anRows) return;
     const rows = anFiltered(), total = rows.length;
     body.classList.remove("an-go","an-noanim");
@@ -3424,7 +3476,7 @@
   })();
 
   /* ---------------- PERBARUI APLIKASI (lewati cache, terutama iPhone) ---------------- */
-  const APP_VERSION = "2026-11-12-4";
+  const APP_VERSION = "2026-11-12-5";
   // versi mengikuti service worker (CACHE_NAME di sw.js), mis. "stock-opname-shell-v173" -> "v173"
   let swVer = "";
   async function getSwVer(){
@@ -3469,6 +3521,168 @@
       }
     }catch(e){}
   }, 3000);
+
+  /* ---------------- PROGRES TINDAK LANJUT (sub-tab Laporan) ---------------- */
+  let tlShow = "open", tlBlobP = null, tlPrepT = null;
+  function tpGroup(rows, keyFn, mk){
+    const m = new Map(), today = ymd(new Date());
+    rows.forEach(r=>{
+      const k = keyFn(r); let o = m.get(k);
+      if(!o){ o = Object.assign({n:0, d:0, late:0}, mk(r)); m.set(k, o); }
+      o.n++;
+      if(r.tl_status) o.d++;
+      else if(ymd(addDays(parseYmd(r.tanggal), 7)) < today) o.late++;
+    });
+    return Array.from(m.values()).map(o=>Object.assign(o, {open:o.n-o.d}))
+      .sort((a,b)=> b.open-a.open || b.late-a.late || natCmp(a.name, b.name));
+  }
+  function tpTable(items, firstHdr){
+    if(tlShow === "open") items = items.filter(o=>o.open > 0);
+    if(!items.length) return '<div class="tp-allok">✔ Semua sudah ditindaklanjuti</div>';
+    return `<table class="tp-t"><thead><tr><th style="width:22px">No</th><th style="text-align:left">${firstHdr}</th><th>Temuan</th><th>Selesai</th><th>Belum</th><th>Lewat<br>batas</th><th style="width:50px">%</th></tr></thead><tbody>`
+      + items.map((o,i)=>{ const pc = Math.round(o.d/o.n*100);
+        return `<tr><td class="c">${i+1}</td><td>${o.label}</td><td class="num">${o.n}</td><td class="num tp-ok">${o.d}</td><td class="num ${o.open?"tp-bad":""}">${o.open}</td><td class="num ${o.late?"tp-bad":""}">${o.late||"-"}</td><td class="c"><span class="tp-pct">${pc}%</span><div class="tp-bar"><i style="width:${pc}%"></i></div></td></tr>`; }).join("")
+      + '</tbody></table>';
+  }
+  function renderTLProg(){
+    const body = $("tlBody"); if(!body) return;
+    if(!anRows){ body.innerHTML = '<div class="an-skel"></div><div class="an-skel"></div>'; return; }
+    const rows = anFiltered();
+    if(rows.length && !rows.some(r=> "tl_status" in r)){
+      body.innerHTML = '<div class="an-p" style="margin-top:12px"><div class="an-empty">Fitur tindak lanjut belum disiapkan di database. Jalankan SQL tindak lanjut dulu (Pengaturan → Sumber Data).</div></div>'; return;
+    }
+    if(!rows.length){ body.innerHTML = '<div class="an-p" style="margin-top:12px"><div class="an-empty">Belum ada temuan pada periode ini.</div></div>'; return; }
+    const total = rows.length, done = rows.filter(r=>r.tl_status).length, open = total - done;
+    const today = ymd(new Date());
+    const late = rows.filter(r=> !r.tl_status && ymd(addDays(parseYmd(r.tanggal), 7)) < today).length;
+    const pc = Math.round(done/total*100);
+    const zonaG = tpGroup(rows, r=>(r.zona||"").trim()+"|"+(r.area||"").trim(), r=>{
+      const z = (r.zona||"").trim(), a = (r.area||"").trim();
+      return { name: z || "~", label: `<b>${escapeHtml(z || "Tanpa zona")}</b>${a?`<div class="tp-sub">${escapeHtml(a)}</div>`:""}` }; });
+    const karuG = tpGroup(rows, r=>(r.kepala_regu||"").trim(), r=>{
+      const k = (r.kepala_regu||"").trim(); return { name: k || "~", label: `<b>${escapeHtml(k || "Tanpa karu")}</b>` }; });
+    const n0 = new Date();
+    const ptxt = anRange ? fmtShort(ymd(addDays(n0,-(anRange-1))))+" – "+fmtShort(ymd(n0))+" ("+anRange+" hari terakhir)" : "Seluruh data tercatat";
+    const tglNow = n0.toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+    body.innerHTML = `
+      <div class="an-seg" id="tlShowSeg" style="margin-top:12px;"><button type="button" data-tls="open" class="${tlShow==="open"?"on":""}">Yang belum saja</button><button type="button" data-tls="all" class="${tlShow==="all"?"on":""}">Semua blok</button></div>
+      <div class="tp-cap" id="tlCap">
+        <div class="tp-h"><b>PROGRES TINDAK LANJUT TEMUAN 5R5S</b><small>PT. Karya Indah Multiguna · Periode temuan: ${ptxt}<br>Per ${tglNow}</small></div>
+        <div class="tp-kpis">
+          <div class="tp-k t"><b>${nfmt(total)}</b><span>Temuan</span></div>
+          <div class="tp-k d"><b>${nfmt(done)}</b><span>Selesai (${pc}%)</span></div>
+          <div class="tp-k o"><b>${nfmt(open)}</b><span>Belum</span></div>
+          <div class="tp-k l"><b>${nfmt(late)}</b><span>Lewat batas</span></div>
+        </div>
+        <div class="tp-sec">Per Blok / Zona${tlShow==="open"?" (yang belum selesai)":""}</div>
+        ${tpTable(zonaG, "Blok / Zona")}
+        <div class="tp-sec">Per Kepala Regu / Karu${tlShow==="open"?" (yang belum selesai)":""}</div>
+        ${tpTable(karuG, "Karu")}
+        <div class="tp-foot">Lewat batas = belum ditindaklanjuti lebih dari 7 hari sejak tanggal temuan.</div>
+      </div>
+      <div class="tp-act"><button type="button" class="goldBtn" id="tlShare" style="padding:11px 8px;font-size:13px;">↗ Bagikan / Simpan Gambar</button><button type="button" class="linkBtn" id="tlDl" style="padding:11px 8px;">⬇ Unduh PNG</button></div>
+      <div class="hint" id="tlSnapMsg" style="text-align:center;margin-top:6px;"></div>`;
+    // siapkan gambar di latar belakang supaya tombol Bagikan langsung jalan
+    tlBlobP = null; clearTimeout(tlPrepT);
+    if($("tlBody").style.display !== "none") tlPrepT = setTimeout(()=>{ tlBlobP = tlMakeBlob().catch(()=>null); }, 600);
+  }
+  async function tlMakeBlob(){
+    const el = $("tlCap"); if(!el) return null;
+    const canvas = await html2canvas(el, { scale:2, backgroundColor:"#ffffff", useCORS:true });
+    return await new Promise(res=> canvas.toBlob(res, "image/png"));
+  }
+  async function tlOutput(share){
+    const msg = $("tlSnapMsg"); msg.textContent = "Menyiapkan gambar…";
+    try{
+      const blob = await (tlBlobP || (tlBlobP = tlMakeBlob()));
+      if(!blob) throw new Error("gagal membuat gambar");
+      const name = "Progres-Tindak-Lanjut_" + ymd(new Date()) + ".png";
+      const file = new File([blob], name, {type:"image/png"});
+      if(share && navigator.canShare && navigator.canShare({files:[file]})){
+        try{ await navigator.share({ files:[file], title:"Progres Tindak Lanjut 5R5S" }); msg.textContent = ""; return; }
+        catch(e){ if(e && e.name === "AbortError"){ msg.textContent = ""; return; } }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=> URL.revokeObjectURL(url), 3000);
+      msg.textContent = "Gambar tersimpan ✔ — kirim lewat WhatsApp dari galeri/unduhan.";
+    }catch(e){ msg.textContent = "Gagal membuat gambar: " + (e.message||e); }
+  }
+  $("tlBody").addEventListener("click", e=>{
+    const t = e.target.closest("[data-tls]");
+    if(t){ tlShow = t.dataset.tls; renderTLProg(); return; }
+    if(e.target.closest("#tlShare")) tlOutput(true);
+    else if(e.target.closest("#tlDl")) tlOutput(false);
+  });
+  $("anSub").addEventListener("click", e=>{
+    const b = e.target.closest("button[data-sub]"); if(!b) return;
+    document.querySelectorAll("#anSub button").forEach(x=> x.classList.toggle("on", x===b));
+    const tl = b.dataset.sub === "tl";
+    $("anBody").style.display = tl ? "none" : ""; $("tlBody").style.display = tl ? "" : "none";
+    if(anRows) { if(tl) renderTLProg(); } else loadAnalytics();
+    if(tl && anRows) loadAnalytics();
+  });
+
+  /* ---------------- TANDAI SELESAI MASSAL (ADMIN) ---------------- */
+  let bulkDates = [];
+  function bulkMsg(t,c){ $("bulkStatus").textContent = t||""; $("bulkStatus").className = "status-msg " + (c||""); }
+  function bulkSelected(){ return Array.from(document.querySelectorAll("#bList input[data-d]:checked")).map(x=>x.dataset.d); }
+  function bulkRefreshBtn(){
+    const sel = new Set(bulkSelected());
+    const n = bulkDates.filter(x=>sel.has(x.d)).reduce((a,x)=>a+x.open, 0);
+    $("btnBulkSave").textContent = n ? `✔ Tandai Selesai (${n} temuan)` : "✔ Tandai Selesai";
+    const sel2 = bulkDates.filter(x=>x.open>0);
+    $("bAll").checked = sel2.length > 0 && sel2.every(x=>sel.has(x.d));
+  }
+  async function bulkLoad(){
+    $("bList").innerHTML = '<div class="hint">Memuat…</div>';
+    try{
+      const sb = getSupabase(); if(!sb) throw new Error("Supabase belum dikonfigurasi.");
+      const map = new Map(); let from = 0;
+      while(true){
+        const { data, error } = await sb.from(CFG.sbTable).select("tanggal,tl_status").order("tanggal",{ascending:false}).range(from, from+999);
+        if(error) throw new Error(tlErr(error));
+        (data||[]).forEach(r=>{ const o = map.get(r.tanggal) || {d:r.tanggal, n:0, open:0}; o.n++; if(!r.tl_status) o.open++; map.set(r.tanggal, o); });
+        if(!data || data.length < 1000) break; from += 1000;
+      }
+      bulkDates = Array.from(map.values()).sort((a,b)=> b.d.localeCompare(a.d));
+      $("bList").innerHTML = bulkDates.length ? bulkDates.map(x=>`<label class="b-row ${x.open?"":"off"}"><input type="checkbox" data-d="${x.d}" ${x.open?"":"disabled"}><span class="b-t">${escapeHtml(parseYmd(x.d).toLocaleDateString("id-ID",{weekday:"short",day:"numeric",month:"short",year:"numeric"}))}<small>${x.n} temuan · ${x.open ? x.open+" belum selesai" : "semua sudah selesai ✔"}</small></span></label>`).join("") : '<div class="hint">Belum ada temuan.</div>';
+      bulkRefreshBtn();
+    }catch(e){ $("bList").innerHTML = '<div class="hint">Gagal memuat: ' + escapeHtml(e.message||String(e)) + '</div>'; }
+  }
+  $("btnBulk").addEventListener("click", ()=>{
+    if(!currentSession){ alert("Hanya admin yang bisa memakai menu ini."); return; }
+    $("bTanggal").value = ymd(new Date()); $("bCatatan").value = ""; $("bAll").checked = false; bulkMsg("");
+    $("bulkOverlay").classList.add("show"); bulkLoad();
+  });
+  $("closeBulk").addEventListener("click", ()=> $("bulkOverlay").classList.remove("show"));
+  $("bAll").addEventListener("change", ()=>{
+    const on = $("bAll").checked;
+    document.querySelectorAll("#bList input[data-d]:not(:disabled)").forEach(x=> x.checked = on);
+    bulkRefreshBtn();
+  });
+  $("bList").addEventListener("change", e=>{ if(e.target.matches("input[data-d]")) bulkRefreshBtn(); });
+  $("btnBulkSave").addEventListener("click", async ()=>{
+    if(!currentSession){ bulkMsg("Hanya admin yang bisa melakukan ini.","err"); return; }
+    const dates = bulkSelected();
+    if(!dates.length){ bulkMsg("Pilih minimal satu tanggal.","err"); return; }
+    const tgl = $("bTanggal").value; if(!tgl){ bulkMsg("Tanggal tindak lanjut wajib diisi.","err"); return; }
+    const n = bulkDates.filter(x=>dates.includes(x.d)).reduce((a,x)=>a+x.open, 0);
+    if(!confirm(`Tandai ${n} temuan pada ${dates.length} tanggal sebagai SUDAH DITINDAKLANJUTI (tanpa foto)?`)) return;
+    const sb = getSupabase(); if(!sb) return;
+    $("btnBulkSave").disabled = true; bulkMsg("Menyimpan…");
+    try{
+      const upd = { tl_status:"SELESAI", tl_tanggal:tgl }; const cat = $("bCatatan").value.trim(); if(cat) upd.tl_catatan = cat;
+      for(const d of dates){
+        const { error } = await sb.from(CFG.sbTable).update(upd).eq("tanggal", d).is("tl_status", null);
+        if(error) throw error;
+      }
+      successFx(); bulkMsg(`${n} temuan ditandai selesai ✔`,"ok");
+      loadRecent(); await bulkLoad();
+    }catch(e){ bulkMsg("Gagal: " + tlErr(e), "err"); }
+    finally{ $("btnBulkSave").disabled = false; }
+  });
 
   if(!CFG.sbUrl || !CFG.sbKey){ openSettings(); }
   loadAllDb();
