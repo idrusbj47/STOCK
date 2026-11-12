@@ -3424,8 +3424,18 @@
   })();
 
   /* ---------------- PERBARUI APLIKASI (lewati cache, terutama iPhone) ---------------- */
-  const APP_VERSION = "2026-11-12-3";
-  $("appVer").textContent = "Versi aplikasi: " + APP_VERSION;
+  const APP_VERSION = "2026-11-12-4";
+  // versi mengikuti service worker (CACHE_NAME di sw.js), mis. "stock-opname-shell-v173" -> "v173"
+  let swVer = "";
+  async function getSwVer(){
+    try{
+      if(!window.caches) return "";
+      const ks = await caches.keys();
+      const k = ks.filter(x=>/^stock-opname-shell-/.test(x)).sort().pop();
+      return k ? k.replace(/^stock-opname-shell-/, "") : "";
+    }catch(e){ return ""; }
+  }
+  getSwVer().then(v=>{ swVer = v; $("appVer").textContent = "Versi aplikasi: " + (v || APP_VERSION); });
   async function hardRefresh(){
     try{ if(navigator.serviceWorker){ const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r=>r.unregister())); } }catch(e){}
     try{ if(window.caches){ const ks = await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } }catch(e){}
@@ -3443,7 +3453,14 @@
       const r = await fetch(location.pathname + "?chk=" + Date.now(), {cache:"no-store"});
       const t = await r.text();
       const m = /APP_VERSION\s*=\s*"([^"]+)"/.exec(t);
-      if(m && m[1] !== APP_VERSION){
+      let swNew = "";
+      try{
+        const rs = await fetch(new URL("sw.js", location.href).pathname + "?chk=" + Date.now(), {cache:"no-store"});
+        const ts = await rs.text();
+        const ms = /CACHE_NAME\s*=\s*['"]stock-opname-shell-([^'"]+)['"]/.exec(ts);
+        if(ms) swNew = ms[1];
+      }catch(e){}
+      if((m && m[1] !== APP_VERSION) || (swNew && swVer && swNew !== swVer)){
         const bar = document.createElement("div");
         bar.style.cssText = "position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:10001;background:#0d1b36;color:#fff;border:1.5px solid #c9a24b;border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:10px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.35);";
         bar.innerHTML = '<span style="flex:1;">Versi baru aplikasi tersedia.</span><button type="button" style="border:none;border-radius:9px;padding:8px 14px;font-weight:800;background:#e3c36f;color:#0d1b36;cursor:pointer;">Perbarui</button>';
