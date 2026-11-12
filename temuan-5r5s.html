@@ -534,6 +534,25 @@
     .an-span2{grid-column:1/-1;}
     .tr-wrap{height:190px;}
   }
+
+  /* ===== TINDAK LANJUT ===== */
+  .badge.done{background:linear-gradient(135deg,#34d399,#059669);}
+  .list-item.done{border-left-color:#10b981;background:linear-gradient(90deg,rgba(16,185,129,.10),transparent 55%);}
+  body.dark .list-item.done{background:linear-gradient(90deg,rgba(16,185,129,.16),transparent 55%);}
+  .dTabs{display:flex;gap:6px;margin:0 0 10px;}
+  .dTabs button{flex:1;padding:9px 6px;border-radius:10px;border:1px solid var(--border);background:var(--an-card);color:var(--text);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .dTabs button.on{background:var(--nbg);color:#fff;border-color:var(--gold);}
+  .dTabs button.after.on{background:#059669;border-color:#10b981;}
+  .tlInfo{background:#f3f6fc;border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45;margin-bottom:6px;}
+  body.dark .tlInfo{background:#0e1830;}
+  .btn-tl{background:linear-gradient(135deg,#10b981,#059669) !important;color:#fff !important;}
+  .btn-tl-undo{background:#fdecec !important;color:#c0392b !important;border:1px solid #f3c3c3 !important;}
+  body.dark .btn-tl-undo{background:#3a1a24 !important;color:#fda4af !important;border-color:#5a2a38 !important;}
+  .tl-prog-top{display:flex;align-items:baseline;gap:8px;}
+  .tl-prog-top b{font-size:30px;color:var(--text);line-height:1;}
+  .tl-prog-top span{flex:1;font-size:12.5px;color:var(--muted);}
+  .tl-prog-top em{font-style:normal;font-weight:800;font-size:18px;color:#10b981;}
+  .tl-sub{margin-top:8px;font-size:12px;color:var(--muted);}
 </style>
 </head>
 <body>
@@ -701,6 +720,7 @@
       <button type="button" class="rTglBtn" id="rTglBtn">📅 &nbsp;Pilih tanggal</button>
       <button type="button" class="linkBtn" id="rReset">Terbaru</button>
     </div>
+    <div class="an-seg" id="rStatus" style="margin:0 0 8px;"><button type="button" data-s="all" class="on">Semua</button><button type="button" data-s="open">Belum Ditindaklanjuti</button><button type="button" data-s="done">Sudah Selesai</button></div>
     <div class="hint" id="rInfo" style="margin:0 0 4px;"></div>
     <div id="recentList"><div class="hint">Belum ada data / memuat…</div></div>
   </div>
@@ -739,7 +759,7 @@
     <button class="save-settings" id="saveSettingsBtn">Simpan Pengaturan &amp; Muat Data</button>
     <div class="hint" style="margin-top:10px;">
       Struktur tabel Supabase yang disarankan (SQL):<br>
-      <code style="font-size:11px;">create table "5r5s_temuan" (id uuid default gen_random_uuid() primary key, tanggal date, area text, zona text, kode text, uraian text, klasifikasi text, poin int, penanggung_jawab text, catatan text, foto_url text, created_at timestamptz default now());</code>
+      <code style="font-size:11px;">create table "5r5s_temuan" (id uuid default gen_random_uuid() primary key, tanggal date, area text, zona text, kode text, uraian text, klasifikasi text, poin int, penanggung_jawab text, catatan text, foto_url text, created_at timestamptz default now());</code><br><br><b>Fitur tindak lanjut (jalankan sekali di SQL Editor):</b><br><code style="font-size:11px;">alter table "5r5s_temuan" add column if not exists tl_status text, add column if not exists tl_tanggal date, add column if not exists tl_catatan text, add column if not exists tl_foto_url text;</code>
     </div>
   </div>
 </div>
@@ -751,11 +771,13 @@
   <div class="modal-sheet">
     <button class="modal-close" id="closeDetail">✕</button>
     <h3 id="dTitle">Detail Temuan</h3>
+    <div class="dTabs" id="dTabs" style="display:none;"><button type="button" class="on" data-t="before">Sebelum (Temuan)</button><button type="button" class="after" data-t="after">Sesudah (Tindak Lanjut)</button></div>
     <div class="dMain" id="dMain"><img id="dImg" alt="Foto temuan">
       <button class="dNav prev" id="dPrev" type="button">‹</button><button class="dNav next" id="dNext" type="button">›</button>
       <span class="dCount" id="dCount"></span><span class="dHint">Ketuk untuk memperbesar</span></div>
     <div class="dThumbs" id="dThumbs"></div>
     <div id="dInfo"></div>
+    <button class="save-settings btn-tl" id="dTL" style="display:none;">✔ Tindak Lanjut</button>
     <button class="save-settings" id="dEdit" style="display:none;">✎ Edit Temuan</button>
   </div>
 </div>
@@ -883,11 +905,51 @@
   </div>
 </div>
 
+<!-- TINDAK LANJUT MODAL -->
+<div class="modal-overlay" id="tlOverlay">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeTL">✕</button>
+    <h3>Tindak Lanjut Temuan</h3>
+    <div class="tlInfo" id="tlInfo"></div>
+
+    <label>Tanggal Tindak Lanjut</label>
+    <input type="date" id="tTanggal">
+
+    <label>Keterangan Perbaikan (opsional)</label>
+    <textarea id="tCatatan" placeholder="mis. Barang sudah dirapikan, label sudah dipasang"></textarea>
+
+    <label>Foto Bukti Tindak Lanjut</label>
+    <div class="photo-preview" id="tExistingPhotos"></div>
+    <div class="photo-actions" style="margin-top:8px;">
+      <button type="button" id="tBtnCamera">📷 Ambil Foto</button>
+      <button type="button" id="tBtnGallery">🖼️ Dari Galeri</button>
+    </div>
+    <input type="file" id="tInputCamera" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="tInputGallery" accept="image/*" style="display:none">
+    <div class="hint" id="tNewPhotosLabel" style="display:none;margin-top:6px;">Foto baru (akan ditambahkan):</div>
+    <div class="photo-preview" id="tNewPhotos"></div>
+    <div class="hint" style="margin-top:6px;">Foto bisa diberi panah, lingkaran, crop, putar &amp; atur kecerahan sebelum dipakai.</div>
+
+    <button class="save-settings btn-tl" id="btnTLSave" style="margin-top:16px;">✔ Simpan Tindak Lanjut</button>
+    <button class="save-settings btn-tl-undo" id="btnTLUndo" style="display:none;">Batalkan Status Tindak Lanjut</button>
+    <div class="status-msg" id="tlStatus"></div>
+  </div>
+</div>
+
 <!-- CETAK PDF MODAL -->
 <div class="modal-overlay" id="cetakOverlay">
   <div class="modal-sheet">
     <button class="modal-close" id="closeCetak">✕</button>
     <h3>Cetak Form Temuan Sidak 5R5S</h3>
+    <label>Jenis Laporan</label>
+    <select id="cetakJenis">
+      <option value="temuan">Laporan Temuan (biasa)</option>
+      <option value="tl">Laporan Sudah Ditindaklanjuti (foto sebelum &amp; sesudah)</option>
+    </select>
+    <div id="cetakBasisBox" style="display:none;">
+      <label>Rentang tanggal berdasarkan</label>
+      <select id="cetakBasis"><option value="tanggal">Tanggal temuan</option><option value="tl_tanggal">Tanggal tindak lanjut</option></select>
+    </div>
     <label>Dari Tanggal</label>
     <input type="date" id="cetakDari">
     <label>Sampai Tanggal</label>
@@ -902,7 +964,7 @@
     </div>
     <button class="save-settings" id="btnGenerateExcel" style="margin-top:10px;background:var(--green);">📊 Unduh Excel</button>
     <div class="hint" style="margin-top:8px;">
-      <b>Cetak</b>: buka dialog cetak browser — cocok di komputer, tinggal pilih printer. <b>Unduh PDF</b>: file PDF (ukuran Legal 8.5 × 13 in) langsung tersimpan di HP, siap dibagikan lewat WhatsApp — lebih disarankan untuk iPhone. <b>Unduh Excel</b>: file .xlsx berisi tabel data lengkap dengan foto temuan ditanam di dalam sheet.
+      <b>Cetak</b>: buka dialog cetak browser — cocok di komputer, tinggal pilih printer. <b>Unduh PDF</b>: file PDF (ukuran Legal 8.5 × 13 in) langsung tersimpan di HP, siap dibagikan lewat WhatsApp — lebih disarankan untuk iPhone. <b>Unduh Excel</b>: file .xlsx berisi tabel data lengkap dengan foto temuan ditanam di dalam sheet. <b>Laporan Sudah Ditindaklanjuti</b> hanya memuat temuan yang sudah ada bukti perbaikannya, lengkap dengan foto sebelum &amp; sesudah.
     </div>
     <div class="status-msg" id="cetakStatus"></div>
   </div>
@@ -944,7 +1006,8 @@
   let photos = [];   // [{blob, dataUrl}]  (single photo slot allowed, but support multiple)
   let photoTarget = "main"; // "main" (form input) atau "edit" (modal edit temuan)
   let editNewPhotos = []; // foto baru yang ditambahkan lewat modal edit
-  let hiddenEditOverlayForPhotoEditor = false; // true jika modal Edit disembunyikan sementara saat editor foto dibuka
+  let hiddenOverlayEl = null; // modal (Edit / Tindak Lanjut) yang disembunyikan sementara saat editor foto dibuka
+  let tlNewPhotos = []; // foto bukti baru untuk tindak lanjut
 
   const $ = id => document.getElementById(id);
 
@@ -1386,8 +1449,8 @@
       $("applyCrop").style.display = "none";
       // Kalau editor foto dibuka dari dalam modal Edit Temuan, sembunyikan
       // dulu modal Edit-nya supaya tidak bertumpuk/menutupi editor foto.
-      hiddenEditOverlayForPhotoEditor = $("editOverlay").classList.contains("show");
-      if(hiddenEditOverlayForPhotoEditor) $("editOverlay").classList.remove("show");
+      hiddenOverlayEl = ["editOverlay","tlOverlay"].map(id=>$(id)).find(el=>el.classList.contains("show")) || null;
+      if(hiddenOverlayEl) hiddenOverlayEl.classList.remove("show");
       editorOverlay.classList.add("show");
     };
     img.src = dataUrl;
@@ -1530,10 +1593,7 @@
 
   function closePhotoEditor(){
     editorOverlay.classList.remove("show");
-    if(hiddenEditOverlayForPhotoEditor){
-      $("editOverlay").classList.add("show");
-      hiddenEditOverlayForPhotoEditor = false;
-    }
+    if(hiddenOverlayEl){ hiddenOverlayEl.classList.add("show"); hiddenOverlayEl = null; }
   }
   $("editorCancel").addEventListener("click", closePhotoEditor);
   $("closeEditor").addEventListener("click", closePhotoEditor);
@@ -1549,15 +1609,15 @@
       if(photoTarget === "edit"){
         editNewPhotos.push({ blob, dataUrl });
         renderEditNewPhotos();
+      } else if(photoTarget === "tl"){
+        tlNewPhotos.push({ blob, dataUrl });
+        renderTlNew();
       } else {
         photos.push({ blob, dataUrl });
         renderPhotoPreview();
       }
       editorOverlay.classList.remove("show");
-      if(hiddenEditOverlayForPhotoEditor){
-        $("editOverlay").classList.add("show");
-        hiddenEditOverlayForPhotoEditor = false;
-      }
+      if(hiddenOverlayEl){ hiddenOverlayEl.classList.add("show"); hiddenOverlayEl = null; }
     }, "image/jpeg", 0.9);
   });
 
@@ -1719,16 +1779,16 @@
     const thumb = (r.foto_url||"").split(",")[0] || "";
     const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
     const rowEnc = encodeURIComponent(JSON.stringify(r));
-    return `<div class="list-item ${isMayor?"mayor":"minor"}" data-row="${rowEnc}">${thumb ? `<img src="${thumb}">` : ""}
+    return `<div class="list-item ${isMayor?"mayor":"minor"}${r.tl_status?" done":""}" data-row="${rowEnc}">${thumb ? `<img src="${thumb}">` : ""}
       <div class="meta">
         <b>${escapeHtml(r.kode)} · ${escapeHtml(r.area||"-")}</b><br>
         ${escapeHtml(r.uraian||"")}<br>
-        <span class="badge ${isMayor?'mayor':'minor'}" style="margin-top:4px;display:inline-block;">${isMayor?'MAYOR':'MINOR'}</span>
+        <span class="badge ${isMayor?'mayor':'minor'}" style="margin-top:4px;display:inline-block;">${isMayor?'MAYOR':'MINOR'}</span>${r.tl_status?' <span class="badge done" style="margin-top:4px;display:inline-block;">✔ SELESAI</span>':""}
         ${r.penanggung_jawab? " · PJ: "+escapeHtml(r.penanggung_jawab):""}${r.kepala_regu? " · Karu: "+escapeHtml(r.kepala_regu):""} · ${escapeHtml(r.tanggal||"")}
       </div>
       ${currentSession ? `<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
         <button class="editBtn" data-row="${rowEnc}" title="Edit temuan">✎</button>
-        <button class="delBtn" data-id="${r.id}" data-fotos="${escapeHtml(r.foto_url||"")}" title="Hapus temuan">✕</button>
+        <button class="delBtn" data-id="${r.id}" data-fotos="${escapeHtml([r.foto_url, r.tl_foto_url].filter(Boolean).join(","))}" title="Hapus temuan">✕</button>
       </div>` : ""}</div>`;
   }
   function fmtTgl(t){
@@ -1775,6 +1835,7 @@
   }
 
   // Riwayat: tanpa tanggal = 20 terbaru; pilih tanggal = semua temuan tanggal itu, tanpa batas
+  let rStat = "all";
   async function loadRecent(){
     const sb = getSupabase();
     const box = $("recentList");
@@ -1792,6 +1853,9 @@
         data = r.data || [];
         $("rInfo").textContent = "Menampilkan 20 temuan terbaru. Pilih tanggal untuk melihat semuanya.";
       }
+      if(rStat==="open") data = data.filter(r=>!r.tl_status);
+      else if(rStat==="done") data = data.filter(r=>r.tl_status);
+      if(rStat!=="all") $("rInfo").textContent += " · " + data.length + (rStat==="done" ? " sudah ditindaklanjuti" : " belum ditindaklanjuti");
       if(!data.length){ box.innerHTML = '<div class="hint">' + (tgl ? "Tidak ada temuan pada tanggal ini." : "Belum ada temuan tersimpan.") + '</div>'; return; }
       box.innerHTML = groupedListHtml(data);
       bindListActions(box);
@@ -1799,6 +1863,12 @@
       box.innerHTML = '<div class="hint">Gagal memuat riwayat: '+escapeHtml(e.message||String(e))+'</div>';
     }
   }
+  $("rStatus").addEventListener("click", e=>{
+    const b = e.target.closest("button[data-s]"); if(!b) return;
+    rStat = b.dataset.s;
+    document.querySelectorAll("#rStatus button").forEach(x=> x.classList.toggle("on", x===b));
+    loadRecent();
+  });
   $("rReset").addEventListener("click", ()=>{ $("rTanggal").value = ""; calSetLabel(); loadRecent(); });
 
   async function deleteTemuan(id, fotoUrls, btn){
@@ -2060,6 +2130,22 @@
     table.p-table tr.grp, table.p-table tr.grp-k{ page-break-after:avoid; break-after:avoid; }
     .p-doc-zona{ background:#dfe5f7; color:#14213d; font-weight:bold; font-size:14px; padding:7px 10px; margin:14px 0 6px; border-radius:4px; page-break-after:avoid; break-after:avoid; }
     .p-doc-karu{ font-weight:bold; font-size:12.5px; color:#444; margin:2px 0 8px 6px; padding-left:8px; border-left:3px solid #b8720c; page-break-after:avoid; break-after:avoid; }
+    .p-doc-card.p-tl{ display:block; }
+    .p-tl-head{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+    .p-tl-head b{ font-size:15px; }
+    .p-doc-card.p-tl p{ margin:5px 0; font-size:13.5px; line-height:1.4; overflow-wrap:break-word; word-break:break-word; }
+    .p-tl-photos{ display:flex; gap:10px; margin-top:8px; align-items:stretch; }
+    .p-tl-photos figure{ margin:0; min-width:0; }
+    .p-tl-photos figure.b{ flex:1 1 0; }
+    .p-tl-photos figure.a{ flex:1 1 0; }
+    .p-tl-photos figure.a.two{ flex:2 1 0; }
+    .p-tl-cap{ font-size:11px; font-weight:bold; text-align:center; padding:3px 0; color:#fff; border-radius:3px 3px 0 0; letter-spacing:.05em; }
+    .p-tl-cap.b{ background:#d1445c; }
+    .p-tl-cap.a{ background:#1f9d55; }
+    .p-tl-imgs{ display:flex; gap:6px; }
+    .p-doc-card.p-tl .p-tl-imgs img{ flex:1 1 0; min-width:0; width:100%; height:210px; object-fit:cover; border-radius:0 0 4px 4px; display:block; }
+    .p-tl-empty{ height:210px; border:1px dashed #bbb; display:flex; align-items:center; justify-content:center; color:#888; font-size:12px; }
+    .p-doc-card.p-tl p.p-tl-note{ background:#eef7ee; border-left:3px solid #1f9d55; padding:5px 8px; }
   `;
 
   $("btnCetak").addEventListener("click", ()=>{
@@ -2097,22 +2183,114 @@
     return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
   }
 
-  // Ambil data & bangun markup laporan (dipakai bersama oleh tombol Cetak & Unduh PDF)
-  async function buildLaporanHtml(){
-    const dari = $("cetakDari").value, sampai = $("cetakSampai").value;
-    const sertakanFoto = $("cetakSertakanFoto").checked;
+  const fmtTglPendek = iso => { if(!iso) return "-"; const d = new Date(iso+"T00:00:00"); const b = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]; return `${d.getDate()} ${b[d.getMonth()]} ${d.getFullYear()}`; };
+  const getJenis = () => ($("cetakJenis").value === "tl" ? "tl" : "temuan");
+  $("cetakJenis").addEventListener("change", ()=>{ $("cetakBasisBox").style.display = getJenis()==="tl" ? "" : "none"; });
+
+  // Ambil baris laporan sesuai jenis (temuan biasa / sudah ditindaklanjuti)
+  async function fetchLaporanRows(){
+    const dari = $("cetakDari").value, sampai = $("cetakSampai").value, jenis = getJenis();
     if(!dari || !sampai) throw new Error("Isi rentang tanggal.");
     const sb = getSupabase();
     if(!sb) throw new Error("Supabase belum dikonfigurasi.");
-
-    const { data: rawData, error } = await sb.from(CFG.sbTable).select("*")
-      .gte("tanggal", dari).lte("tanggal", sampai)
-      .order("tanggal", {ascending:true}).order("created_at",{ascending:true});
-    if(error) throw error;
+    const col = (jenis==="tl" && $("cetakBasis").value==="tl_tanggal") ? "tl_tanggal" : "tanggal";
+    let q = sb.from(CFG.sbTable).select("*").gte(col, dari).lte(col, sampai);
+    if(jenis==="tl") q = q.eq("tl_status","SELESAI");
+    const { data: rawData, error } = await q.order(col, {ascending:true}).order("created_at",{ascending:true});
+    if(error) throw new Error(tlErr(error));
     const data = sortTemuan(rawData);   // urut: zona/lokasi → karu → kode
-    if(!data || !data.length) throw new Error("Tidak ada temuan pada rentang tanggal ini.");
+    if(!data || !data.length) throw new Error(jenis==="tl" ? "Belum ada temuan yang ditindaklanjuti pada rentang tanggal ini." : "Tidak ada temuan pada rentang tanggal ini.");
+    return { dari, sampai, jenis, data };
+  }
 
+  // Laporan "sudah ditindaklanjuti": tabel ringkas + halaman foto sebelum & sesudah
+  function buildTLHtml(data, rangeLabel, sertakanFoto){
+    const basisLbl = $("cetakBasis").value==="tl_tanggal" ? "Tindak Lanjut" : "Temuan";
+    let html = `<div class="p-page">
+      <div class="p-header">
+        <h3>PT. KARYA INDAH<br>MULTIGUNA</h3>
+        <div class="p-title">
+          <h1>FORM TINDAK LANJUT TEMUAN SIDAK 5R5S</h1>
+          <div class="p-sub">Tanggal ${basisLbl} : ${rangeLabel}</div>
+        </div>
+        <div class="p-signbox">
+          <div><span>Dibuat</span><em></em></div>
+          <div><span>Mengetahui</span><em></em></div>
+        </div>
+      </div>
+      <table class="p-table">
+        <colgroup>
+          <col style="width:4%"><col style="width:12%"><col style="width:10%"><col style="width:9%"><col style="width:5%">
+          <col style="width:20%"><col style="width:8%"><col style="width:11%"><col style="width:11%"><col style="width:10%">
+        </colgroup>
+        <thead><tr>
+          <th>No.</th><th>Lokasi</th><th>PJ</th><th>Karu</th><th>Kode</th>
+          <th>Jenis Temuan</th><th>Level</th><th>Tgl<br>Temuan</th><th>Tgl Tindak<br>Lanjut</th><th>Paraf<br>(Verifikasi)</th>
+        </tr></thead>
+        <tbody>`;
+    const cnt = grpCounts(data);
+    let lz=null, lk=null;
+    data.forEach((r,i)=>{
+      const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+      const zk = grpZonaKey(r), k = (r.kepala_regu||"").trim();
+      if(zk!==lz){ html += `<tr class="grp"><td colspan="10">${escapeHtml(grpZonaLabel(r))} &nbsp;(${cnt.get(zk)} temuan)</td></tr>`; lz=zk; lk=null; }
+      if(k!==lk){ html += `<tr class="grp-k"><td colspan="10">Karu: ${escapeHtml(k||"-")}</td></tr>`; lk=k; }
+      html += `<tr>
+        <td class="center">${i+1}</td>
+        <td>${escapeHtml(r.area||"-")}</td>
+        <td>${escapeHtml(r.penanggung_jawab||"-")}</td>
+        <td>${escapeHtml(r.kepala_regu||"-")}</td>
+        <td class="center">${escapeHtml(r.kode||"-")}</td>
+        <td>${escapeHtml(r.uraian||"-")}</td>
+        <td class="${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'}</td>
+        <td class="center">${fmtTglPendek(r.tanggal)}</td>
+        <td class="center">${fmtTglPendek(r.tl_tanggal)}</td>
+        <td></td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    if(sertakanFoto){
+      html += `<div class="p-page p-section-break">
+        <h3>PT. KARYA INDAH MULTIGUNA</h3>
+        <h2 class="p-docs-title">Dokumentasi Tindak Lanjut Temuan ${rangeLabel}</h2>`;
+      let dlz=null, dlk=null;
+      data.forEach((r,i)=>{
+        const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+        const before = splitUrls(r.foto_url)[0];
+        const after = splitUrls(r.tl_foto_url).slice(0,2);
+        const zk = grpZonaKey(r), k = (r.kepala_regu||"").trim();
+        if(zk!==dlz){ html += `<div class="p-doc-zona">${escapeHtml(grpZonaLabel(r))}</div>`; dlz=zk; dlk=null; }
+        if(k!==dlk){ html += `<div class="p-doc-karu">Karu: ${escapeHtml(k||"-")}</div>`; dlk=k; }
+        const img = u => `<img src="${escapeHtml(u)}" crossorigin="anonymous">`;
+        html += `<div class="p-doc-card p-tl">
+          <div class="p-tl-head"><b>${i+1}. ${escapeHtml(r.area||"-")} (${escapeHtml(r.kode||"-")})</b><span class="p-doc-level ${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'}</span></div>
+          <p>${escapeHtml(r.uraian||"-")}</p>
+          <p class="p-doc-meta">
+            <span>PJ: ${escapeHtml(r.penanggung_jawab||"-")}</span>
+            <span>Karu: ${escapeHtml(r.kepala_regu||"-")}</span>
+            <span>Zona: ${escapeHtml(r.zona||"-")}</span>
+            <span>Tgl Temuan: ${fmtTglPendek(r.tanggal)}</span>
+            <span>Tgl Tindak Lanjut: ${fmtTglPendek(r.tl_tanggal)}</span>
+          </p>
+          <div class="p-tl-photos">
+            <figure class="b"><div class="p-tl-cap b">SEBELUM (TEMUAN)</div><div class="p-tl-imgs">${before ? img(before) : '<div class="p-tl-empty">Tidak ada foto</div>'}</div></figure>
+            <figure class="a${after.length>1?" two":""}"><div class="p-tl-cap a">SESUDAH (TINDAK LANJUT)</div><div class="p-tl-imgs">${after.length ? after.map(img).join("") : '<div class="p-tl-empty">Tidak ada foto</div>'}</div></figure>
+          </div>
+          ${r.tl_catatan?`<p class="p-tl-note"><b>Keterangan perbaikan:</b> ${escapeHtml(r.tl_catatan)}</p>`:""}
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    return html;
+  }
+
+  // Ambil data & bangun markup laporan (dipakai bersama oleh tombol Cetak & Unduh PDF)
+  async function buildLaporanHtml(){
+    const sertakanFoto = $("cetakSertakanFoto").checked;
+    const { dari, sampai, jenis, data } = await fetchLaporanRows();
     const rangeLabel = dari === sampai ? fmtTanggalID(dari) : `${fmtTanggalID(dari)} — ${fmtTanggalID(sampai)}`;
+    if(jenis==="tl") return { dari, sampai, jenis, rangeLabel, html: buildTLHtml(data, rangeLabel, sertakanFoto) };
 
     // ---- Bangun HTML halaman tabel ----
     let html = `<div class="p-page">
@@ -2190,7 +2368,7 @@
       html += `</div>`;
     }
 
-    return { dari, sampai, rangeLabel, html };
+    return { dari, sampai, jenis, rangeLabel, html };
   }
 
   /* ---- Tombol CETAK: langsung panggil dialog print browser di halaman ini juga (tanpa tab/link baru) ---- */
@@ -2251,7 +2429,7 @@
 
     let holder = null;
     try{
-      const { dari, sampai, html } = await buildLaporanHtml();
+      const { dari, sampai, html, jenis } = await buildLaporanHtml();
 
       $("cetakStatus").textContent = "Menyiapkan gambar & memuat foto…";
 
@@ -2345,7 +2523,7 @@
       holder = null;
 
       const fnameRange = dari === sampai ? dari : `${dari}_sd_${sampai}`;
-      pdf.save(`Temuan-5R5S_${fnameRange}.pdf`);
+      pdf.save(`${jenis==="tl" ? "TindakLanjut-5R5S" : "Temuan-5R5S"}_${fnameRange}.pdf`);
 
       $("cetakStatus").textContent = "PDF berhasil diunduh ✔ — silakan bagikan lewat WhatsApp atau aplikasi lain.";
       $("cetakStatus").className = "status-msg ok";
@@ -2367,21 +2545,12 @@
     $("cetakStatus").className = "status-msg";
 
     try{
-      const dari = $("cetakDari").value, sampai = $("cetakSampai").value;
       const sertakanFoto = $("cetakSertakanFoto").checked;
-      if(!dari || !sampai) throw new Error("Isi rentang tanggal.");
-      const sb = getSupabase();
-      if(!sb) throw new Error("Supabase belum dikonfigurasi.");
-
-      const { data: rawData, error } = await sb.from(CFG.sbTable).select("*")
-        .gte("tanggal", dari).lte("tanggal", sampai)
-        .order("tanggal", {ascending:true}).order("created_at",{ascending:true});
-      if(error) throw error;
-      const data = sortTemuan(rawData);   // urut: zona/lokasi → karu → kode
-      if(!data || !data.length) throw new Error("Tidak ada temuan pada rentang tanggal ini.");
+      const { dari, sampai, jenis, data } = await fetchLaporanRows();
+      const isTL = jenis === "tl";
 
       const wb = new ExcelJS.Workbook();
-      const ws = wb.addWorksheet("Temuan 5R5S");
+      const ws = wb.addWorksheet(isTL ? "Tindak Lanjut 5R5S" : "Temuan 5R5S");
 
       const cols = [
         {header:"No.", key:"no", width:5},
@@ -2396,24 +2565,43 @@
         {header:"Tgl Batas Perbaikan", key:"deadline", width:16},
         {header:"Catatan", key:"catatan", width:28}
       ];
-      if(sertakanFoto) cols.push({header:"Foto", key:"foto", width:20});
+      if(isTL){
+        cols.push({header:"Tgl Tindak Lanjut", key:"tltgl", width:16});
+        cols.push({header:"Keterangan Tindak Lanjut", key:"tlcat", width:30});
+      }
+      if(sertakanFoto){
+        if(isTL){ cols.push({header:"Foto Sebelum", key:"fotoB", width:20}); cols.push({header:"Foto Sesudah", key:"fotoA", width:20}); }
+        else cols.push({header:"Foto", key:"foto", width:20});
+      }
       ws.columns = cols;
 
       ws.getRow(1).font = { bold:true, color:{argb:"FFFFFFFF"} };
       ws.getRow(1).fill = { type:"pattern", pattern:"solid", fgColor:{argb:"FF14213D"} };
       ws.getRow(1).alignment = { vertical:"middle", horizontal:"center" };
 
+      const putImg = async (url, colIdx, rowIdx)=>{
+        if(!url) return;
+        try{
+          const resp = await fetch(url);
+          const buf = await resp.arrayBuffer();
+          const imgId = wb.addImage({ buffer: buf, extension: "jpeg" });
+          ws.addImage(imgId, { tl: { col: colIdx, row: rowIdx - 1 }, ext: { width:110, height:110 } });
+        }catch(e){ /* lewati kalau satu foto gagal diambil */ }
+      };
+
       for(let i=0;i<data.length;i++){
         const r = data[i];
         const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
         const rowIdx = i+2;
 
-        ws.addRow({
+        const rowObj = {
           no:i+1, tanggal:r.tanggal||"-", area:r.area||"-", zona:r.zona||"-",
           pj:r.penanggung_jawab||"-", karu:r.kepala_regu||"-", kode:r.kode||"-",
           uraian:r.uraian||"-", level:isMayor?"MAYOR":"MINOR",
           deadline:fmtDeadlineID(r.tanggal), catatan:r.catatan||""
-        });
+        };
+        if(isTL){ rowObj.tltgl = fmtTanggalID(r.tl_tanggal); rowObj.tlcat = r.tl_catatan||""; }
+        ws.addRow(rowObj);
 
         const levelCell = ws.getCell(`I${rowIdx}`);
         if(isMayor){
@@ -2427,18 +2615,12 @@
 
         if(sertakanFoto){
           ws.getRow(rowIdx).height = 90;
-          const firstUrl = (r.foto_url||"").split(",")[0].trim();
-          if(firstUrl){
-            $("cetakStatus").textContent = `Mengambil foto ${i+1}/${data.length}…`;
-            try{
-              const resp = await fetch(firstUrl);
-              const buf = await resp.arrayBuffer();
-              const imgId = wb.addImage({ buffer: buf, extension: "jpeg" });
-              ws.addImage(imgId, {
-                tl: { col: cols.length - 1, row: rowIdx - 1 },
-                ext: { width:110, height:110 }
-              });
-            }catch(e){ /* lewati kalau satu foto gagal diambil, lanjut ke baris berikutnya */ }
+          $("cetakStatus").textContent = `Mengambil foto ${i+1}/${data.length}…`;
+          if(isTL){
+            await putImg(splitUrls(r.foto_url)[0], cols.length - 2, rowIdx);
+            await putImg(splitUrls(r.tl_foto_url)[0], cols.length - 1, rowIdx);
+          } else {
+            await putImg(splitUrls(r.foto_url)[0], cols.length - 1, rowIdx);
           }
         }
       }
@@ -2449,7 +2631,7 @@
       const fnameRange = dari === sampai ? dari : `${dari}_sd_${sampai}`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = `Temuan-5R5S_${fnameRange}.xlsx`;
+      a.href = url; a.download = `${isTL ? "TindakLanjut-5R5S" : "Temuan-5R5S"}_${fnameRange}.xlsx`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=> URL.revokeObjectURL(url), 3000);
 
@@ -2501,23 +2683,138 @@
     $("dPrev").style.display = $("dNext").style.display = dFotos.length>1 ? "" : "none";
     $("dThumbs").innerHTML = dFotos.length>1 ? dFotos.map((u,i)=>`<img src="${escapeHtml(u)}" data-i="${i}" class="${i===dIdx?"on":""}">`).join("") : "";
   }
+  let dBefore = [], dAfter = [], dTab = "before";
+  const splitUrls = v => String(v||"").split(",").map(x=>x.trim()).filter(Boolean);
   function openDetail(r){
-    dRow = r; dIdx = 0;
-    dFotos = (r.foto_url||"").split(",").map(s=>s.trim()).filter(Boolean);
+    dRow = r; dIdx = 0; dTab = "before";
+    dBefore = splitUrls(r.foto_url); dAfter = splitUrls(r.tl_foto_url);
+    dFotos = dBefore;
+    const done = !!r.tl_status;
+    $("dTabs").style.display = done ? "" : "none";
+    document.querySelectorAll("#dTabs button").forEach(b=> b.classList.toggle("on", b.dataset.t==="before"));
     const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
     $("dTitle").textContent = "Temuan " + (r.kode||"");
     const rows = [
       ["Klasifikasi", `<span class="badge ${isMayor?"mayor":"minor"}" style="flex:none;color:#fff;font-size:11px;">${isMayor?"MAYOR":"MINOR"}</span>`],
+      ["Status", done ? `<span class="badge done" style="flex:none;color:#fff;font-size:11px;">✔ SUDAH DITINDAKLANJUTI</span>` : `<span class="badge" style="flex:none;color:#fff;font-size:11px;background:#94a3b8;">BELUM DITINDAKLANJUTI</span>`],
       ["Kode", escapeHtml(r.kode||"")], ["Uraian", escapeHtml(r.uraian||"")], ["Tanggal", escapeHtml(r.tanggal||"")],
       ["Area", escapeHtml(r.area||"")], ["Zona", escapeHtml(r.zona||"")],
       ["Penanggung Jawab", escapeHtml(r.penanggung_jawab||"")], ["Kepala Regu", escapeHtml(r.kepala_regu||"")],
-      ["Catatan", escapeHtml(r.catatan||"").replace(/\n/g,"<br>")]
+      ["Catatan", escapeHtml(r.catatan||"").replace(/\n/g,"<br>")],
+      ["Tgl Tindak Lanjut", done ? escapeHtml(r.tl_tanggal||"") : ""],
+      ["Ket. Tindak Lanjut", done ? escapeHtml(r.tl_catatan||"").replace(/\n/g,"<br>") : ""]
     ].filter(x=>x[1]);
     $("dInfo").innerHTML = rows.map(x=>`<div class="dRow"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
     $("dEdit").style.display = currentSession ? "" : "none";
+    $("dTL").style.display = currentSession ? "" : "none";
+    $("dTL").textContent = done ? "✎ Ubah Tindak Lanjut" : "✔ Tindak Lanjut (Sudah Diperbaiki)";
     dShow();
     $("detailOverlay").classList.add("show");
   }
+  $("dTabs").addEventListener("click", e=>{
+    const b = e.target.closest("button[data-t]"); if(!b) return;
+    dTab = b.dataset.t; dFotos = dTab==="after" ? dAfter : dBefore; dIdx = 0;
+    document.querySelectorAll("#dTabs button").forEach(x=> x.classList.toggle("on", x===b));
+    dShow();
+  });
+  $("dTL").addEventListener("click", ()=>{ $("detailOverlay").classList.remove("show"); if(dRow) openTL(dRow); });
+
+  /* ---------------- TINDAK LANJUT TEMUAN ---------------- */
+  const tlOverlay = $("tlOverlay");
+  let tlRow = null, tlKept = [], tlRemoved = [];
+  function tlErr(e){
+    const m = (e && e.message) || String(e);
+    return /tl_status|tl_tanggal|tl_foto|tl_catatan/.test(m) ? "Kolom tindak lanjut belum ada di database. Jalankan SQL migrasi dulu (lihat Pengaturan → Sumber Data)." : m;
+  }
+  function renderTlExisting(){
+    const wrap = $("tExistingPhotos"); wrap.innerHTML = "";
+    tlKept.forEach((url, idx)=>{
+      const div = document.createElement("div"); div.className = "thumb";
+      div.innerHTML = `<img src="${escapeHtml(url)}"><button class="rm" data-idx="${idx}">✕</button>`;
+      wrap.appendChild(div);
+    });
+    wrap.querySelectorAll(".rm").forEach(btn=> btn.addEventListener("click", ()=>{
+      tlRemoved.push(tlKept[+btn.dataset.idx]); tlKept.splice(+btn.dataset.idx,1); renderTlExisting();
+    }));
+  }
+  function renderTlNew(){
+    const wrap = $("tNewPhotos"); wrap.innerHTML = "";
+    $("tNewPhotosLabel").style.display = tlNewPhotos.length ? "block" : "none";
+    tlNewPhotos.forEach((p, idx)=>{
+      const div = document.createElement("div"); div.className = "thumb";
+      div.innerHTML = `<img src="${p.dataUrl}"><button class="rm" data-idx="${idx}">✕</button>`;
+      wrap.appendChild(div);
+    });
+    wrap.querySelectorAll(".rm").forEach(btn=> btn.addEventListener("click", ()=>{ tlNewPhotos.splice(+btn.dataset.idx,1); renderTlNew(); }));
+  }
+  function openTL(row){
+    if(!currentSession){ alert("Anda harus login sebagai admin untuk mengisi tindak lanjut."); return; }
+    tlRow = row; tlKept = splitUrls(row.tl_foto_url); tlRemoved = []; tlNewPhotos = [];
+    $("tTanggal").value = row.tl_tanggal || ymd(new Date());
+    $("tCatatan").value = row.tl_catatan || "";
+    $("tlInfo").innerHTML = `<b>${escapeHtml(row.kode||"")} · ${escapeHtml(row.area||"-")}</b><br>${escapeHtml(row.uraian||"")}`;
+    $("btnTLUndo").style.display = row.tl_status ? "" : "none";
+    $("tlStatus").textContent = ""; $("tlStatus").className = "status-msg";
+    renderTlExisting(); renderTlNew();
+    tlOverlay.classList.add("show");
+  }
+  $("closeTL").addEventListener("click", ()=> tlOverlay.classList.remove("show"));
+  $("tBtnCamera").addEventListener("click", ()=>{ photoTarget = "tl"; $("tInputCamera").click(); });
+  $("tBtnGallery").addEventListener("click", ()=>{ photoTarget = "tl"; $("tInputGallery").click(); });
+  $("tInputCamera").addEventListener("change", e=>{ photoTarget = "tl"; handleFile(e.target.files[0]); e.target.value = ""; });
+  $("tInputGallery").addEventListener("change", e=>{ photoTarget = "tl"; handleFile(e.target.files[0]); e.target.value = ""; });
+  const storagePath = u => { const parts = u.split("/"); return parts[parts.length-1]; };
+  async function reopenDetail(id){
+    try{
+      const sb = getSupabase();
+      const { data } = await sb.from(CFG.sbTable).select("*").eq("id", id).maybeSingle();
+      if(data) openDetail(data);
+    }catch(e){}
+  }
+  $("btnTLSave").addEventListener("click", async ()=>{
+    const st = (t,c)=>{ $("tlStatus").textContent = t; $("tlStatus").className = "status-msg" + (c?" "+c:""); };
+    const tanggal = $("tTanggal").value, catatan = $("tCatatan").value.trim();
+    if(!tanggal){ st("Tanggal tindak lanjut wajib diisi.","err"); return; }
+    if(tlKept.length + tlNewPhotos.length === 0){ st("Foto bukti tindak lanjut wajib ada minimal 1.","err"); return; }
+    const sb = getSupabase(); if(!sb){ st("Supabase belum dikonfigurasi.","err"); return; }
+    $("btnTLSave").disabled = true; st("Mengupload foto & menyimpan…","");
+    try{
+      const uploaded = [];
+      for(const p of tlNewPhotos){
+        const fname = `tl_${Date.now()}_${Math.random().toString(36).slice(2,8)}.jpg`;
+        const { error: upErr } = await sb.storage.from(CFG.sbBucket).upload(fname, p.blob, { contentType:"image/jpeg" });
+        if(upErr) throw upErr;
+        const { data: pub } = sb.storage.from(CFG.sbBucket).getPublicUrl(fname);
+        uploaded.push(pub.publicUrl);
+      }
+      const upd = { tl_status:"SELESAI", tl_tanggal:tanggal, tl_catatan:catatan || null, tl_foto_url:[...tlKept, ...uploaded].join(",") };
+      const { error } = await sb.from(CFG.sbTable).update(upd).eq("id", tlRow.id);
+      if(error) throw error;
+      if(tlRemoved.length) sb.storage.from(CFG.sbBucket).remove(tlRemoved.map(storagePath)).catch(()=>{});
+      successFx(); st("Tindak lanjut tersimpan ✔","ok");
+      loadRecent();
+      const id = tlRow.id;
+      setTimeout(()=>{ tlOverlay.classList.remove("show"); reopenDetail(id); }, 500);
+    }catch(e){
+      st("Gagal menyimpan: " + tlErr(e), "err");
+    }finally{ $("btnTLSave").disabled = false; }
+  });
+  $("btnTLUndo").addEventListener("click", async ()=>{
+    if(!confirm("Batalkan status tindak lanjut? Foto bukti tindak lanjut akan dihapus.")) return;
+    const st = (t,c)=>{ $("tlStatus").textContent = t; $("tlStatus").className = "status-msg" + (c?" "+c:""); };
+    const sb = getSupabase(); if(!sb) return;
+    $("btnTLUndo").disabled = true;
+    try{
+      const { error } = await sb.from(CFG.sbTable).update({ tl_status:null, tl_tanggal:null, tl_catatan:null, tl_foto_url:null }).eq("id", tlRow.id);
+      if(error) throw error;
+      const all = [...splitUrls(tlRow.tl_foto_url)];
+      if(all.length) sb.storage.from(CFG.sbBucket).remove(all.map(storagePath)).catch(()=>{});
+      successFx(); loadRecent();
+      const id = tlRow.id;
+      tlOverlay.classList.remove("show"); reopenDetail(id);
+    }catch(e){ st("Gagal membatalkan: " + tlErr(e), "err"); }
+    finally{ $("btnTLUndo").disabled = false; }
+  });
   function zoomOpen(){ if(!dFotos.length) return; $("zImg").src = dFotos[dIdx]; $("zoomView").classList.remove("z2"); zReset(false); $("zoomView").classList.add("show"); }
   document.addEventListener("click", e=>{
     const it = e.target.closest(".list-item");
@@ -2620,12 +2917,17 @@
 
   async function anFetchAll(){
     const sb = getSupabase(); if(!sb) throw new Error("Supabase belum dikonfigurasi.");
+    const AN_BASE = "tanggal,area,zona,kode,klasifikasi,poin,penanggung_jawab,kepala_regu";
+    let anCols = AN_BASE + ",tl_status";
     const all = []; let from = 0; const step = 1000;
     while(true){
       const { data, error } = await sb.from(CFG.sbTable)
-        .select("tanggal,area,zona,kode,klasifikasi,poin,penanggung_jawab,kepala_regu")
+        .select(anCols)
         .order("tanggal",{ascending:false}).order("created_at",{ascending:false}).range(from, from+step-1);
-      if(error) throw error;
+      if(error){
+        if(anCols !== AN_BASE && /tl_status/.test(error.message||"")){ anCols = AN_BASE; all.length = 0; from = 0; continue; }
+        throw error;
+      }
       all.push(...(data||[]));
       if(!data || data.length < step) break;
       from += step;
@@ -2789,7 +3091,16 @@
     const pPj = anPanel("Penanggung Jawab","Top 5 penjaga area dengan temuan terbanyak", anRank(pjG.slice(0,5).map(orang),"#8b5cf6"), "#8b5cf6");
     const pKaru = anPanel("Kepala Regu / Karu","Top 5 karu dengan temuan terbanyak", anRank(karuG.slice(0,5).map(orang),"#f43f5e"), "#f43f5e");
 
-    body.innerHTML = per + kpis + hls + `<div class="an-grid">${pTrend}${pKode}${pKat}${pZona}${pArea}${pPj}${pKaru}</div>`;
+    let pTL = "";
+    if(rows.some(r=> "tl_status" in r)){
+      const done = rows.filter(r=>r.tl_status).length, doneMayor = rows.filter(r=>r.tl_status && isMayorRow(r)).length;
+      const pd = Math.round(done/total*100);
+      pTL = anPanel("Progres Tindak Lanjut","Temuan yang sudah diperbaiki dan punya bukti foto",
+        `<div class="tl-prog"><div class="tl-prog-top"><b>${nfmt(done)}</b><span>dari ${nfmt(total)} temuan sudah ditindaklanjuti</span><em>${pd}%</em></div>
+         <div class="an-bar" style="margin:10px 0 0"><span style="--w:${done?Math.max(3,pd):0}%;background:linear-gradient(90deg,#10b981,#34d399)"></span></div>
+         <div class="tl-sub">Mayor ${doneMayor}/${mayor} selesai · Minor ${done-doneMayor}/${minor} selesai</div></div>`, "#10b981", "an-span2");
+    }
+    body.innerHTML = per + kpis + hls + `<div class="an-grid">${pTL}${pTrend}${pKode}${pKat}${pZona}${pArea}${pPj}${pKaru}</div>`;
     if(animate === false){ body.classList.add("an-noanim","an-go"); }
     else requestAnimationFrame(()=> requestAnimationFrame(()=> body.classList.add("an-go")));
   }
