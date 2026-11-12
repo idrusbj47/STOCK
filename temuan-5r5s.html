@@ -656,7 +656,9 @@
       <button class="setRow admin-only" data-click="btnMaster"><i>&#128451;</i><span>Kelola Data Master</span></button>
       <button class="setRow" data-click="btnSettings"><i>&#9881;</i><span>Sumber Data (Supabase)</span></button>
       <button class="setRow" data-click="btnRefresh"><i>&#10227;</i><span>Muat Ulang Database</span></button>
+      <button class="setRow" id="btnUpdateApp" type="button"><i>&#11014;</i><span>Perbarui Aplikasi (ambil versi terbaru)</span></button>
       <button class="setRow" data-click="btnHome"><i>&#8962;</i><span>Kembali ke Home</span></button>
+      <div class="hint" id="appVer" style="text-align:center;margin-top:12px;"></div>
     </div>
   </section>
 
@@ -3420,6 +3422,36 @@
     const mo = new MutationObserver(updateLock);
     lockEls.forEach(e=> mo.observe(e, {attributes:true, attributeFilter:["class"]}));
   })();
+
+  /* ---------------- PERBARUI APLIKASI (lewati cache, terutama iPhone) ---------------- */
+  const APP_VERSION = "2026-11-12-3";
+  $("appVer").textContent = "Versi aplikasi: " + APP_VERSION;
+  async function hardRefresh(){
+    try{ if(navigator.serviceWorker){ const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r=>r.unregister())); } }catch(e){}
+    try{ if(window.caches){ const ks = await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); } }catch(e){}
+    try{ await fetch(location.pathname, {cache:"reload"}); }catch(e){}
+    const u = new URL(location.href); u.searchParams.set("v", Date.now());
+    location.replace(u.toString());
+  }
+  $("btnUpdateApp").addEventListener("click", async ()=>{
+    const b = $("btnUpdateApp"); b.disabled = true; b.querySelector("span").textContent = "Memperbarui…";
+    await hardRefresh();
+  });
+  // cek otomatis: kalau ada versi lebih baru di server, tampilkan pita pemberitahuan
+  setTimeout(async ()=>{
+    try{
+      const r = await fetch(location.pathname, {cache:"no-store"});
+      const t = await r.text();
+      const m = /APP_VERSION\s*=\s*"([^"]+)"/.exec(t);
+      if(m && m[1] !== APP_VERSION){
+        const bar = document.createElement("div");
+        bar.style.cssText = "position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:10001;background:#0d1b36;color:#fff;border:1.5px solid #c9a24b;border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:10px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.35);";
+        bar.innerHTML = '<span style="flex:1;">Versi baru aplikasi tersedia.</span><button type="button" style="border:none;border-radius:9px;padding:8px 14px;font-weight:800;background:#e3c36f;color:#0d1b36;cursor:pointer;">Perbarui</button>';
+        bar.querySelector("button").addEventListener("click", hardRefresh);
+        document.body.appendChild(bar);
+      }
+    }catch(e){}
+  }, 3000);
 
   if(!CFG.sbUrl || !CFG.sbKey){ openSettings(); }
   loadAllDb();
