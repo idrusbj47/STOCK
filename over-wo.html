@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12161B">
+<title>OVER WO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>(function(){try{var s=localStorage.getItem('overwo_theme');var th=s||(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',th)}catch(e){}})();</script>
+<style>
+:root{--bg:#12161B;--surface:#1B2129;--surface-2:#212831;--border:#2A323C;--text:#EDEFF2;--muted:#8B95A1;--amber:#FFB020;--green:#34D399;--red:#F45B69;--violet:#A78BFA;--teal:#2DD4BF;--on-accent:#1A1300;--radius:14px;
+ --bg-rgb:18,22,27;--amber-rgb:255,176,32;--green-rgb:52,211,153;--red-rgb:244,91,105;--violet-rgb:167,139,250;
+ --indigo:var(--violet);--gold:var(--amber);--rose:var(--red);--navy2:var(--surface-2);--card:var(--surface);--track:var(--surface-2);
+ --fd:'Barlow Condensed',sans-serif;--fb:'Inter',sans-serif;--fm:'JetBrains Mono',monospace;color-scheme:dark}
+html[data-theme="light"]{--bg:#F3F4F6;--surface:#FFFFFF;--surface-2:#EEF0F3;--border:#DCE0E6;--text:#171B21;--muted:#667085;--amber:#B8770F;--green:#12996B;--red:#DC3E4E;--violet:#7C5CE0;--teal:#0F9F95;--on-accent:#FFFFFF;
+ --bg-rgb:243,244,246;--amber-rgb:184,119,15;--green-rgb:18,153,107;--red-rgb:220,62,78;--violet-rgb:124,92,224;color-scheme:light}
+*{box-sizing:border-box}
+html,body{min-height:100%;margin:0;background:var(--bg);color:var(--text);font-family:var(--fb);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;transition:background-color .25s,color .25s}
+body{padding-bottom:env(safe-area-inset-bottom)}body.ov{overflow:hidden}
+button{font-family:inherit;cursor:pointer}
+#app-splash{position:fixed;inset:0;z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);transition:opacity .45s,visibility .45s}
+#app-splash.hide{opacity:0;visibility:hidden;pointer-events:none}
+.sp-logo{width:76px;height:76px;border-radius:20px;background:var(--surface);display:flex;align-items:center;justify-content:center;border:1.5px solid var(--border);box-shadow:0 0 0 6px rgba(var(--amber-rgb),.1),0 14px 34px -10px rgba(0,0,0,.4);margin-bottom:18px;animation:pop .55s cubic-bezier(.34,1.56,.64,1);font-family:var(--fd);font-weight:700;font-size:30px;color:var(--amber)}
+@keyframes pop{0%{transform:scale(.75);opacity:0}100%{transform:scale(1);opacity:1}}
+.sp-t{font-family:var(--fd);font-weight:700;font-size:22px;letter-spacing:.02em;text-transform:uppercase;text-align:center}.sp-t span{color:var(--amber)}
+.sp-s{font-family:var(--fm);font-size:11px;letter-spacing:.08em;color:var(--muted);margin-top:4px;text-transform:uppercase}
+.sp-d{display:flex;gap:6px;margin-top:26px}.sp-d i{width:7px;height:7px;border-radius:50%;background:var(--amber);animation:dt 1.1s ease-in-out infinite}.sp-d i:nth-child(2){animation-delay:.15s}.sp-d i:nth-child(3){animation-delay:.3s}
+@keyframes dt{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
+header.topbar{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px;background:rgba(var(--bg-rgb),.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.brand{display:flex;flex-direction:column;min-width:0}
+.eyebrow{font-family:var(--fm);font-size:10px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.brand h1{font-family:var(--fd);font-weight:700;font-size:22px;margin:0;letter-spacing:.01em;text-transform:uppercase}.brand h1 span{color:var(--amber)}
+.stbadge{display:inline-flex;align-items:center;gap:6px;margin-top:4px;font-family:var(--fm);font-size:10.5px;color:var(--muted);max-width:62vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}.dot.live{background:var(--green)}.dot.off{background:var(--amber)}.dot.err{background:var(--red)}
+.acts{display:flex;gap:6px}
+.ib{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);display:flex;align-items:center;justify-content:center;font-size:16px}
+.ib:active{transform:scale(.94)}.ib.spin svg{animation:sp .8s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.main{max-width:1180px;margin:0 auto;padding:16px 16px 60px}
+.view-tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:14px}
+.view-tabs button{flex:1;border:none;background:none;color:var(--muted);font-family:var(--fd);font-weight:600;letter-spacing:.02em;text-transform:uppercase;font-size:13px;padding:9px 4px;border-radius:9px}
+.view-tabs button.on{background:var(--violet);color:#fff}
+.seg{display:flex;gap:6px;overflow-x:auto;padding-bottom:3px;margin-bottom:14px}
+.seg button{flex:0 0 auto;font-family:var(--fm);font-size:12.5px;font-weight:600;padding:9px 18px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);white-space:nowrap}
+.seg button.on{background:var(--amber);border-color:var(--amber);color:var(--on-accent)}
+.seg button:hover:not(.on){border-color:var(--amber);color:var(--text)}.seg small{opacity:.75;margin-left:6px}
+.view{display:none}.view.on{display:block}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 14px 14px 18px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.kpi span{display:block;font-family:var(--fm);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpi b{display:block;font-family:var(--fd);font-weight:700;font-size:32px;color:var(--c);line-height:1.1;margin-top:4px}
+.kpi small{font-size:12px;color:var(--muted)}
+.ins{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.in{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--c,var(--amber));border-radius:var(--radius);padding:12px 14px;font-size:13px;line-height:1.55}
+.in i{font-style:normal;font-size:19px}.in b{display:block;font-family:var(--fm);font-weight:600;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;align-items:start}.span2{grid-column:1/-1}
+.p{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px 14px;min-width:0}
+.ph{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px}
+.ph h3{font-family:var(--fd);font-weight:700;font-size:15px;letter-spacing:.01em;text-transform:uppercase;margin:0 0 2px}.ph p{margin:0;font-size:11.5px;color:var(--muted)}
+.empty{padding:16px;text-align:center;color:var(--muted);font-size:13px}
+.rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.rk{display:flex;align-items:center;gap:10px}
+.no{flex:none;width:22px;height:22px;border-radius:7px;background:var(--surface-2);color:var(--muted);font-family:var(--fm);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.rank li:first-child .no{background:var(--amber);color:var(--on-accent)}
+.rt{flex:1;min-width:0}.rt b{display:block;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rt small{font-size:11.5px;color:var(--muted)}
+.nv{flex:none;font-family:var(--fm);font-weight:700;font-size:13px;text-align:right}.nv i{font-style:normal;font-weight:500;font-size:10.5px;color:var(--muted)}
+.bar{height:6px;border-radius:4px;background:var(--surface-2);margin:6px 0 0 32px;overflow:hidden}.bar span{display:block;height:100%;border-radius:4px;background:var(--c,var(--green))}
+.mini{display:inline-flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px}
+.mini button{border:none;background:transparent;color:var(--muted);font-family:var(--fm);font-size:11px;font-weight:600;padding:5px 10px;border-radius:8px}
+.mini button.on{background:var(--amber);color:var(--on-accent)}
+.tr{height:170px;display:flex;align-items:flex-end;gap:6px;border-bottom:1px solid var(--border);background-image:linear-gradient(to top,var(--border) 1px,transparent 1px);background-size:100% 25%}
+.tc{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer}
+.tc span{display:block;width:100%}.tc .o{background:var(--amber)}.tc .c{background:var(--green);border-radius:4px 4px 0 0}.tc .o:first-child{border-radius:4px 4px 0 0}.tc.sel{filter:brightness(1.25)}
+.tax{display:flex;gap:6px;margin-top:6px;font-family:var(--fm);font-size:10.5px;color:var(--muted)}.tax div{flex:1;text-align:center;min-width:0}
+.tinfo{font-size:12.5px;margin-top:10px;min-height:18px}
+.lg{display:flex;gap:14px;font-family:var(--fm);font-size:10.5px;color:var(--muted);margin-top:8px}.lg i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px}
+.toolbar{display:flex;gap:8px;margin-bottom:12px}
+input[type=text]{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:11px 12px;font-size:14px;font-family:var(--fb)}
+input[type=text]:focus{outline:2px solid var(--amber);outline-offset:-1px}
+.btn{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--fm);font-weight:600;font-size:12px;white-space:nowrap}
+.btn.gold{background:var(--amber);border-color:var(--amber);color:var(--on-accent)}
+.tw{overflow:auto;-webkit-overflow-scrolling:touch;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-height:72vh}
+table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:1000px}
+th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;white-space:nowrap}
+td.w{white-space:normal;min-width:150px}
+th{position:sticky;top:0;background:var(--surface-2);color:var(--muted);font-family:var(--fm);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;user-select:none;z-index:1}
+td.n,th.n{text-align:right;font-family:var(--fm)}
+tbody tr{cursor:pointer}tbody tr:hover{background:var(--surface-2)}tbody tr:last-child td{border-bottom:none}
+tr.f td{background:rgba(var(--amber-rgb),.08)}
+.bd{display:inline-block;padding:2px 9px;border-radius:999px;font-family:var(--fm);font-size:10.5px;font-weight:700;white-space:nowrap}
+.bd.out{background:rgba(var(--amber-rgb),.2);color:var(--amber)}.bd.close{background:rgba(var(--green-rgb),.2);color:var(--green)}.bd.warn{background:rgba(var(--red-rgb),.2);color:var(--red)}
+.hint{font-size:12px;color:var(--muted);line-height:1.55}
+.cardx{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px}
+.cardx h2{font-family:var(--fd);font-weight:700;font-size:15px;letter-spacing:.01em;text-transform:uppercase;margin:0 0 10px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}.row:last-child{border-bottom:none}.row b{font-family:var(--fm);font-weight:600}
+.ok{color:var(--green)}.bad{color:var(--red)}
+.setRow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-top:9px;font-size:14px;font-weight:600;color:var(--text)}
+.setRow i{font-style:normal;width:30px;height:30px;border-radius:9px;background:var(--amber);color:var(--on-accent);display:flex;align-items:center;justify-content:center}
+.verbar{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:6000;background:var(--surface);color:var(--text);border:1.5px solid var(--amber);border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:10px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.verbar button{border:none;border-radius:9px;padding:8px 14px;font-weight:700;background:var(--amber);color:var(--on-accent)}
+#splash{position:fixed;inset:0;background:rgba(10,14,20,.55);display:none;align-items:center;justify-content:center;z-index:5500}#splash.show{display:flex}
+#splash div{background:var(--surface);border:1px solid var(--border);padding:20px 26px;border-radius:16px;font-family:var(--fm);font-size:12px}
+.sheet-overlay{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:opacity .2s}
+.sheet-overlay.show{opacity:1;visibility:visible}
+.sheet{width:100%;max-width:720px;max-height:88vh;background:var(--bg);border-radius:20px 20px 0 0;display:flex;flex-direction:column;transform:translateY(30px);transition:transform .25s;border:1px solid var(--border)}
+.sheet-overlay.show .sheet{transform:none}
+.sh-h{width:40px;height:4px;border-radius:3px;background:var(--border);margin:10px auto 4px}
+.sh-head{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 18px 10px;border-bottom:1px solid var(--border)}
+.sh-e{font-family:var(--fm);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.sh-t{font-family:var(--fd);font-weight:700;font-size:19px;margin:2px 0 0;text-transform:uppercase}
+.sh-b{padding:8px 18px 24px;overflow-y:auto}
+.printhead{display:none}
+@media(max-width:820px){.grid{grid-template-columns:1fr}.ins{grid-template-columns:1fr}}
+@media(max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media print{
+ @page{size:A4 landscape;margin:10mm}
+ html,body{background:#fff!important;color:#111!important}
+ :root,html[data-theme]{--bg:#fff;--surface:#fff;--surface-2:#f2f3f5;--border:#ccc;--text:#111;--muted:#555}
+ #app-splash,header.topbar .acts,.view-tabs,.seg,.toolbar,.verbar,#splash,.sheet-overlay,#v-set{display:none!important}
+ .view{display:block!important}#v-set{display:none!important}
+ .printhead{display:block;margin:0 0 8px;font-size:12px}
+ .p,.cardx,.kpi,.in{break-inside:avoid}
+ .tw{max-height:none;overflow:visible;border:none}table{min-width:0;font-size:10px}th{position:static}
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div id="app-splash"><div class="sp-logo">OW</div><div class="sp-t">OVER<span> WO</span></div><div class="sp-s">PT Karya Indah Multiguna</div><div class="sp-d"><i></i><i></i><i></i></div></div>
+<header class="topbar">
+  <div class="brand"><span class="eyebrow">PT Karya Indah Multiguna · Gudang Barang Jadi</span><h1>LAPORAN BARANG<span> OVER WO</span></h1>
+    <span class="stbadge"><span class="dot" id="dot"></span><span id="statTxt">Memuat…</span></span></div>
+  <div class="acts">
+    <button class="ib" id="btnReload" title="Muat ulang data"><svg viewBox="0 0 24 24" width="19" height="19"><path fill="currentColor" d="M17.65 6.35A7.95 7.95 0 0012 4a8 8 0 108 8h-2a6 6 0 11-1.76-4.24L13 11h7V4l-2.35 2.35z"/></svg></button>
+    <button class="ib" id="btnTheme" title="Ganti tema">◐</button>
+  </div>
+</header>
+<main class="main">
+  <div class="printhead" id="printHead"></div>
+  <div class="view-tabs" id="tabs">
+    <button data-t="sum" class="on">📊 Ringkasan</button>
+    <button data-t="list">📋 Daftar WO</button>
+    <button data-t="chk">⚖️ Cek Data</button>
+    <button data-t="set">⚙️ Pengaturan</button>
+  </div>
+  <div class="seg" id="srcSeg"></div>
+  <section class="view on" id="v-sum"><div id="sumBody"></div></section>
+  <section class="view" id="v-list">
+    <div class="toolbar"><input type="text" id="q" placeholder="Cari SO, WO, customer, barang, internal, sales…"><button class="btn" id="btnCsv">⬇ CSV</button></div>
+    <div class="hint" id="listInfo" style="margin-bottom:8px"></div>
+    <div class="tw"><table id="tbl"></table></div>
+  </section>
+  <section class="view" id="v-chk"><div id="chkBody"></div></section>
+  <section class="view" id="v-set">
+    <div class="cardx">
+      <h2>Sumber Data</h2>
+      <div class="hint" style="margin-bottom:6px">Link CSV Google Sheet (Publish to web → CSV)</div>
+      <input type="text" id="cfgUrl">
+      <div class="toolbar" style="margin:10px 0 0"><button class="btn gold" id="btnSaveUrl" style="flex:1">Simpan &amp; Muat Data</button><button class="btn" id="btnDefUrl">Default</button></div>
+      <label class="hint" style="display:flex;gap:8px;align-items:center;margin:12px 0 0"><input type="checkbox" id="cfgAuto"> Muat ulang otomatis tiap 5 menit</label>
+    </div>
+    <div class="cardx">
+      <h2>Aplikasi</h2>
+      <button class="setRow" id="btnTheme2"><i>◐</i><span>Ganti Tema Terang / Gelap</span></button>
+      <button class="setRow" id="btnReload2"><i>⟳</i><span>Muat Ulang Data dari Google Sheet</span></button>
+      <button class="setRow" id="btnPrint"><i>🖨</i><span>Cetak Laporan (Ringkasan + Daftar)</span></button>
+      <button class="setRow" id="btnUpdateApp"><i>⬆</i><span>Perbarui Aplikasi (ambil versi terbaru)</span></button>
+      <div class="hint" id="appVer" style="text-align:center;margin-top:12px"></div>
+    </div>
+  </section>
+</main>
+<div id="splash"><div>MEMUAT ULANG…</div></div>
+<div class="sheet-overlay" id="shOv"><div class="sheet"><div class="sh-h"></div><div class="sh-head"><div><div class="sh-e" id="shE"></div><h3 class="sh-t" id="shT"></h3></div><button class="ib" id="shX">✕</button></div><div class="sh-b" id="shB"></div></div></div>
+
+<script>
+(function(){
+"use strict";
+const APP_VERSION="2026-11-13-1";
+const DEF_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=668867028&single=true&output=csv";
+const SNAP_CSV="LAPORAN BARANG OVER OUTSTANDING - BPK. HERWANTO,,,,,,,,,,,,,,,,,LAPORAN BARANG OVER WO CLOSE - IBU. HELLEN,,,,,,,,,,,,,,,\nDEPARTEMEN GUDANG BARANG JADI | FORM INPUT DATA BARANG OVER,,,,,,,,,,,,,,,,,DEPARTEMEN GUDANG BARANG JADI | FORM INPUT DATA BARANG OVER,,,,,,,,,,,,,,,\nSUBTOTAL QTY OVER,,,,,,,,SUBTOTAL TONASE,,,,,,,,,SUBTOTAL QTY OVER,,,,,,,,SUBTOTAL TONASE,,,,,,,\n\"14,020 PCS\",,,,,,,,\"2,695.69 KG\",,,,,,,,,\"31,770 PCS\",,,,,,,,\"5,235.13 KG\",,,,,,,\nNO,TGL,SHIFT,SO,WO OVER,WO TERPAKAI,MESIN,INTERNAL,SALES,CUSTOMER,NAMA BARANG,MC,FIT,BERAT,QTY,TONASE,,NO,TGL,SHIFT,SO,WO,KETERANGAN,MESIN,INTERNAL,SALES,CUSTOMER,NAMA BARANG,MC,FIT,BERAT,QTY,TONASE\n1,06 Nov 2026,2,11-2026-00772,10-2026-02887,11-2026-00447,,PUTRA,FEBBY,\"ARISU INDONESIA, PT\",PA-0000048.COVER FAL 25,62804,1,0.19,300,57.30,,1,05 Nov 2026,1,10-2026-05178,10-2026-02858,,,KIKA,INDAH SIE,\"BUMI CITRA JAYA, PT\",230040_K.IND MI GRG HK 8x5 (KR,77422,1,0.25,325,82.49\n2,06 Nov 2026,3,10-2026-06751,10-2026-4038,10-2026-04041,,RATNA,KURNIAWAN,\"STARKEMAS INDONESIA, PT\",CB PO-DO-002,45919,1,0.27,300,81.30,,2,05 Nov 2026,1,10-2026-07175,10-2026-04064,,,RIZAL,SUSAN,\"MENACOCO SARI, PT\",CB.YEKO JELLY NATADECOCO 60X12,51817,1,0.24,350,84.81\n3,06 Nov 2026,3,10-2026-04372,11-2026-00210/00211,11-2026-00210/00211,,NUR,ROBERT,PT GODREJ CONSUMER PRODUCTS INDONESIA,20028987_M.BOX SANITER WIPES 5,57632,1,0.34,300,103.32,,3,05 Nov 2026,2,06-2026-06032,06-2026-00163,,,YOSEP,HASAN,\"SURYA PELANGI SEJAHTERA, PT\",BOX POLOS 1050x350x205MM,71513,1,1.66,110,182.80\n4,08 Nov 2026,1,11-2026-00804,10-2026-003028,11-2026-00804,,KIKA,SUSAN,\"ARIRA PANGINDO, CV\",CB.MAX'S FARM ORIGINAL CASA CH,61581,1,0.42,800,335.12,,4,05 Nov 2026,2,11-2026-00070,11-2026-00146,,,NUR,ROBERT,PT FORISA NUSAPERSADA,PEA.PIFYZ.001_POP ICE CHOCODRE,73235,1,0.49,200,97.80\n5,09 Nov 2026,3,09-2026-06106,09-2026-03609,09-2026-03610,,NUR,ROBERT,PT FORISA NUSAPERSADA,PEA.PIAYZ.023_POP ICE BIRU,72899,1,0.35,300,106.38,,5,05 Nov 2026,2,10-2026-06590,10-2026-03792,,,BAGUS,YONAS,\"ICI PAINTS INDONESIA, PT\",BOX CAT CATYLAC HI-GLOSS 8x0.9,52692,1,0.25,150,37.48\n6,11 Nov 2026,1,10-2026-04977,10-2026-02903,10-2026-02903,LT.1,ZAMRONI,KIREY ANGELA LIHA,\"PT CISARUA MOUNTAIN DAIRY, TBK\",PK100847 BOX UHT MILK 225ML RE,76792,1,0.17,12,\"1,999.20\",,6,05 Nov 2026,2,11-2026-00071,11-2026-00147,,,NUR,ROBERT,PT FORISA NUSAPERSADA,PEA.PJAYZ.000_POP JUSS,77510,1,0.22,125,27.81\n7,11 Nov 2026,2,11-2026-01401,11-2026-00856,11-2026-00856,SUN.5,YOSEP,IN HOUSE,\"MULTI KEMASINDO GUNATAMA, PT\",BOX JERIGEN 5 LITER,73748,1,0.65,20,13.07,,7,05 Nov 2026,2,11-2026-00060,11-2026-00034,,,NUR,ROBERT,PT GODREJ CONSUMER PRODUCTS INDONESIA,20009732 M.BOX PROCLIN BOTOL 5,46818,1,0.40,200,80.14\n8,12 Nov 2026,,TIDAK DAPAT,,,,,,,,,,,,,,8,05 Nov 2026,2,11-2026-00402,11-2026-00298,,,TIURMA,TUN WIE,ROSIDAH,\"\"\"MASTER KIPAS ANGIN 12\"\"\"\" POLOS\"\"\",72293,1,1.16,500,578.30\n,,,,,,,,,,,,,,,,,9,05 Nov 2026,2,09-2026-01648,11-2026-00244,,,YOSEP,HASAN,\"KERTAS PADALARANG, PT\",BOX UANG LOGAM 500 R (NEW) TOP,76772,1,1.43,70,99.88\n,,,,,,,,,,,,,,,,,10,05 Nov 2026,2,10-2026-03764,10-2026-02029,,,KOKOM,EKO,\"COCA-COLA BOTTLING INDONESIA, PT\",13313526_TRAY MMPO 300x12 NEW,55537,1,0.04,21,842.10\n,,,,,,,,,,,,,,,,,11,05 Nov 2026,2,10-2026-05036,10-2026-02785,,,NUR,ROBERT,\"NISSIN FOODS INDONESIA, PT\",TA09685-1/KARTON CHM CUP NOODL,72707,1,0.32,150,48.68\n,,,,,,,,,,,,,,,,,12,05 Nov 2026,2,10-2026-05032,10-2026-2781,,,NUR,ROBERT,\"NISSIN FOODS INDONESIA, PT\",TA06511-4/KARTON JRK-2,73097,1,0.55,25,13.80\n,,,,,,,,,,,,,,,,,13,05 Nov 2026,3,10-2026-05037,10-2026-02786,,,NUR,ROBERT,\"NISSIN FOODS INDONESIA, PT\",TA09687DB-1/ KARTON CHYDB,74598,1,0.19,250,48.13\n,,,,,,,,,,,,,,,,,14,05 Nov 2026,3,10-2026-04210,10-2026-02335,,,TIURMA,TUN WIE,\"NUAI UNGGUL ABADI, PT\",DUS JAR (POLOS) BESAR,69325,1,2.18,50,108.81\n,,,,,,,,,,,,,,,,,15,05 Nov 2026,3,11-2026-00106,11-2026-00186,,,NUR,ROBERT,PT FORISA NUSAPERSADA,PEA.NJEYZ.A04_JELLY SHAKE,77520,1,0.15,325,49.95\n,,,,,,,,,,,,,,,,,16,06 Nov 2026,2,11-2026-00201,11-2026-00137,,,TIURMA,TUN WIE,\"LEO JAYA MANDIRI, PT\",INNER KINGSTON DF 1212 (KIPAS,72580,1,0.27,60,16.09\n,,,,,,,,,,,,,,,,,17,06 Nov 2026,2,10-2026-06806,10-2026-03847,,,TIURMA,TUN WIE,\"CENTA BRASINDO ABADI CHEMICAL INDUSTRY, PT\",KB.WHITE CRAFT CENTOP 540SL UK,65473,1,1.11,70,77.48\n,,,,,,,,,,,,,,,,,18,06 Nov 2026,2,10-2026-04979,10-2026-02754,,,PUTRA,FEBBY,\"DELTA DJAKARTA TBK, PT\",BOX AB 12x620ML + PARTISI (KRA,72713,1,0.39,4,\"1,559.20\"\n,,,,,,,,,,,,,,,,,19,07 Nov 2026,2,10-2026-04968,10-2026-02749,,,NUR,ROBERT,\"NOVATECH KAYA KREASI, PT\",INNER BOX WALL FLOWER,75780,1,0.07,\"2,25\",166.73\n,,,,,,,,,,,,,,,,,20,07 Nov 2026,2,09-2026-05067,10-2026-1825,,,KIKA,IN HOUSE,\"KIDS PLAY INDONESIA, PT\",QA62316W26AA 62316-91A8 KP 8 I,76800,1,0.19,25,4.67\n,,,,,,,,,,,,,,,,,21,07 Nov 2026,2,09-2026-05068,10-2026-1826,,,KIKA,IN HOUSE,\"KIDS PLAY INDONESIA, PT\",QA72316W26AA 72316-91A3 KP 8 I,76801,1,0.19,50,9.34\n,,,,,,,,,,,,,,,,,22,08 Nov 2026,2,09-2026-04392,10-2026-03895,,,AXEL,TEDDY,\"FUMAKILLA INDONESIA, PT\",M.BOX VLR 90 SAKURA BLOSSOM,68665,1,0.32,60,19.06\n,,,,,,,,,,,,,,,,,23,09 Nov 2026,1,09-2026-04396,10-2026-03896,,,AXEL,TEDDY,\"FUMAKILLA INDONESIA, PT\",M2-PH-16-45412_VAPE 12.1 LV LI,68667,1,0.32,40,12.71\n,,,,,,,,,,,,,,,,,24,09 Nov 2026,1,11-2026-00612,11-2026-00310,,,YOSEP,YULI,\"SPARK INTEGRATED SOLUTIONS, PT\",SF-BF 35035040,71854,1,0.18,450,82.80\n,,,,,,,,,,,,,,,,,25,09 Nov 2026,3,11-2026-00380,11-2026-00193,,,PUTRA,MARFIN,\"DRAGON STAR INDONESIA, PT\",BOX POLOS A60 7 WATT CUSTOM,69044,1,0.51,340,172.24\n,,,,,,,,,,,,,,,,,26,09 Nov 2026,3,10-2026-01017,10-2026-01995,,,TITA,FEBRY GRESMEDIKA,\"ZINUS GLOBAL INDONESIA, PT\",C-BOX.CLE-08T (WT),74190,1,1.81,85,153.52\n,,,,,,,,,,,,,,,,,27,10 Nov 2026,1,09-2026-00905,11-2026-00444,,,PUTRA,MARFIN,\"ESTERINDO TRI CHEM,PT\",BOX.3M GENERAL POLOS / SCOTCH,53042,1,0.25,60,15.29\n,,,,,,,,,,,,,,,,,28,11 Nov 2026,1,11-2026-01519,11-2026-01061,OVER,LT.3,YOSEP,HASAN,\"SURYA PELANGI SEJAHTERA, PT\",BOX BEAUTY WING WR RED MULLET,77609,1,0.78,40,31.16\n,,,,,,,,,,,,,,,,,29,11 Nov 2026,1,10-2026-07240,11-2026-00012,OVER,JUMBO.1,TIURMA,TUN WIE,NURMALA SARI,\"\"\"BOX WALL FAN 30\"\"\"\" YASAKA (+ INN\"\"\",77548,1,1.41,150,212.04\n,,,,,,,,,,,,,,,,,30,11 Nov 2026,1,10-2026-06819,10-2026-04044,OVER,LT.2,RATNA,KURNIAWAN,\"STARKEMAS INDONESIA, PT\",BOX PO-DO-145,45915,1,0.64,20,12.74\n,,,,,,,,,,,,,,,,,31,11 Nov 2026,1,11-2026-01520,11-2026-01062,OVER,LT.3,YOSEP,HASAN,\"SURYA PELANGI SEJAHTERA, PT\",BOX BEAUTY WING WC BABY OCTOPU,77611,1,0.83,50,41.74\n,,,,,,,,,,,,,,,,,32,12 Nov 2026,1,10-2026-00675,11-2026-00281,OVER,JUMBO1,TITA,FEBRY GRESMEDIKA,\"ZINUS DREAM INDONESIA, PT\",C-BOX 10X.F-FOAM (ZU),67361,1,1.34,40,53.50\n,,,,,,,,,,,,,,,,,33,12 Nov 2026,1,10-2026-05705,10-2026-03151,OVER,JUMBO.3,AXEL,FEBBY,\"QUANTUM TOSAN INTERNASIONAL, PT\",SOFA BOX MAGIS 340x340x1100,75363,1,1.66,10,16.58\n,,,,,,,,,,,,,,,,,34,12 Nov 2026,1,11-2026-00382,11-2026-00194,OVER,AFG 3,PUTRA,MARFIN,\"DRAGON STAR INDONESIA, PT\",BOX POLOS A80 18 WATT CUSTOM,69040,1,1.39,140,195.27";
+const K={url:"overwo_url",csv:"overwo_csv",ts:"overwo_ts",auto:"overwo_auto",theme:"overwo_theme"};
+const $=id=>document.getElementById(id);
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const nf=(n,d)=>Number(n||0).toLocaleString("id-ID",{minimumFractionDigits:d||0,maximumFractionDigits:d||0});
+
+/* ---------- parsing ---------- */
+function parseCSV(t){const rows=[];let r=[],c="",q=false;for(let i=0;i<t.length;i++){const ch=t[i];
+  if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}
+  else if(ch==='"')q=true;else if(ch===","){r.push(c);c=""}
+  else if(ch==="\n"||ch==="\r"){if(ch==="\r"&&t[i+1]==="\n")i++;r.push(c);rows.push(r);r=[];c=""}else c+=ch}
+  if(c!==""||r.length){r.push(c);rows.push(r)}return rows}
+const num=s=>{const v=parseFloat(String(s||"").replace(/,/g,""));return isNaN(v)?0:v};
+const qtyNum=s=>{s=String(s||"").trim();if(/^\d+,\d{1,2}$/.test(s))return parseFloat(s.replace(",","."))||0;return num(s)};
+const MON={jan:0,feb:1,mar:2,apr:3,mei:4,may:4,jun:5,jul:6,agu:7,agt:7,aug:7,sep:8,okt:9,oct:9,nov:10,des:11,dec:11};
+function pd(s){s=String(s||"").trim();let m=/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/.exec(s);
+  if(m){const mo=MON[m[2].slice(0,3).toLowerCase()];if(mo!=null)return new Date(+m[3],mo,+m[1])}
+  m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s);if(m)return new Date(+m[1],+m[2]-1,+m[3]);
+  m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);if(m)return new Date(+m[3],+m[2]-1,+m[1]);return null}
+const normCust=s=>{let x=String(s||"").trim().replace(/\s+/g," ");for(let i=0;i<2;i++)x=x.replace(/^PT\.?\s+/i,"").replace(/,?\s*(PT|CV|TBK)\.?$/i,"").trim();return x||"-"};
+
+function parseSheet(text){
+  const rows=parseCSV(text);
+  const h=rows.findIndex(r=>r.some(x=>x.trim().toUpperCase()==="TGL")&&r.some(x=>x.trim().toUpperCase()==="SHIFT"));
+  if(h<0)throw new Error("Header tabel (TGL / SHIFT) tidak ditemukan di CSV");
+  const hdr=rows[h].map(x=>x.trim().toUpperCase());
+  const starts=[];hdr.forEach((x,i)=>{if(x==="NO")starts.push(i)});
+  if(!starts.length)starts.push(0);
+  const recs=[],notes=[],meta=[];
+  starts.forEach((s,k)=>{
+    const e=k+1<starts.length?starts[k+1]:hdr.length;
+    const idx={};for(let i=s;i<e;i++){if(hdr[i]&&!(hdr[i] in idx))idx[hdr[i]]=i}
+    const top=rows.slice(0,h);let title="";
+    for(const r of top){const v=(r[s]||"").trim();if(/LAPORAN/i.test(v)){title=v;break}}
+    let subPcs=null,subKg=null;
+    for(const r of top)for(let i=s;i<e;i++){const v=(r[i]||"").trim();let m;
+      if((m=/^([\d.,]+)\s*PCS$/i.exec(v)))subPcs=num(m[1]);if((m=/^([\d.,]+)\s*KG$/i.exec(v)))subKg=num(m[1])}
+    const kind=/CLOSE/i.test(title)?"close":"out";
+    const pic=(title.split(" - ")[1]||"").trim();
+    meta.push({src:kind,title,pic,subPcs,subKg});
+    const g=(r,key)=>{const i=idx[key];return i==null?"":String(r[i]||"").trim()};
+    for(let ri=h+1;ri<rows.length;ri++){const r=rows[ri];
+      if(!r.slice(s,e).some(x=>String(x).trim()))continue;
+      const rec={src:kind,no:g(r,"NO"),tglStr:g(r,"TGL"),shift:g(r,"SHIFT"),so:g(r,"SO"),
+        wo:g(r,"WO OVER")||g(r,"WO"),woPakai:g(r,"WO TERPAKAI"),ket:g(r,"KETERANGAN"),mesin:g(r,"MESIN"),
+        internal:g(r,"INTERNAL").toUpperCase(),sales:g(r,"SALES").toUpperCase(),custRaw:g(r,"CUSTOMER"),barang:g(r,"NAMA BARANG"),
+        mc:g(r,"MC"),fit:g(r,"FIT"),berat:num(g(r,"BERAT")),qtyRaw:g(r,"QTY"),ton:num(g(r,"TONASE"))};
+      rec.tgl=pd(rec.tglStr);
+      if(!rec.custRaw&&!rec.barang){notes.push({src:kind,tglStr:rec.tglStr,text:rec.so||rec.ket||"(kosong)"});continue}
+      rec.cust=normCust(rec.custRaw);
+      const q0=qtyNum(rec.qtyRaw);rec.qty0=q0;rec.qty=q0;rec.flag="";
+      const exp=q0*rec.berat;
+      if(rec.berat>0&&rec.ton>0&&q0>0&&Math.abs(exp-rec.ton)/rec.ton>0.2){
+        const ratio=rec.ton/exp;
+        if(ratio>=800&&ratio<=1250){rec.qty=q0*1000;rec.flag="ribu"}else rec.flag="beda"}
+      recs.push(rec)}
+  });
+  return{recs,notes,meta}}
+
+/* ---------- state ---------- */
+let lastList=[];let DATA={recs:[],notes:[],meta:[]},srcMode="all",tab="sum",sortKey="tgl",sortDir=-1,trMetric="ton",trSel=null,loadInfo={mode:"snap",ts:null,err:""};
+const today0=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())})();
+const ageOf=r=>r.tgl?Math.max(0,Math.round((today0-r.tgl)/864e5)):null;
+const cur=()=>DATA.recs.filter(r=>srcMode==="all"||r.src===srcMode);
+const srcLbl={out:"Outstanding",close:"WO Close"};
+const sum=(a,f)=>a.reduce((x,r)=>x+f(r),0);
+function group(a,kf,{minKey}={}){const m=new Map();a.forEach(r=>{const k=kf(r);if(!k||k==="-")return;let o=m.get(k);if(!o){o={k,n:0,qty:0,ton:0};m.set(k,o)}o.n++;o.qty+=r.qty;o.ton+=r.ton});return[...m.values()]}
+
+/* ---------- load ---------- */
+function applyCsv(text,mode,ts){DATA=parseSheet(text);loadInfo={mode,ts,err:""};render()}
+async function loadData(force){
+  const url=ls.get(K.url)||DEF_URL;
+  $("btnReload").classList.add("spin");setStat("Memuat dari Google Sheet…","");
+  try{
+    const u=url+(url.indexOf("?")>-1?"&":"?")+"_="+Date.now();
+    const res=await fetch(u,{cache:"no-store"});
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    const text=await res.text();
+    if(!/TGL/i.test(text))throw new Error("Isi bukan CSV tabel Over WO (cek link / izin publish)");
+    ls.set(K.csv,text);ls.set(K.ts,String(Date.now()));
+    applyCsv(text,"live",Date.now());
+  }catch(e){
+    const c=ls.get(K.csv),ts=+ls.get(K.ts)||null;
+    try{
+      if(c){applyCsv(c,"cache",ts)}else{applyCsv(SNAP_CSV,"snap",null)}
+      loadInfo.err=String(e.message||e);render();
+    }catch(e2){loadInfo.err=String(e2.message||e2);setStat("Gagal membaca data: "+loadInfo.err,"err")}
+  }finally{$("btnReload").classList.remove("spin")}
+}
+function setStat(t,cls){$("statTxt").textContent=t;$("dot").className="dot "+(cls||"")}
+function statLine(){
+  const f=d=>new Date(d).toLocaleString("id-ID",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+  if(loadInfo.mode==="live")setStat("Live dari Google Sheet · diperbarui "+f(loadInfo.ts),"live");
+  else if(loadInfo.mode==="cache")setStat("Offline — memakai data tersimpan"+(loadInfo.ts?" ("+f(loadInfo.ts)+")":"")+(loadInfo.err?" · "+loadInfo.err:""),"off");
+  else setStat("Offline — memakai snapshot bawaan file"+(loadInfo.err?" · "+loadInfo.err:""),"off")}
+
+/* ---------- render ---------- */
+function render(){statLine();renderSeg();renderSum();renderList();renderChk();
+  const ph=$("printHead");const a=cur();
+  ph.innerHTML="<b>LAPORAN BARANG OVER WO</b> — Dept. Gudang Barang Jadi · dicetak "+new Date().toLocaleString("id-ID")+" · sumber: "+(srcMode==="all"?"semua":srcLbl[srcMode])+" ("+a.length+" WO)"}
+function renderSeg(){
+  const c={all:DATA.recs.length,out:DATA.recs.filter(r=>r.src==="out").length,close:DATA.recs.filter(r=>r.src==="close").length};
+  const pic=s=>{const m=DATA.meta.find(x=>x.src===s);return m&&m.pic?" · "+m.pic.replace(/^(BPK|IBU)\.?\s*/i,"").split(" ").map(w=>w[0]+w.slice(1).toLowerCase()).join(" "):""};
+  $("srcSeg").innerHTML=[["all","Semua"],["out","Outstanding"+pic("out")],["close","WO Close"+pic("close")]].map(([k,l])=>`<button data-s="${k}" class="${srcMode===k?"on":""}">${esc(l)}<small>${c[k]}</small></button>`).join("")}
+function barList(items,{val="ton",unit="kg",color="var(--teal)",dec=0,sub,limit=8}={}){
+  if(!items.length)return'<div class="empty">Belum ada data</div>';
+  items=items.slice(0,limit);const mx=Math.max(...items.map(i=>i[val]),1);
+  return'<ul class="rank">'+items.map((o,i)=>`<li><div class="rk"><span class="no">${i+1}</span><div class="rt"><b title="${esc(o.k)}">${esc(o.k)}</b><small>${sub?sub(o):""}</small></div><div class="nv">${nf(o[val],dec)}<i> ${unit}</i></div></div><div class="bar"><span style="width:${Math.max(3,o[val]/mx*100)}%;background:${color}"></span></div></li>`).join("")+"</ul>"}
+function renderSum(){
+  const a=cur(),B=$("sumBody");
+  if(!a.length){B.innerHTML='<div class="cardx"><div class="empty">Tidak ada data WO over pada sumber ini.</div></div>';return}
+  const tQty=sum(a,r=>r.qty),tTon=sum(a,r=>r.ton),nCust=new Set(a.map(r=>r.cust)).size,nItem=new Set(a.map(r=>r.barang)).size;
+  const nOut=a.filter(r=>r.src==="out").length,nCl=a.length-nOut;
+  const byCust=group(a,r=>r.cust).sort((x,y)=>y.ton-x.ton);
+  const byInt=group(a,r=>r.internal).sort((x,y)=>y.n-x.n||y.ton-x.ton);
+  const bySales=group(a,r=>r.sales).sort((x,y)=>y.n-x.n||y.ton-x.ton);
+  const byShift=group(a,r=>r.shift?"Shift "+r.shift:"").sort((x,y)=>x.k.localeCompare(y.k));
+  const byMc=group(a,r=>r.mesin).sort((x,y)=>y.n-x.n);
+  const items=[...a].sort((x,y)=>y.ton-x.ton).slice(0,10).map(r=>({k:r.barang,n:1,ton:r.ton,qty:r.qty,cust:r.cust,wo:r.wo}));
+  const ages=a.map(ageOf).filter(x=>x!=null);
+  const bk=[["0–2 hari",0,2,"var(--green)"],["3–5 hari",3,5,"var(--amber)"],["6–7 hari",6,7,"#f97316"],["> 7 hari",8,9999,"var(--red)"]].map(([l,lo,hi,c])=>{const rs=a.filter(r=>{const g=ageOf(r);return g!=null&&g>=lo&&g<=hi});return{k:l,n:rs.length,ton:sum(rs,r=>r.ton),qty:sum(rs,r=>r.qty),c}});
+  /* insights */
+  const I=[];const c1=byCust[0];
+  if(c1)I.push(["🏭","var(--indigo)","Customer terbesar",`<b style="display:inline;text-transform:none;font-size:13px;color:var(--text)">${esc(c1.k)}</b> menyumbang ${nf(c1.ton/tTon*100,0)}% dari tonase over (${nf(c1.ton,0)} kg dari ${c1.n} WO). 5 besar customer = ${nf(byCust.slice(0,5).reduce((x,o)=>x+o.ton,0)/tTon*100,0)}% tonase.`]);
+  const i1=byInt[0];
+  if(i1)I.push(["👤","var(--teal)","Internal terbanyak",`<b style="display:inline;text-transform:none;font-size:13px;color:var(--text)">${esc(i1.k)}</b> mencatat ${i1.n} dari ${a.length} WO over (${nf(i1.n/a.length*100,0)}%), total ${nf(i1.ton,0)} kg.`]);
+  const t1=items[0];
+  if(t1)I.push(["⚖️","var(--rose,#f43f5e)","Over tunggal terberat",`${esc(t1.k)} — ${nf(t1.ton,2)} kg (${nf(t1.qty,0)} pcs) untuk ${esc(t1.cust)}, WO ${esc(t1.wo||"-")}.`]);
+  const oldOut=a.filter(r=>r.src==="out"&&(ageOf(r)||0)>=5);
+  if(nOut)I.push(["⏳","var(--amber)","Umur outstanding",oldOut.length?`${oldOut.length} dari ${nOut} WO outstanding sudah berumur ≥ 5 hari sejak tanggal over (${nf(sum(oldOut,r=>r.ton),0)} kg) — prioritas follow-up ke produksi.`:`Semua WO outstanding masih berumur < 5 hari.`]);
+  const dupWo=(()=>{const m=new Map();a.forEach(r=>{String(r.wo).split("/").forEach(w=>{w=w.trim();if(w)m.set(w,(m.get(w)||0)+1)})});return[...m.entries()].filter(x=>x[1]>1)})();
+  if(dupWo.length)I.push(["🔁","var(--gold)","WO muncul berulang",`${dupWo.length} nomor WO tercatat lebih dari sekali: ${dupWo.slice(0,4).map(x=>esc(x[0])+" (×"+x[1]+")").join(", ")}${dupWo.length>4?"…":""}.`]);
+  const flagged=a.filter(r=>r.flag).length;
+  if(flagged)I.push(["🧮","var(--muted)","Cek data",`${flagged} baris punya qty yang tidak cocok dengan berat × tonase — lihat tab <i>Cek Data</i>.`]);
+  /* trend */
+  const dm=new Map();a.forEach(r=>{if(!r.tgl)return;const k=r.tgl.getTime();let o=dm.get(k);if(!o){o={d:r.tgl,out:{n:0,qty:0,ton:0},close:{n:0,qty:0,ton:0}};dm.set(k,o)}const t=o[r.src];t.n++;t.qty+=r.qty;t.ton+=r.ton});
+  const days=[...dm.values()].sort((x,y)=>x.d-y.d);
+  const mk={ton:"ton",qty:"qty",n:"n"};const val=(o,s)=>o[s][mk[trMetric]];
+  const mxD=Math.max(...days.map(o=>val(o,"out")+val(o,"close")),1);
+  const sel=trSel!=null?days.find(o=>o.d.getTime()===trSel):null;
+  const tfmt=d=>d.toLocaleDateString("id-ID",{day:"2-digit",month:"short"});
+  const trInfo=sel?`<b>${sel.d.toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long"})}</b> — ${sel.out.n+sel.close.n} WO · ${nf(sel.out.ton+sel.close.ton,0)} kg (Outstanding ${sel.out.n}, Close ${sel.close.n})`:'<span class="hint">Ketuk batang untuk melihat detail hari.</span>';
+  const donut=(()=>{const tot=byShift.reduce((x,o)=>x+o.n,0)||1;const cols=["#6366f1","#0ea5a4","#f59e0b","#f43f5e"];let acc=0;const R=52,C=2*Math.PI*R;
+    const segs=byShift.map((o,i)=>{const L=o.n/tot*C;const s=`<circle r="${R}" cx="70" cy="70" fill="none" stroke="${cols[i%4]}" stroke-width="22" stroke-dasharray="${L} ${C-L}" stroke-dashoffset="${-acc}" transform="rotate(-90 70 70)"/>`;acc+=L;return s}).join("");
+    return`<div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center"><div style="position:relative;width:140px;height:140px"><svg viewBox="0 0 140 140" width="140" height="140">${segs}</svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><b style="font-size:24px">${tot}</b><span class="hint">WO</span></div></div><div style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:9px">${byShift.map((o,i)=>`<div style="display:flex;gap:8px;align-items:center;font-size:12.5px"><i style="width:10px;height:10px;border-radius:3px;background:${cols[i%4]}"></i><span style="flex:1">${esc(o.k)}</span><b>${o.n}</b><span class="hint" style="width:70px;text-align:right">${nf(o.ton,0)} kg</span></div>`).join("")}</div></div>`})();
+  B.innerHTML=`
+  <div class="kpis">
+    <div class="kpi" style="--c:var(--indigo)"><span>JUMLAH WO OVER</span><b>${nf(a.length)}</b><small>${srcMode==="all"?`Outstanding ${nOut} · Close ${nCl}`:srcLbl[srcMode]}</small></div>
+    <div class="kpi" style="--c:var(--amber)"><span>QTY OVER</span><b>${nf(tQty)}</b><small>pcs</small></div>
+    <div class="kpi" style="--c:var(--red)"><span>TONASE OVER</span><b>${nf(tTon,0)}</b><small>kg · ${nf(tTon/1000,2)} ton</small></div>
+    <div class="kpi" style="--c:var(--teal)"><span>CUSTOMER / ITEM</span><b>${nCust} / ${nItem}</b><small>unik pada periode ini</small></div>
+  </div>
+  <div class="ins">${I.map(([ic,c,t,x])=>`<div class="in" style="--c:${c}"><i>${ic}</i><div><b>${t}</b>${x}</div></div>`).join("")}</div>
+  <div class="grid">
+    <div class="p span2" style="--c:var(--gold)"><div class="ph"><div><h3>Tren Over per Tanggal</h3><p>${days.length?tfmt(days[0].d)+" – "+tfmt(days[days.length-1].d):""}</p></div>
+      <div class="mini" id="trM"><button data-m="ton" class="${trMetric==="ton"?"on":""}">Tonase</button><button data-m="qty" class="${trMetric==="qty"?"on":""}">Qty</button><button data-m="n" class="${trMetric==="n"?"on":""}">WO</button></div></div>
+      <div class="tr" id="trChart">${days.map(o=>{const k=o.d.getTime();return`<div class="tc ${k===trSel?"sel":""}" data-d="${k}" title="${tfmt(o.d)}"><span class="o" style="height:${val(o,"out")/mxD*100}%"></span><span class="c" style="height:${val(o,"close")/mxD*100}%"></span></div>`}).join("")}</div>
+      <div class="tax">${days.map(o=>`<div>${o.d.getDate()}</div>`).join("")}</div>
+      <div class="tinfo">${trInfo}</div>
+      <div class="lg"><span><i style="background:#f59e0b"></i>Outstanding</span><span><i style="background:#10b981"></i>WO Close</span></div></div>
+    <div class="p" style="--c:var(--indigo)"><div class="ph"><div><h3>Top Customer</h3><p>menurut tonase over</p></div></div>${barList(byCust,{color:"var(--indigo)",sub:o=>o.n+" WO · "+nf(o.qty)+" pcs",limit:8})}</div>
+    <div class="p" style="--c:var(--teal)"><div class="ph"><div><h3>Per Internal</h3><p>jumlah WO over yang dicatat</p></div></div>${barList(byInt,{val:"n",unit:"WO",color:"var(--teal)",sub:o=>nf(o.ton,0)+" kg",limit:8})}</div>
+    <div class="p" style="--c:var(--amber)"><div class="ph"><div><h3>Per Sales</h3><p>jumlah WO over per sales</p></div></div>${barList(bySales,{val:"n",unit:"WO",color:"var(--amber)",sub:o=>nf(o.ton,0)+" kg",limit:8})}</div>
+    <div class="p" style="--c:var(--red)"><div class="ph"><div><h3>Umur Over</h3><p>sejak tanggal over s/d hari ini</p></div></div>
+      <ul class="rank">${bk.map(o=>{const mx=Math.max(...bk.map(x=>x.n),1);return`<li><div class="rk"><div class="rt"><b>${o.k}</b><small>${nf(o.ton,0)} kg · ${nf(o.qty)} pcs</small></div><div class="nv">${o.n}<i> WO</i></div></div><div class="bar" style="margin-left:0"><span style="width:${o.n?Math.max(3,o.n/mx*100):0}%;background:${o.c}"></span></div></li>`}).join("")}</ul></div>
+    <div class="p" style="--c:var(--green)"><div class="ph"><div><h3>Per Shift</h3><p>sebaran WO over</p></div></div>${byShift.length?donut:'<div class="empty">Belum ada data</div>'}</div>
+    <div class="p" style="--c:var(--indigo)"><div class="ph"><div><h3>Per Mesin</h3><p>hanya baris yang mesinnya terisi (${sum(byMc,o=>o.n)} dari ${a.length} WO)</p></div></div>${barList(byMc,{val:"n",unit:"WO",color:"var(--indigo)",sub:o=>nf(o.ton,0)+" kg",limit:8})}</div>
+    <div class="p span2" style="--c:var(--rose,#f43f5e)"><div class="ph"><div><h3>10 Barang Over Terberat</h3><p>menurut tonase per WO</p></div></div>${barList(items,{color:"#f43f5e",dec:1,sub:o=>esc(o.cust)+" · WO "+esc(o.wo||"-"),limit:10})}</div>
+  </div>`;
+  $("trChart").addEventListener("click",e=>{const t=e.target.closest(".tc");if(!t)return;const k=+t.dataset.d;trSel=trSel===k?null:k;renderSum()});
+  $("trM").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;trMetric=b.dataset.m;renderSum()})}
+
+/* ---------- daftar ---------- */
+const COLS=[["tgl","Tgl"],["shift","Sft"],["src","Sumber"],["so","SO"],["wo","WO Over"],["woPakai","WO Terpakai / Ket"],["cust","Customer"],["barang","Nama Barang"],["qty","Qty","n"],["ton","Tonase (kg)","n"],["internal","Internal"],["sales","Sales"],["mesin","Mesin"],["age","Umur"]];
+function listRows(){
+  const q=$("q").value.trim().toLowerCase();let a=cur();
+  if(q)a=a.filter(r=>[r.so,r.wo,r.woPakai,r.ket,r.cust,r.custRaw,r.barang,r.internal,r.sales,r.mesin,r.mc].join(" ").toLowerCase().includes(q));
+  const kv=r=>sortKey==="tgl"?(r.tgl?r.tgl.getTime():0):sortKey==="age"?(ageOf(r)||0):sortKey==="qty"||sortKey==="ton"?r[sortKey]:String(r[sortKey]||"").toLowerCase();
+  return a.sort((x,y)=>{const A=kv(x),B=kv(y);return(A<B?-1:A>B?1:0)*sortDir})}
+function renderList(){
+  const a=listRows();lastList=a;$("listInfo").textContent=a.length+" WO · "+nf(sum(a,r=>r.qty))+" pcs · "+nf(sum(a,r=>r.ton),2)+" kg";
+  $("tbl").innerHTML="<thead><tr>"+COLS.map(([k,l,c])=>`<th data-k="${k}" class="${c||""}">${l}${sortKey===k?(sortDir>0?" ▲":" ▼"):""}</th>`).join("")+"</tr></thead><tbody>"+
+  (a.length?a.map(r=>{const ag=ageOf(r);
+    const st=r.src==="out"?(r.woPakai?esc(r.woPakai):'<span class="hint">—</span>'):esc(r.ket||"—");
+    return`<tr data-i="${a.indexOf(r)}" class="${r.flag?"f":""}"><td>${r.tgl?r.tgl.toLocaleDateString("id-ID",{day:"2-digit",month:"short"}):esc(r.tglStr)}</td><td>${esc(r.shift)}</td><td><span class="bd ${r.src}">${r.src==="out"?"OUT":"CLOSE"}</span></td><td>${esc(r.so)}</td><td>${esc(r.wo)}</td><td>${st}</td><td class="w">${esc(r.cust)}</td><td class="w">${esc(r.barang)}</td><td class="n">${nf(r.qty)}${r.flag==="ribu"?' <span class="bd warn" title="Qty di sheet '+esc(r.qtyRaw)+' dibaca ribuan (×1.000)">×1000</span>':r.flag==="beda"?' <span class="bd warn" title="Qty × berat tidak cocok dengan tonase">?</span>':""}</td><td class="n">${nf(r.ton,2)}</td><td>${esc(r.internal)}</td><td>${esc(r.sales)}</td><td>${esc(r.mesin)}</td><td class="n">${ag==null?"-":ag+" h"}</td></tr>`}).join(""):'<tr><td colspan="14" class="empty">Tidak ada data yang cocok.</td></tr>')+"</tbody>"}
+function csvOut(){
+  const a=listRows();const H=["Tanggal","Shift","Sumber","SO","WO Over","WO Terpakai","Keterangan","Customer","Nama Barang","MC","Fit","Berat","Qty","Tonase","Internal","Sales","Mesin"];
+  const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
+  const L=[H.map(q).join(",")].concat(a.map(r=>[r.tglStr,r.shift,srcLbl[r.src],r.so,r.wo,r.woPakai,r.ket,r.custRaw,r.barang,r.mc,r.fit,r.berat,r.qty,r.ton,r.internal,r.sales,r.mesin].map(q).join(",")));
+  const b=new Blob(["\ufeff"+L.join("\r\n")],{type:"text/csv"});const u=URL.createObjectURL(b);const l=document.createElement("a");l.href=u;l.download="over-wo-"+new Date().toISOString().slice(0,10)+".csv";document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}
+
+/* ---------- cek data ---------- */
+function renderChk(){
+  const B=$("chkBody");let h="";
+  DATA.meta.forEach(m=>{
+    const rs=DATA.recs.filter(r=>r.src===m.src);const cp=sum(rs,r=>r.qty),ck=sum(rs,r=>r.ton);
+    const dp=m.subPcs==null?null:cp-m.subPcs,dk=m.subKg==null?null:ck-m.subKg;
+    const cls=d=>d==null?"":Math.abs(d)<1?"ok":"bad";
+    h+=`<div class="cardx"><h2>Rekonsiliasi subtotal — ${esc(srcLbl[m.src])}${m.pic?" ("+esc(m.pic)+")":""}</h2>
+    <div class="row"><span>Subtotal Qty di sheet</span><b>${m.subPcs==null?"-":nf(m.subPcs)+" pcs"}</b></div>
+    <div class="row"><span>Qty dihitung dari baris</span><b>${nf(cp)} pcs</b></div>
+    <div class="row"><span>Selisih qty</span><b class="${cls(dp)}">${dp==null?"-":nf(dp)}</b></div>
+    <div class="row"><span>Subtotal Tonase di sheet</span><b>${m.subKg==null?"-":nf(m.subKg,2)+" kg"}</b></div>
+    <div class="row"><span>Tonase dihitung dari baris</span><b>${nf(ck,2)} kg</b></div>
+    <div class="row"><span>Selisih tonase</span><b class="${cls(dk)}">${dk==null?"-":nf(dk,2)}</b></div></div>`});
+  const fl=DATA.recs.filter(r=>r.flag);
+  h+=`<div class="cardx"><h2>Baris dengan qty tidak cocok (${fl.length})</h2><p class="hint">Dicek dengan rumus qty × berat ≈ tonase (toleransi 20%). Bila selisihnya ≈ 1.000×, qty dibaca sebagai ribuan secara otomatis (tanda <span class="bd warn">×1000</span>); selain itu hanya ditandai <span class="bd warn">?</span> dan dipakai apa adanya. Sebaiknya dikoreksi di Google Sheet.</p>`+
+    (fl.length?`<div class="tw" style="max-height:340px"><table style="min-width:640px"><thead><tr><th>Sumber</th><th>WO</th><th>Barang</th><th class="n">Qty sheet</th><th class="n">Berat</th><th class="n">Tonase</th><th>Dibaca</th></tr></thead><tbody>${fl.map(r=>`<tr><td><span class="bd ${r.src}">${r.src==="out"?"OUT":"CLOSE"}</span></td><td>${esc(r.wo)}</td><td>${esc(r.barang)}</td><td class="n">${esc(r.qtyRaw)}</td><td class="n">${r.berat}</td><td class="n">${nf(r.ton,2)}</td><td>${r.flag==="ribu"?nf(r.qty)+" pcs (ribuan)":"apa adanya"}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty ok">Semua baris konsisten ✔</div>')+"</div>";
+  const miss=DATA.recs.filter(r=>!r.so||!r.wo||!r.tgl);
+  const dup=(()=>{const m=new Map();DATA.recs.forEach(r=>{const k=(r.so+"|"+r.wo+"|"+r.barang).toLowerCase();m.set(k,(m.get(k)||[]).concat(r))});return[...m.values()].filter(x=>x.length>1)})();
+  const outTot=DATA.recs.filter(r=>r.src==="out"),pakai=outTot.filter(r=>r.woPakai).length;
+  h+=`<div class="cardx"><h2>Catatan lain</h2>
+    <div class="row"><span>Baris tanpa SO / WO / tanggal valid</span><b class="${miss.length?"bad":"ok"}">${miss.length}</b></div>
+    <div class="row"><span>Baris ganda (SO + WO + barang sama)</span><b class="${dup.length?"bad":"ok"}">${dup.length}</b></div>
+    <div class="row"><span>Outstanding dengan "WO Terpakai" terisi</span><b>${pakai} dari ${outTot.length}</b></div>
+    ${DATA.notes.length?`<div class="row"><span>Catatan di sheet</span><b style="text-align:right">${DATA.notes.map(n=>esc(n.tglStr+": "+n.text)).join("<br>")}</b></div>`:""}</div>`;
+  B.innerHTML=h}
+
+/* ---------- ui wiring ---------- */
+function setTab(t){tab=t;document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+t));
+  $("srcSeg").style.display=(t==="set"||t==="chk")?"none":"flex";window.scrollTo(0,0)}
+$("tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(b)setTab(b.dataset.t)});
+$("srcSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;srcMode=b.dataset.s;trSel=null;render()});
+$("q").addEventListener("input",renderList);
+$("tbl").addEventListener("click",e=>{const th=e.target.closest("th");if(!th)return;const k=th.dataset.k;if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=(k==="qty"||k==="ton"||k==="tgl"||k==="age")?-1:1}renderList()});
+$("btnCsv").addEventListener("click",csvOut);
+function openSheet(r){
+  const ag=ageOf(r);const rows=[["Sumber",srcLbl[r.src]],["Tanggal",r.tglStr+(ag==null?"":" ("+ag+" hari lalu)")],["Shift",r.shift||"-"],["SO",r.so||"-"],["WO Over",r.wo||"-"],[r.src==="out"?"WO Terpakai":"Keterangan",(r.src==="out"?r.woPakai:r.ket)||"-"],["Customer",r.custRaw||"-"],["Nama Barang",r.barang||"-"],["MC / Fit",(r.mc||"-")+" / "+(r.fit||"-")],["Berat / pcs",r.berat+" kg"],["Qty",nf(r.qty)+" pcs"+(r.flag==="ribu"?" (sheet: "+r.qtyRaw+", dibaca ribuan)":r.flag==="beda"?" (⚠ tidak cocok dgn tonase)":"")],["Tonase",nf(r.ton,2)+" kg"],["Internal",r.internal||"-"],["Sales",r.sales||"-"],["Mesin",r.mesin||"-"]];
+  $("shE").textContent=srcLbl[r.src]+" · "+r.tglStr;$("shT").textContent=r.barang||r.wo;
+  $("shB").innerHTML=rows.map(([k,v])=>`<div class="row"><span style="color:var(--muted)">${esc(k)}</span><b style="text-align:right">${esc(v)}</b></div>`).join("");
+  $("shOv").classList.add("show");document.body.classList.add("ov")}
+function closeSheet(){$("shOv").classList.remove("show");document.body.classList.remove("ov")}
+$("shX").addEventListener("click",closeSheet);$("shOv").addEventListener("click",e=>{if(e.target===$("shOv"))closeSheet()});
+$("tbl").addEventListener("click",e=>{const tr=e.target.closest("tbody tr");if(!tr||e.target.closest("th"))return;const r=lastList[+tr.dataset.i];if(r)openSheet(r)});
+function toggleTheme(){const el=document.documentElement;const n=el.getAttribute("data-theme")==="light"?"dark":"light";el.setAttribute("data-theme",n);ls.set(K.theme,n);const m=document.querySelector('meta[name=theme-color]');if(m)m.content=n==="light"?"#F3F4F6":"#12161B"}
+$("btnTheme").addEventListener("click",toggleTheme);$("btnTheme2").addEventListener("click",toggleTheme);
+async function reloadAll(){const sp=$("splash");sp.classList.add("show");try{await loadData(true)}finally{sp.classList.remove("show")}}
+$("btnReload").addEventListener("click",reloadAll);$("btnReload2").addEventListener("click",reloadAll);
+$("cfgUrl").value=ls.get(K.url)||DEF_URL;
+$("btnSaveUrl").addEventListener("click",()=>{const v=$("cfgUrl").value.trim();ls.set(K.url,v||DEF_URL);reloadAll()});
+$("btnDefUrl").addEventListener("click",()=>{$("cfgUrl").value=DEF_URL;ls.set(K.url,DEF_URL);reloadAll()});
+$("cfgAuto").checked=ls.get(K.auto)!=="0";
+$("cfgAuto").addEventListener("change",()=>ls.set(K.auto,$("cfgAuto").checked?"1":"0"));
+setInterval(()=>{if(!document.hidden&&$("cfgAuto").checked)loadData()},5*60*1000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){const t=+ls.get(K.ts)||0;if(Date.now()-t>2*60*1000&&$("cfgAuto").checked)loadData()}});
+$("btnPrint").addEventListener("click",()=>{window.print()});
+
+/* ---------- perbarui aplikasi (lewati cache) ---------- */
+$("appVer").textContent="Versi aplikasi: "+APP_VERSION;
+async function hardRefresh(){
+  try{if(navigator.serviceWorker){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()))}}catch(e){}
+  try{if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}}catch(e){}
+  try{await fetch(location.pathname,{cache:"reload"})}catch(e){}
+  const u=new URL(location.href);u.searchParams.set("v",Date.now());location.replace(u.toString())}
+$("btnUpdateApp").addEventListener("click",async()=>{const b=$("btnUpdateApp");b.disabled=true;b.querySelector("span").textContent="Memperbarui…";await hardRefresh()});
+setTimeout(async()=>{
+  if(!/^https?:/.test(location.protocol))return;
+  try{
+    const r=await fetch(location.pathname+"?chk="+Date.now(),{cache:"no-store"});const t=await r.text();
+    const m=/APP_VERSION\s*=\s*"([^"]+)"/.exec(t);
+    if(m&&m[1]!==APP_VERSION){
+      const bar=document.createElement("div");bar.className="verbar";
+      bar.innerHTML='<span style="flex:1">Versi baru aplikasi tersedia.</span><button type="button">Perbarui</button>';
+      bar.querySelector("button").addEventListener("click",hardRefresh);document.body.appendChild(bar)}
+  }catch(e){}
+},3000);
+
+/* ---------- start ---------- */
+try{applyCsv(ls.get(K.csv)||SNAP_CSV,ls.get(K.csv)?"cache":"snap",+ls.get(K.ts)||null)}catch(e){setStat("Gagal membaca data awal: "+e.message,"err")}
+loadData();
+setTimeout(()=>{const s=$("app-splash");if(s)s.classList.add("hide")},700);
+})();
+</script>
+</body>
+</html>
