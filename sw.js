@@ -7,6 +7,7 @@ const SHELL_FILES = [
   './over-wo.html',
   './ringkasan-memo.html',
   './ringkasan-palet.html',
+  './ringkasan-overwo.html',
   './ringkasan-sob.html',
   './ringkasan-slg.html',
   './ringkasan-mlg.html',
