@@ -4,6 +4,7 @@ const SHELL_FILES = [
   './index.html',
   './index2.html',
   './presentasi.html',
+  './over-wo.html',
   './ringkasan-memo.html',
   './ringkasan-palet.html',
   './ringkasan-sob.html',
