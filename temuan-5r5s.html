@@ -1035,6 +1035,10 @@
       <input type="checkbox" id="cetakSertakanFoto" checked style="width:auto;">
       <span style="font-weight:600;color:var(--text);font-size:13.5px;">Sertakan halaman dokumentasi foto</span>
     </label>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+      <input type="checkbox" id="cetakPerZona" style="width:auto;">
+      <span style="font-weight:600;color:var(--text);font-size:13.5px;">Pisahkan per zona (zona baru mulai di halaman baru)</span>
+    </label>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="save-settings" id="btnCetakPrint" style="margin-top:0;background:var(--nbg);flex:1;">🖨 Cetak</button>
       <button class="save-settings" id="btnGeneratePdf" style="margin-top:0;flex:1;">⬇️ Unduh PDF</button>
@@ -2262,6 +2266,15 @@
   }
 
   const fmtTglPendek = iso => { if(!iso) return "-"; const d = new Date(iso+"T00:00:00"); const b = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]; return `${d.getDate()} ${b[d.getMonth()]} ${d.getFullYear()}`; };
+  // Pilihan "per zona": data (sudah terurut per zona) dipecah per zona; tiap potongan = halaman baru.
+  // Kalau tidak dicentang -> satu potongan saja (perilaku lama).
+  const isPerZona = () => !!($("cetakPerZona") && $("cetakPerZona").checked);
+  function zonaChunks(data){
+    if(!isPerZona()) return [data];
+    const out = []; let last = null;
+    data.forEach(r=>{ const k = grpZonaKey(r); if(k !== last){ out.push([]); last = k; } out[out.length-1].push(r); });
+    return out;
+  }
   const getJenis = () => ($("cetakJenis").value === "tl" ? "tl" : "temuan");
   $("cetakJenis").addEventListener("change", ()=>{ $("cetakBasisBox").style.display = getJenis()==="tl" ? "" : "none"; });
 
@@ -2284,12 +2297,19 @@
   // Laporan "sudah ditindaklanjuti": tabel ringkas + halaman foto sebelum & sesudah
   function buildTLHtml(data, rangeLabel, sertakanFoto){
     const basisLbl = $("cetakBasis").value==="tl_tanggal" ? "Tindak Lanjut" : "Temuan";
-    let html = `<div class="p-page">
+    const perZona = isPerZona();
+    const chunks = zonaChunks(data);
+    const cnt = grpCounts(data);
+    let html = "", no = 0;
+    chunks.forEach((chunk, ci)=>{
+      const zoneSub = perZona ? `<div class="p-sub">Zona : ${escapeHtml(grpZonaLabel(chunk[0]))}</div>` : "";
+      html += `<div class="p-page${ci>0?" p-section-break":""}">
       <div class="p-header">
         <h3>PT. KARYA INDAH<br>MULTIGUNA</h3>
         <div class="p-title">
           <h1>FORM TINDAK LANJUT TEMUAN SIDAK 5R5S</h1>
           <div class="p-sub">Tanggal ${basisLbl} : ${rangeLabel}</div>
+          ${zoneSub}
         </div>
         <div class="p-signbox">
           <div><span>Dibuat</span><em></em></div>
@@ -2306,15 +2326,15 @@
           <th>Jenis Temuan</th><th>Level</th><th>Tgl<br>Temuan</th><th>Tgl Tindak<br>Lanjut</th><th>Paraf<br>(Verifikasi)</th>
         </tr></thead>
         <tbody>`;
-    const cnt = grpCounts(data);
-    let lz=null, lk=null;
-    data.forEach((r,i)=>{
-      const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
-      const zk = grpZonaKey(r), k = (r.kepala_regu||"").trim();
-      if(zk!==lz){ html += `<tr class="grp"><td colspan="10">${escapeHtml(grpZonaLabel(r))} &nbsp;(${cnt.get(zk)} temuan)</td></tr>`; lz=zk; lk=null; }
-      if(k!==lk){ html += `<tr class="grp-k"><td colspan="10">Karu: ${escapeHtml(k||"-")}</td></tr>`; lk=k; }
-      html += `<tr>
-        <td class="center">${i+1}</td>
+      let lz=null, lk=null;
+      chunk.forEach(r=>{
+        no++;
+        const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+        const zk = grpZonaKey(r), k = (r.kepala_regu||"").trim();
+        if(zk!==lz){ html += `<tr class="grp"><td colspan="10">${escapeHtml(grpZonaLabel(r))} &nbsp;(${cnt.get(zk)} temuan)</td></tr>`; lz=zk; lk=null; }
+        if(k!==lk){ html += `<tr class="grp-k"><td colspan="10">Karu: ${escapeHtml(k||"-")}</td></tr>`; lk=k; }
+        html += `<tr>
+        <td class="center">${no}</td>
         <td>${escapeHtml(r.area||"-")}</td>
         <td>${escapeHtml(r.penanggung_jawab||"-")}</td>
         <td>${escapeHtml(r.kepala_regu||"-")}</td>
@@ -2325,24 +2345,29 @@
         <td class="center">${fmtTglPendek(r.tl_tanggal)}</td>
         <td></td>
       </tr>`;
+      });
+      html += `</tbody></table></div>`;
     });
-    html += `</tbody></table></div>`;
 
     if(sertakanFoto){
-      html += `<div class="p-page p-section-break">
+      let dno = 0;
+      chunks.forEach((chunk)=>{
+        const zoneTitle = perZona ? `<div class="p-doc-zona" style="margin-top:0;">${escapeHtml(grpZonaLabel(chunk[0]))}</div>` : "";
+        html += `<div class="p-page p-section-break">
         <h3>PT. KARYA INDAH MULTIGUNA</h3>
-        <h2 class="p-docs-title">Dokumentasi Tindak Lanjut Temuan ${rangeLabel}</h2>`;
-      let dlz=null, dlk=null;
-      data.forEach((r,i)=>{
-        const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
-        const before = splitUrls(r.foto_url)[0];
-        const after = splitUrls(r.tl_foto_url).slice(0,2);
-        const zk = grpZonaKey(r), k = (r.kepala_regu||"").trim();
-        if(zk!==dlz){ html += `<div class="p-doc-zona">${escapeHtml(grpZonaLabel(r))}</div>`; dlz=zk; dlk=null; }
-        if(k!==dlk){ html += `<div class="p-doc-karu">Karu: ${escapeHtml(k||"-")}</div>`; dlk=k; }
-        const img = u => `<img src="${escapeHtml(u)}" crossorigin="anonymous">`;
-        html += `<div class="p-doc-card p-tl">
-          <div class="p-tl-head"><b>${i+1}. ${escapeHtml(r.area||"-")} (${escapeHtml(r.kode||"-")})</b><span class="p-doc-level ${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'}</span></div>
+        <h2 class="p-docs-title">Dokumentasi Tindak Lanjut Temuan ${rangeLabel}</h2>${zoneTitle}`;
+        let dlz=null, dlk=null;
+        chunk.forEach(r=>{
+          dno++;
+          const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+          const before = splitUrls(r.foto_url)[0];
+          const after = splitUrls(r.tl_foto_url).slice(0,2);
+          const zk = grpZonaKey(r), k = (r.kepala_regu||"").trim();
+          if(!perZona && zk!==dlz){ html += `<div class="p-doc-zona">${escapeHtml(grpZonaLabel(r))}</div>`; dlz=zk; dlk=null; }
+          if(k!==dlk){ html += `<div class="p-doc-karu">Karu: ${escapeHtml(k||"-")}</div>`; dlk=k; }
+          const img = u => `<img src="${escapeHtml(u)}" crossorigin="anonymous">`;
+          html += `<div class="p-doc-card p-tl">
+          <div class="p-tl-head"><b>${dno}. ${escapeHtml(r.area||"-")} (${escapeHtml(r.kode||"-")})</b><span class="p-doc-level ${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'}</span></div>
           <p>${escapeHtml(r.uraian||"-")}</p>
           <p class="p-doc-meta">
             <span>PJ: ${escapeHtml(r.penanggung_jawab||"-")}</span>
@@ -2357,8 +2382,9 @@
           </div>
           ${r.tl_catatan?`<p class="p-tl-note"><b>Keterangan perbaikan:</b> ${escapeHtml(r.tl_catatan)}</p>`:""}
         </div>`;
+        });
+        html += `</div>`;
       });
-      html += `</div>`;
     }
     return html;
   }
@@ -2370,13 +2396,20 @@
     const rangeLabel = dari === sampai ? fmtTanggalID(dari) : `${fmtTanggalID(dari)} — ${fmtTanggalID(sampai)}`;
     if(jenis==="tl") return { dari, sampai, jenis, rangeLabel, html: buildTLHtml(data, rangeLabel, sertakanFoto) };
 
-    // ---- Bangun HTML halaman tabel ----
-    let html = `<div class="p-page">
+    // ---- Bangun HTML halaman tabel (per zona bila dicentang) ----
+    const perZona = isPerZona();
+    const chunks = zonaChunks(data);
+    const _cnt = grpCounts(data);
+    let html = "", no = 0;
+    chunks.forEach((chunk, ci)=>{
+      const zoneSub = perZona ? `<div class="p-sub">Zona : ${escapeHtml(grpZonaLabel(chunk[0]))}</div>` : "";
+      html += `<div class="p-page${ci>0?" p-section-break":""}">
       <div class="p-header">
         <h3>PT. KARYA INDAH<br>MULTIGUNA</h3>
         <div class="p-title">
           <h1>FORM TEMUAN SIDAK 5R5S</h1>
           <div class="p-sub">Tanggal : ${rangeLabel}</div>
+          ${zoneSub}
         </div>
         <div class="p-signbox">
           <div><span>Dibuat</span><em></em></div>
@@ -2393,15 +2426,15 @@
           <th>Jenis Temuan</th><th>Level</th><th>Paraf<br>(Closed)</th>
         </tr></thead>
         <tbody>`;
-    const _cnt = grpCounts(data);
-    let _lz=null, _lk=null;
-    data.forEach((r,i)=>{
-      const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
-      const _zk = grpZonaKey(r), _k = (r.kepala_regu||"").trim();
-      if(_zk!==_lz){ html += `<tr class="grp"><td colspan="8">${escapeHtml(grpZonaLabel(r))} &nbsp;(${_cnt.get(_zk)} temuan)</td></tr>`; _lz=_zk; _lk=null; }
-      if(_k!==_lk){ html += `<tr class="grp-k"><td colspan="8">Karu: ${escapeHtml(_k||"-")}</td></tr>`; _lk=_k; }
-      html += `<tr>
-        <td class="center">${i+1}</td>
+      let _lz=null, _lk=null;
+      chunk.forEach(r=>{
+        no++;
+        const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+        const _zk = grpZonaKey(r), _k = (r.kepala_regu||"").trim();
+        if(_zk!==_lz){ html += `<tr class="grp"><td colspan="8">${escapeHtml(grpZonaLabel(r))} &nbsp;(${_cnt.get(_zk)} temuan)</td></tr>`; _lz=_zk; _lk=null; }
+        if(_k!==_lk){ html += `<tr class="grp-k"><td colspan="8">Karu: ${escapeHtml(_k||"-")}</td></tr>`; _lk=_k; }
+        html += `<tr>
+        <td class="center">${no}</td>
         <td>${escapeHtml(r.area||"-")}</td>
         <td>${escapeHtml(r.penanggung_jawab||"-")}</td>
         <td>${escapeHtml(r.kepala_regu||"-")}</td>
@@ -2410,29 +2443,32 @@
         <td class="${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'}</td>
         <td></td>
       </tr>`;
+      });
+      html += `</tbody></table></div>`;
     });
-    html += `</tbody></table></div>`;
 
     // ---- Bangun HTML halaman dokumentasi foto ----
     if(sertakanFoto){
-      html += `<div class="p-page p-section-break">
+      let dno = 0;
+      chunks.forEach((chunk)=>{
+        const zoneTitle = perZona ? `<div class="p-doc-zona" style="margin-top:0;">${escapeHtml(grpZonaLabel(chunk[0]))}</div>` : "";
+        html += `<div class="p-page p-section-break">
         <h3>PT. KARYA INDAH MULTIGUNA</h3>
-        <h2 class="p-docs-title">Dokumentasi Hasil Pemeriksaan ${rangeLabel}</h2>`;
-      let _dlz=null, _dlk=null;
-      for(let i=0;i<data.length;i++){
-        const r = data[i];
-        const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
-        const firstUrl = (r.foto_url||"").split(",")[0];
-        const _dzk = grpZonaKey(r), _dk = (r.kepala_regu||"").trim();
-        if(_dzk!==_dlz){ html += `<div class="p-doc-zona">${escapeHtml(grpZonaLabel(r))}</div>`; _dlz=_dzk; _dlk=null; }
-        if(_dk!==_dlk){ html += `<div class="p-doc-karu">Karu: ${escapeHtml(_dk||"-")}</div>`; _dlk=_dk; }
-        html += `<div class="p-doc-card">
+        <h2 class="p-docs-title">Dokumentasi Hasil Pemeriksaan ${rangeLabel}</h2>${zoneTitle}`;
+        let _dlz=null, _dlk=null;
+        chunk.forEach(r=>{
+          dno++;
+          const isMayor = (r.klasifikasi||"").toUpperCase()==="MAYOR";
+          const firstUrl = (r.foto_url||"").split(",")[0];
+          const _dzk = grpZonaKey(r), _dk = (r.kepala_regu||"").trim();
+          if(!perZona && _dzk!==_dlz){ html += `<div class="p-doc-zona">${escapeHtml(grpZonaLabel(r))}</div>`; _dlz=_dzk; _dlk=null; }
+          if(_dk!==_dlk){ html += `<div class="p-doc-karu">Karu: ${escapeHtml(_dk||"-")}</div>`; _dlk=_dk; }
+          html += `<div class="p-doc-card">
           ${firstUrl?`<img src="${firstUrl}" crossorigin="anonymous">`:""}
           <div class="p-doc-text">
-            <b>${i+1}. ${escapeHtml(r.area||"-")} (${escapeHtml(r.kode||"-")})</b>
+            <b>${dno}. ${escapeHtml(r.area||"-")} (${escapeHtml(r.kode||"-")})</b>
             <p>${escapeHtml(r.uraian||"-")}</p>
             <p class="p-doc-level ${isMayor?'mayor':'minor'}">${isMayor?'MAYOR':'minor'}</p>
-            <!-- Poin disembunyikan sementara. Untuk menampilkan lagi, tambahkan " · " + r.poin + " poin" pada baris di atas. -->
             <p class="p-doc-meta">
               <span>PJ: ${escapeHtml(r.penanggung_jawab||"-")}</span>
               <span>Karu: ${escapeHtml(r.kepala_regu||"-")}</span>
@@ -2442,8 +2478,9 @@
             ${r.catatan?`<p>Catatan: ${escapeHtml(r.catatan)}</p>`:""}
           </div>
         </div>`;
-      }
-      html += `</div>`;
+        });
+        html += `</div>`;
+      });
     }
 
     return { dari, sampai, jenis, rangeLabel, html };
