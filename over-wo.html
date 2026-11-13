@@ -286,6 +286,43 @@ body[data-tab="report"]{--accent:#1688f8;--accent-rgb:22,136,248}
   .kpis.k4 .kpi-value{font-size:26px}.kpis.k4 .kpi-value small{font-size:14px}.kpis.k4 .kpi{padding:14px 14px 18px}
   .toast{bottom:104px}
 }
+
+.fs-btn{margin-left:auto;flex:0 0 auto;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:0;border-radius:12px;cursor:pointer;color:var(--accent);background:rgba(var(--accent-rgb),.12);transition:.2s}
+.fs-btn:hover{background:var(--accent);color:#fff;transform:translateY(-2px)}
+.fs-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.table-card.fs{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;overflow:hidden;border:0;border-radius:0;background:var(--bg);box-shadow:none}
+.table-card.fs::after{display:none}
+.table-card.fs .table-title{padding:max(14px,env(safe-area-inset-top)) 18px 8px}
+.table-card.fs .table-wrap{flex:1;max-height:none;overflow:auto;padding:0 8px 8px}
+body.fs-lock{overflow:hidden}
+.ch-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.seg{display:inline-flex;padding:4px;border-radius:14px;background:var(--glass);border:1px solid var(--glass-b);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.seg button{border:0;cursor:pointer;padding:8px 16px;border-radius:10px;font:700 12px var(--font-body);color:var(--muted);background:none;transition:.2s}
+.seg button.on{color:#fff;background:linear-gradient(160deg,rgba(var(--accent-rgb),.75),var(--accent));box-shadow:0 4px 12px rgba(var(--accent-rgb),.3)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 8px}
+.lg{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;cursor:pointer;font:600 12px var(--font-body);color:var(--text);background:var(--glass);border:1px solid var(--glass-b);transition:.2s}
+.lg:hover{transform:translateY(-1px)}
+.lg i{width:11px;height:11px;border-radius:4px}
+.lg.off{color:var(--muted);opacity:.7}.lg.off span{text-decoration:line-through}.lg.off i{background:var(--border)!important}
+@media (max-width:720px){
+  .table-card.fs table{display:table}
+  .table-card.fs thead{display:table-header-group}
+  .table-card.fs tbody{display:table-row-group}
+  .table-card.fs tfoot{display:table-footer-group}
+  .table-card.fs tbody tr{display:table-row;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;overflow:visible}
+  .table-card.fs tbody tr::before{display:none}
+  .table-card.fs tbody tr:nth-child(odd){background:none}
+  .table-card.fs tbody tr:nth-child(even){background:var(--row-alt)}
+  .table-card.fs td,.table-card.fs td.hide-m,.table-card.fs td.empty,.table-card.fs td.name,.table-card.fs td.cust{display:table-cell;padding:11px 14px;margin:0;border:0;border-bottom:1px solid var(--border);text-align:left!important;font-size:13px;color:inherit}
+  .table-card.fs td.num{text-align:right!important}
+  .table-card.fs td::before{display:none}
+  .table-card.fs td.name{font:600 13px var(--font-body);text-transform:none;min-width:220px}
+  .table-card.fs td.cust{min-width:190px}
+}
+.scope{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 16px;margin:16px 0;border-radius:20px}
+.scope-l{font:600 10px var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.scope-n{font-size:12px;color:var(--muted)}
+.table-card.fs .toolbar{margin:0 12px 10px;box-shadow:none}
 </style>
 </head>
 <body data-tab="out">
@@ -317,7 +354,7 @@ body[data-tab="report"]{--accent:#1688f8;--accent-rgb:22,136,248}
 
   <div class="layout">
   <nav class="nav glass" role="tablist" aria-label="Menu Over WO">
-    <button class="nav-item active" data-tab="out"><span class="nav-ico flex-center"><svg viewBox="0 0 24 24"><path d="M3.5 9 12 4.5 20.5 9v8L12 21.5 3.5 17V9Z"/><path d="M12 13V8M9.5 10.2 12 7.7l2.5 2.5"/></svg></span><span class="nav-txt"><span class="nl">Outstanding</span><span class="np" id="personOut">-</span></span><span class="nb" id="badgeOut">0</span></button>
+    <button class="nav-item active" data-tab="out"><span class="nav-ico flex-center"><svg viewBox="0 0 24 24"><path d="M3.5 9 12 4.5 20.5 9v8L12 21.5 3.5 17V9Z"/><path d="M12 13V8M9.5 10.2 12 7.7l2.5 2.5"/></svg></span><span class="nav-txt"><span class="nl">WO OS</span><span class="np" id="personOut">-</span></span><span class="nb" id="badgeOut">0</span></button>
     <button class="nav-item" data-tab="close"><span class="nav-ico flex-center"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/></svg></span><span class="nav-txt"><span class="nl">WO Close</span><span class="np" id="personClose">-</span></span><span class="nb" id="badgeClose">0</span></button>
     <button class="nav-item" data-tab="report"><span class="nav-ico flex-center"><svg viewBox="0 0 24 24"><path d="M5 20V13M12 20V8M19 20V4"/></svg></span><span class="nav-txt"><span class="nl">Laporan</span><span class="np">Grafik &amp; ringkasan</span></span></button>
   </nav>
@@ -343,25 +380,36 @@ body[data-tab="report"]{--accent:#1688f8;--accent-rgb:22,136,248}
     </div>
     <select id="fTgl" class="field" aria-label="Filter tanggal"></select>
     <select id="fShift" class="field" aria-label="Filter shift"></select>
+    <select id="fInternal" class="field" aria-label="Filter internal"></select>
     <select id="fSales" class="field" aria-label="Filter sales"></select>
     <select id="fMesin" class="field" aria-label="Filter mesin"></select>
     <button id="btnReset" class="btn-reset">Reset</button>
     <div class="result-count" id="resultCount"></div>
   </section>
 
-  <section class="table-card">
-    <div class="table-title"><h3 id="tableTitle">-</h3><span id="tableSub"></span></div>
+  <section class="table-card" id="tableCard">
+    <div class="table-title"><h3 id="tableTitle">-</h3><span id="tableSub"></span><button id="btnFs" class="fs-btn" aria-label="Layar penuh" title="Layar penuh"></button></div>
     <div class="table-wrap" id="tableWrap"></div>
   </section>
 
     </div>
     <div id="reportView" hidden>
-      <section class="kpis k4"><div class="kpi"><div class="kpi-label">Tonase Outstanding</div><div class="kpi-value"><span id="rk1">0</span><small>KG</small></div><div class="kpi-note" id="rn1"></div></div><div class="kpi"><div class="kpi-label">Tonase WO Close</div><div class="kpi-value"><span id="rk2">0</span><small>KG</small></div><div class="kpi-note" id="rn2"></div></div><div class="kpi"><div class="kpi-label">Qty Outstanding</div><div class="kpi-value"><span id="rk3">0</span><small>PCS</small></div><div class="kpi-note" id="rn3"></div></div><div class="kpi"><div class="kpi-label">Qty WO Close</div><div class="kpi-value"><span id="rk4">0</span><small>PCS</small></div><div class="kpi-note" id="rn4"></div></div></section>
+      <section class="kpis k4"><div class="kpi"><div class="kpi-label">Tonase WO OS</div><div class="kpi-value"><span id="rk1">0</span><small>KG</small></div><div class="kpi-note" id="rn1"></div></div><div class="kpi"><div class="kpi-label">Tonase WO Close</div><div class="kpi-value"><span id="rk2">0</span><small>KG</small></div><div class="kpi-note" id="rn2"></div></div><div class="kpi"><div class="kpi-label">Qty WO OS</div><div class="kpi-value"><span id="rk3">0</span><small>PCS</small></div><div class="kpi-note" id="rn3"></div></div><div class="kpi"><div class="kpi-label">Qty WO Close</div><div class="kpi-value"><span id="rk4">0</span><small>PCS</small></div><div class="kpi-note" id="rn4"></div></div></section>
       <section class="charts">
-        <div class="chart-card wide"><h3>Tonase per Tanggal</h3><p>Outstanding vs WO Close · KG</p><div id="chDates"></div></div>
-        <div class="chart-card "><h3>Top 8 Customer</h3><p>Total tonase · KG</p><div id="chCust"></div></div>
-        <div class="chart-card "><h3>Tonase per Sales</h3><p>Top 8 · KG</p><div id="chSales"></div></div>
-        <div class="chart-card wide"><h3>Komposisi Shift</h3><p>Share tonase per shift</p><div id="chShift"></div></div>
+        <div class="chart-card wide">
+          <div class="ch-head"><div><h3 id="dateTitle">Tonase per Tanggal</h3><p id="dateSub"></p></div>
+            <div class="seg" id="metricSeg"><button data-m="ton" class="on">Tonase</button><button data-m="qty">Qty</button></div></div>
+          <div class="legend" id="dateLegend"><button class="lg" data-s="out"><i style="background:#f59e0b"></i><span>WO OS</span></button><button class="lg" data-s="close"><i style="background:#0d9488"></i><span>WO Close</span></button></div>
+          <div id="chDates"></div></div>
+        </section>
+      <div class="scope glass"><span class="scope-l">Tampilkan grafik</span>
+        <div class="seg" id="scopeSeg"><button data-s="all" class="on">Semua</button><button data-s="out">OS</button><button data-s="close">CL</button></div>
+        <span class="scope-n">Berlaku untuk semua grafik di bawah ini (kecuali "per Tanggal")</span></div>
+      <section class="charts">
+        <div class="chart-card"><h3>Top 10 Customer</h3><p id="pCust"></p><div id="chCust"></div></div>
+        <div class="chart-card"><h3>Top 10 Sales</h3><p id="pSales"></p><div id="chSales"></div></div>
+        <div class="chart-card"><h3>Top 10 Internal</h3><p id="pInt"></p><div id="chInt"></div></div>
+        <div class="chart-card"><h3>Komposisi Shift</h3><p id="pShift"></p><div id="chShift"></div></div>
       </section>
     </div>
   </div>
@@ -535,7 +583,7 @@ function buildDataset(text){
 const personOf = t => { const p = t.split(' - '); return p.length > 1 ? p.slice(1).join(' - ') : t; };
 
 /* ===== State ===== */
-const state = { tab:'out', data:null, q:'', fTgl:'', fShift:'', fSales:'', fMesin:'', sort:{k:null, dir:1}, source:'' };
+const state = { tab:'out', data:null, q:'', fTgl:'', fShift:'', fInternal:'', fSales:'', fMesin:'', sort:{k:null, dir:1}, source:'' };
 
 function distinct(rows, k){
   const set = new Set(rows.filter(r => !r._note).map(r => r[k]).filter(Boolean));
@@ -553,6 +601,7 @@ function rebuildFilters(){
   const rows = state.data[state.tab]?.rows; if (!rows) return;
   state.fTgl   = fillSelect($('fTgl'),   'Semua Tanggal', distinct(rows,'tgl'),   state.fTgl);
   state.fShift = fillSelect($('fShift'), 'Semua Shift',   distinct(rows,'shift'), state.fShift);
+  state.fInternal = fillSelect($('fInternal'), 'Semua Internal', distinct(rows,'internal'), state.fInternal);
   state.fSales = fillSelect($('fSales'), 'Semua Sales',   distinct(rows,'sales'), state.fSales);
   state.fMesin = fillSelect($('fMesin'), 'Semua Mesin',   distinct(rows,'mesin'), state.fMesin);
 }
@@ -562,6 +611,7 @@ function filtered(){
   let rows = state.data[state.tab].rows.filter(r =>
     (!state.fTgl   || r.tgl   === state.fTgl) &&
     (!state.fShift || r.shift === state.fShift) &&
+    (!state.fInternal || r.internal === state.fInternal) &&
     (!state.fSales || r.sales === state.fSales) &&
     (!state.fMesin || r.mesin === state.fMesin) &&
     terms.every(t => r._search.includes(t)));
@@ -611,9 +661,9 @@ function render(){
   $('kRowsNote').textContent = (isFiltered ? `dari total ${all.length} baris` : 'seluruh data') + (warnN ? ` · ⚠ ${warnN} qty perlu dicek` : '');
   $('badgeOut').textContent   = state.data.out.rows.filter(r=>!r._note).length;
   $('badgeClose').textContent = state.data.close.rows.filter(r=>!r._note).length;
-  $('personOut').textContent   = personOf(state.data.out.title)   || 'Outstanding';
+  $('personOut').textContent   = personOf(state.data.out.title)   || 'WO OS';
   $('personClose').textContent = personOf(state.data.close.title) || 'WO Close';
-  $('tableTitle').textContent = state.tab === 'out' ? 'Barang Over Outstanding' : 'Barang Over WO Close';
+  $('tableTitle').textContent = state.tab === 'out' ? 'Barang WO OS' : 'Barang WO Close';
   $('tableSub').textContent = personOf(ds.title);
   $('resultCount').textContent = `${real.length} / ${all.length} DATA`;
 
@@ -664,10 +714,10 @@ document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', 
 }));
 let tmr;
 $('q').addEventListener('input', e => { clearTimeout(tmr); tmr = setTimeout(() => { state.q = e.target.value.trim(); render(); }, 120); });
-[['fTgl','fTgl'],['fShift','fShift'],['fSales','fSales'],['fMesin','fMesin']].forEach(([id, key]) =>
+[['fTgl','fTgl'],['fShift','fShift'],['fInternal','fInternal'],['fSales','fSales'],['fMesin','fMesin']].forEach(([id, key]) =>
   $(id).addEventListener('change', e => { state[key] = e.target.value; render(); }));
 $('btnReset').addEventListener('click', () => {
-  state.q = state.fTgl = state.fShift = state.fSales = state.fMesin = ''; state.sort = {k:null, dir:1};
+  state.q = state.fTgl = state.fShift = state.fInternal = state.fSales = state.fMesin = ''; state.sort = {k:null, dir:1};
   $('q').value = ''; rebuildFilters(); render();
 });
 $('tableWrap').addEventListener('click', e => {
@@ -710,7 +760,7 @@ async function loadData(manual){
 }
 
 /* ===== Laporan, grafik & ekspor ===== */
-const NAMES = {out:'Over Outstanding', close:'Over WO Close', report:'Laporan'};
+const NAMES = {out:'WO OS', close:'WO Close', report:'Laporan'};
 const todayStr = () => new Date().toLocaleDateString('sv-SE');
 const todayLong = () => new Date().toLocaleDateString('id-ID', {day:'2-digit', month:'long', year:'numeric'});
 const realRows = t => state.data[t].rows.filter(r => !r._note);
@@ -721,7 +771,7 @@ function updateChrome(){
   $('dataView').hidden = rep; $('reportView').hidden = !rep;
   $('vhTitle').innerHTML = rep ? 'Laporan <span>Over WO</span>' : NAMES[state.tab].replace(/(\S+)$/, '<span>$1</span>');
   $('badgeOut').textContent = realRows('out').length; $('badgeClose').textContent = realRows('close').length;
-  $('personOut').textContent = personOf(d.out.title) || 'Outstanding'; $('personClose').textContent = personOf(d.close.title) || 'WO Close';
+  $('personOut').textContent = personOf(d.out.title) || 'WO OS'; $('personClose').textContent = personOf(d.close.title) || 'WO Close';
 }
 const PAL = () => html.dataset.theme === 'dark' ? {t:'#e2e8f0', m:'#94a3b8', g:'rgba(148,163,184,.2)'} : {t:'#0f172a', m:'#64748b', g:'#e2e8f0'};
 const PAL_PDF = {t:'#0f172a', m:'#64748b', g:'#e2e8f0', bg:'#ffffff', solid:true};
@@ -731,18 +781,21 @@ const trunc = (s, n) => s.length > n ? s.slice(0, n - 1) + '…' : s;
 function niceMax(v){ if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))), f = v / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
 const svgWrap = (P, W, H, body) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;max-width:100%;height:auto" font-family="Inter,Arial,sans-serif">${P.solid ? `<rect width="${W}" height="${H}" fill="${P.bg}"/>` : ''}${body}</svg>`;
 
-function chDates(P, W, agg){
-  const H = 250, l = 44, r = 8, t = 28, b = 30, iw = W - l - r, ih = H - t - b;
-  const mx = niceMax(Math.max(1, ...agg.flatMap(a => [a.out, a.close])));
+function chDates(P, W, agg, o = {m:'ton', hide:{}, lg:false}){
+  const q = o.m === 'qty', u = q ? 'PCS' : 'KG', H = 250, l = 44, r = 8, t = o.lg ? 28 : 14, b = 30, iw = W - l - r, ih = H - t - b;
+  const vis = [['out', C.out, 'WO OS'], ['close', C.close, 'WO Close']].filter(x => !o.hide[x[0]]);
+  const val = (a, k) => q ? (k === 'out' ? a.outQ : a.closeQ) : a[k];
+  const mx = niceMax(Math.max(1, ...agg.flatMap(a => vis.map(([k]) => val(a, k)))));
   let s = '';
   for (let i = 0; i <= 4; i++){ const y = t + ih - ih * i / 4;
     s += `<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" stroke="${P.g}"/><text x="${l-6}" y="${y+4}" text-anchor="end" font-size="10" fill="${P.m}">${short(mx*i/4)}</text>`; }
-  const gw = iw / Math.max(agg.length, 1), bw = Math.min(24, gw / 2.6);
+  const gw = iw / Math.max(agg.length, 1), bw = Math.min(vis.length > 1 ? 24 : 34, gw / (vis.length + 1.6));
   agg.forEach((a, i) => { const cx = l + gw * i + gw / 2;
-    [[a.out, C.out, -bw], [a.close, C.close, 0]].forEach(([v, c, dx]) => { const h = ih * v / mx;
-      s += `<rect x="${cx+dx}" y="${t+ih-h}" width="${bw-1}" height="${h}" rx="3" fill="${c}"><title>${a.k}: ${fmtDec(v)} KG</title></rect>`; });
+    vis.forEach(([k, c], j) => { const v = val(a, k), h = ih * v / mx, x = cx - vis.length * bw / 2 + j * bw;
+      s += `<rect x="${x}" y="${t+ih-h}" width="${bw-1}" height="${h}" rx="3" fill="${c}"><title>${a.k}: ${q ? fmtInt(v) : fmtDec(v)} ${u}</title></rect>`;
+      if (gw > 46 && v > 0) s += `<text x="${x+(bw-1)/2}" y="${t+ih-h-4}" text-anchor="middle" font-size="9" fill="${P.m}">${short(v)}</text>`; });
     s += `<text x="${cx}" y="${H-10}" text-anchor="middle" font-size="10" fill="${P.m}">${a.k.slice(0,6)}</text>`; });
-  s += `<g font-size="11" fill="${P.t}"><rect x="${l}" y="4" width="10" height="10" rx="3" fill="${C.out}"/><text x="${l+15}" y="13">Outstanding</text><rect x="${l+105}" y="4" width="10" height="10" rx="3" fill="${C.close}"/><text x="${l+120}" y="13">WO Close</text></g>`;
+  if (o.lg) vis.forEach(([k, c, n], j) => { const x = l + j * 105; s += `<rect x="${x}" y="4" width="10" height="10" rx="3" fill="${c}"/><text x="${x+15}" y="13" font-size="11" fill="${P.t}">${n}</text>`; });
   return svgWrap(P, W, H, s);
 }
 function chBars(P, W, items, color){
@@ -763,22 +816,43 @@ function chDonut(P, W, items){
   return svgWrap(P, W, H, s);
 }
 function reportData(){
-  const o = realRows('out'), c = realRows('close'), all = [...o, ...c];
-  const by = k => { const m = new Map(); all.forEach(r => m.set(r[k] || '-', (m.get(r[k] || '-') || 0) + r._ton)); return [...m].map(([k, v]) => ({k, v})); };
+  const o = realRows('out'), c = realRows('close'), all = [...o, ...c], base = rState.scope === 'out' ? o : rState.scope === 'close' ? c : all;
+  const by = k => { const m = new Map(); base.forEach(r => m.set(r[k] || '-', (m.get(r[k] || '-') || 0) + r._ton)); return [...m].map(([k, v]) => ({k, v})); };
   const desc = (a, b) => b.v - a.v, sub = (t, rs) => { const x = state.data[t].sub; return {q: x.has ? x.qty : sumBy(rs, r => r._qty), t: x.has ? x.ton : sumBy(rs, r => r._ton)}; };
   const dates = [...new Set(all.map(r => r.tgl))].sort((a, b) => parseDate(a) - parseDate(b))
-    .map(d => ({k:d, out:sumBy(o.filter(r => r.tgl === d), r => r._ton), close:sumBy(c.filter(r => r.tgl === d), r => r._ton)}));
-  return {o, c, all, dates, cust:by('cust').sort(desc), sales:by('sales').sort(desc),
+    .map(d => ({k:d, out:sumBy(o.filter(r => r.tgl === d), r => r._ton), close:sumBy(c.filter(r => r.tgl === d), r => r._ton), outQ:sumBy(o.filter(r => r.tgl === d), r => r._qty), closeQ:sumBy(c.filter(r => r.tgl === d), r => r._qty)}));
+  return {o, c, all, dates, cust:by('cust').sort(desc), sales:by('sales').sort(desc), internal:by('internal').sort(desc),
     shift:by('shift').sort((a, b) => a.k.localeCompare(b.k)).map(x => ({k:'Shift ' + x.k, v:x.v})), sub:{out:sub('out', o), close:sub('close', c)}};
 }
+const dState = {m:'ton', hide:{out:false, close:false}};
+const rState = {scope:'all'};
+const SCOPE_L = {all:'Semua (WO OS + WO Close)', out:'WO OS', close:'WO Close'};
+const scopeSfx = () => rState.scope === 'all' ? '' : ' - ' + SCOPE_L[rState.scope];
+function drawDates(d, P, w){
+  const q = dState.m === 'qty';
+  $('dateTitle').textContent = (q ? 'Qty' : 'Tonase') + ' per Tanggal';
+  $('dateSub').textContent = 'WO OS vs WO Close · ' + (q ? 'PCS · qty sesuai kolom sheet' : 'KG');
+  document.querySelectorAll('#metricSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === dState.m));
+  document.querySelectorAll('#dateLegend .lg').forEach(b => b.classList.toggle('off', dState.hide[b.dataset.s]));
+  $('chDates').innerHTML = chDates(P, w, d.dates, {m:dState.m, hide:dState.hide, lg:false});
+}
+$('metricSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; dState.m = b.dataset.m; renderReport(); });
+$('dateLegend').addEventListener('click', e => { const b = e.target.closest('.lg'); if (!b) return; const k = b.dataset.s, other = k === 'out' ? 'close' : 'out';
+  if (!dState.hide[k] && dState.hide[other]) return toast('Minimal satu seri harus tampil');
+  dState.hide[k] = !dState.hide[k]; renderReport(); });
+$('scopeSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; rState.scope = b.dataset.s; renderReport(); });
 function renderReport(){
   const d = reportData(), P = PAL(), W = id => Math.max(280, Math.floor($(id).clientWidth));
   $('rk1').textContent = fmtDec(d.sub.out.t); $('rk2').textContent = fmtDec(d.sub.close.t);
   $('rk3').textContent = fmtInt(d.sub.out.q); $('rk4').textContent = fmtInt(d.sub.close.q);
   $('rn1').textContent = $('rn3').textContent = d.o.length + ' baris'; $('rn2').textContent = $('rn4').textContent = d.c.length + ' baris';
-  $('chDates').innerHTML = chDates(P, W('chDates'), d.dates);
-  $('chCust').innerHTML = chBars(P, W('chCust'), d.cust.slice(0, 8), C.blue);
-  $('chSales').innerHTML = chBars(P, W('chSales'), d.sales.slice(0, 8), C.close);
+  drawDates(d, P, W('chDates'));
+  const sl = SCOPE_L[rState.scope], col = {all:C.blue, out:C.out, close:C.close}[rState.scope];
+  document.querySelectorAll('#scopeSeg button').forEach(b => b.classList.toggle('on', b.dataset.s === rState.scope));
+  [['pCust', 'Tonase customer'], ['pSales', 'Tonase sales'], ['pInt', 'Tonase internal'], ['pShift', 'Share tonase per shift']].forEach(([i, t]) => $(i).textContent = `${t} · KG · ${sl}`);
+  $('chCust').innerHTML = chBars(P, W('chCust'), d.cust.slice(0, 10), col);
+  $('chSales').innerHTML = chBars(P, W('chSales'), d.sales.slice(0, 10), col);
+  $('chInt').innerHTML = chBars(P, W('chInt'), d.internal.slice(0, 10), col);
   $('chShift').innerHTML = chDonut(P, W('chShift'), d.shift);
 }
 $('themeToggle').addEventListener('click', () => { if (state.tab === 'report') renderReport(); });
@@ -789,7 +863,7 @@ const LIB = {xl:'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.mi
 const libs = {};
 const loadLib = u => libs[u] || (libs[u] = new Promise((res, rej) => { const e = document.createElement('script'); e.src = u; e.onload = res; e.onerror = () => { delete libs[u]; rej(new Error('library tidak bisa dimuat (cek koneksi internet)')); }; document.head.appendChild(e); }));
 async function busy(btn, fn){ btn.disabled = true; toast('Menyiapkan file…'); try{ await fn(); toast('File berhasil diunduh ✓'); }catch(e){ console.error(e); toast('Gagal: ' + e.message); } btn.disabled = false; }
-const fname = ext => `Over-WO_${{out:'Outstanding', close:'WO-Close', report:'Laporan'}[state.tab]}_${todayStr()}.${ext}`;
+const fname = ext => `Over-WO_${{out:'WO-OS', close:'WO-Close', report:'Laporan'}[state.tab]}_${todayStr()}.${ext}`;
 const NUMFMT = {berat:'0.00', qty:'#,##0', tonase:'#,##0.00'};
 const XW = {tgl:12, shift:7, so:15, wo:15, wo2:15, ket:14, mesin:10, internal:12, sales:16, cust:34, nama:38, mc:9, fit:6, berat:8, qty:10, tonase:12};
 const fill = argb => ({type:'pattern', pattern:'solid', fgColor:{argb}});
@@ -828,11 +902,12 @@ function xlSummary(wb){
   };
   const so = d.sub.out, sc = d.sub.close;
   table('Ringkasan (sesuai subtotal Google Sheet)', ['Laporan', 'Baris', 'Qty (PCS)', 'Tonase (KG)'],
-    [['Over Outstanding', d.o.length, so.q, so.t], ['Over WO Close', d.c.length, sc.q, sc.t], ['Total', d.all.length, so.q + sc.q, so.t + sc.t]], [, '#,##0', '#,##0', '#,##0.00']);
-  table('Tonase per Tanggal', ['Tanggal', 'Outstanding (KG)', 'WO Close (KG)', 'Total (KG)'], d.dates.map(x => [x.k, x.out, x.close, x.out + x.close]));
-  table('Top 10 Customer', ['Customer', 'Tonase (KG)'], d.cust.slice(0, 10).map(x => [x.k, x.v]));
-  table('Tonase per Sales', ['Sales', 'Tonase (KG)'], d.sales.map(x => [x.k, x.v]));
-  table('Tonase per Shift', ['Shift', 'Tonase (KG)'], d.shift.map(x => [x.k, x.v]));
+    [['WO OS', d.o.length, so.q, so.t], ['WO Close', d.c.length, sc.q, sc.t], ['Total', d.all.length, so.q + sc.q, so.t + sc.t]], [, '#,##0', '#,##0', '#,##0.00']);
+  table('Tonase per Tanggal', ['Tanggal', 'WO OS (KG)', 'WO Close (KG)', 'Total (KG)'], d.dates.map(x => [x.k, x.out, x.close, x.out + x.close]));
+  table('Top 10 Customer' + scopeSfx(), ['Customer', 'Tonase (KG)'], d.cust.slice(0, 10).map(x => [x.k, x.v]));
+  table('Top 10 Sales' + scopeSfx(), ['Sales', 'Tonase (KG)'], d.sales.slice(0, 10).map(x => [x.k, x.v]));
+  table('Top 10 Internal' + scopeSfx(), ['Internal', 'Tonase (KG)'], d.internal.slice(0, 10).map(x => [x.k, x.v]));
+  table('Tonase per Shift' + scopeSfx(), ['Shift', 'Tonase (KG)'], d.shift.map(x => [x.k, x.v]));
   [38, 18, 16, 16].forEach((w, i) => ws.getColumn(i + 1).width = w);
 }
 async function exportXlsx(){
@@ -880,12 +955,12 @@ async function pdfReport(){
   const d = reportData(), doc = new window.jspdf.jsPDF({unit:'mm', format:'a4'}), so = d.sub.out, sc = d.sub.close;
   pdfBand(doc, 210, [22, 136, 248], 'LAPORAN BARANG OVER WO', 'DEPARTEMEN GUDANG BARANG JADI');
   doc.autoTable({startY:28, head:[['Laporan', 'Baris', 'Qty (PCS)', 'Tonase (KG)']], theme:'grid', margin:{left:14, right:14},
-    body:[['Over Outstanding', d.o.length, fmtInt(so.q), fmtDec(so.t)], ['Over WO Close', d.c.length, fmtInt(sc.q), fmtDec(sc.t)]],
+    body:[['WO OS', d.o.length, fmtInt(so.q), fmtDec(so.t)], ['WO Close', d.c.length, fmtInt(sc.q), fmtDec(sc.t)]],
     foot:[['TOTAL', d.all.length, fmtInt(so.q + sc.q), fmtDec(so.t + sc.t)]], styles:{fontSize:9, cellPadding:2.2},
     headStyles:{fillColor:[22, 136, 248], halign:'center'}, footStyles:{fillColor:[241, 245, 249], textColor:[15, 23, 42], fontStyle:'bold'},
     columnStyles:{1:{halign:'right'}, 2:{halign:'right'}, 3:{halign:'right'}}});
-  const W = 520, items = [['Tonase per Tanggal (KG)', chDates(PAL_PDF, W, d.dates)], ['Top 8 Customer - Tonase (KG)', chBars(PAL_PDF, W, d.cust.slice(0, 8), C.blue)],
-    ['Tonase per Sales (KG)', chBars(PAL_PDF, W, d.sales.slice(0, 8), C.close)], ['Komposisi Tonase per Shift', chDonut(PAL_PDF, W, d.shift)]];
+  const col = {all:C.blue, out:C.out, close:C.close}[rState.scope], W = 520, items = [[(dState.m === 'qty' ? 'Qty (PCS)' : 'Tonase (KG)') + ' per Tanggal', chDates(PAL_PDF, W, d.dates, {m:dState.m, hide:dState.hide, lg:true})], ['Top 10 Customer - Tonase (KG)' + scopeSfx(), chBars(PAL_PDF, W, d.cust.slice(0, 10), col)],
+    ['Top 10 Sales - Tonase (KG)' + scopeSfx(), chBars(PAL_PDF, W, d.sales.slice(0, 10), col)], ['Top 10 Internal - Tonase (KG)' + scopeSfx(), chBars(PAL_PDF, W, d.internal.slice(0, 10), col)], ['Komposisi Tonase per Shift' + scopeSfx(), chDonut(PAL_PDF, W, d.shift)]];
   let y = doc.lastAutoTable.finalY + 10;
   for (const [title, svg] of items){
     const H = +svg.match(/viewBox="0 0 \S+ (\S+)"/)[1], mm = 182 * H / W;
@@ -895,6 +970,21 @@ async function pdfReport(){
   }
   pdfFooter(doc, 210, 297); doc.save(fname('pdf'));
 }
+const FS_ON = '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>', FS_OFF = '<svg viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+let fsPh = null;
+function setFs(on){
+  const el = $('tableCard'); el.classList.toggle('fs', on); document.body.classList.toggle('fs-lock', on);
+  const tb = document.querySelector('.toolbar');
+  if (on && !fsPh){ fsPh = document.createComment('toolbar'); tb.before(fsPh); el.insertBefore(tb, $('tableWrap')); }
+  else if (!on && fsPh){ fsPh.replaceWith(tb); fsPh = null; }
+  $('btnFs').innerHTML = on ? FS_OFF : FS_ON; $('btnFs').title = $('btnFs').ariaLabel = on ? 'Keluar layar penuh' : 'Layar penuh';
+  if (on){ try{ el.requestFullscreen && el.requestFullscreen().catch(() => {}); }catch(e){} }
+  else if (document.fullscreenElement){ document.exitFullscreen().catch(() => {}); }
+}
+$('btnFs').innerHTML = FS_ON;
+$('btnFs').addEventListener('click', () => setFs(!$('tableCard').classList.contains('fs')));
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && $('tableCard').classList.contains('fs')) setFs(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('tableCard').classList.contains('fs')) setFs(false); });
 $('btnXlsx').addEventListener('click', e => busy(e.currentTarget, exportXlsx));
 $('btnPdf').addEventListener('click', e => busy(e.currentTarget, () => state.tab === 'report' ? pdfReport() : pdfData()));
 
