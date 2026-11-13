@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>KIM — Ringkasan Over WO</title>
+<meta name="description" content="Ringkasan barang Over WO (WO OS & WO Close) gudang barang jadi — tonase, qty, customer, sales, internal dan detail item" />
+<meta name="theme-color" content="#f3f5f9" id="meta-theme-color" />
+<script>
+(function(){ try{ var s = localStorage.getItem('ringkasanoverwo.theme'); document.documentElement.setAttribute('data-theme', s || 'light'); }catch(e){} })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" crossorigin="anonymous">
+<style>
+:root{
+  --navy:#1e2a5a; --navy-s:#e9ecf8; --primary:#5b4bc4;
+  --bg:#f3f5f9; --surface:#fff; --surface-2:#f8f9fc; --border:#e3e7ef; --text:#141a30; --muted:#566079; --grid:#eef0f6; --hdr:#fff;
+  --os:#e08a00; --cl:#13805a; --red:#dc2626; --blue:#2563eb;
+  --radius:16px; --font:'Inter','Segoe UI',system-ui,sans-serif; color-scheme:light;
+}
+html[data-theme="dark"]{
+  --navy-s:#232c52; --primary:#8b7df0;
+  --bg:#0f1428; --surface:#171e3a; --surface-2:#1d2547; --border:#2a3358; --text:#e8ebf7; --muted:#9aa3c4; --grid:#232c52; --hdr:#141a33;
+  --os:#f59e0b; --cl:#34d399; --red:#f87171; --blue:#60a5fa; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;transition:background-color .25s,color .25s}
+body.overlay-open{overflow:hidden}
+.hidden{display:none!important}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* splash & banner */
+#app-splash{position:fixed;inset:0;z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);transition:opacity .45s,visibility .45s}
+#app-splash.hide{opacity:0;visibility:hidden;pointer-events:none}
+.splash-logo{width:76px;height:76px;border-radius:20px;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:800;font-size:24px;letter-spacing:.04em;margin-bottom:18px;animation:pop .55s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{transform:scale(.75);opacity:0}to{transform:none;opacity:1}}
+.splash-title{font-weight:800;font-size:21px;letter-spacing:.02em;text-transform:uppercase}.splash-title span{color:var(--primary)}
+.splash-sub{font-size:11px;letter-spacing:.08em;color:var(--muted);margin-top:4px;text-transform:uppercase}
+.splash-dots{display:flex;gap:6px;margin-top:26px}.splash-dots span{width:7px;height:7px;border-radius:50%;background:var(--primary);animation:sd 1.1s ease-in-out infinite}.splash-dots span:nth-child(2){animation-delay:.15s}.splash-dots span:nth-child(3){animation-delay:.3s}
+@keyframes sd{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-4px)}}
+.data-banner{background:color-mix(in srgb,var(--red) 16%,transparent);color:var(--text);font-size:12.5px;padding:7px 16px;text-align:center;flex:none}
+
+/* header */
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:18px;padding:10px 22px;background:var(--hdr);border-bottom:1px solid var(--border);flex:none}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:40px;height:40px;border-radius:11px;background:var(--navy);color:#fff;font-weight:800;font-size:13px;letter-spacing:.04em;display:grid;place-items:center;flex:none}
+html[data-theme="dark"] .logo{background:#4a56c9}
+.brand h1{font:700 17px/1.2 var(--font);margin:0;white-space:nowrap}.brand .sub{font-size:12px;color:var(--muted);white-space:nowrap}
+.view-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;position:relative}
+.view-tabs button{font:600 13px var(--font);height:36px;padding:0 16px;border:0;border-radius:999px;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;transition:background .2s,color .2s;flex:none}
+.view-tabs button:hover{background:var(--surface-2)}.view-tabs button.active{background:var(--navy-s);color:var(--text)}
+html[data-theme="light"] .view-tabs button.active{color:var(--navy)}
+.ctl{display:flex;gap:8px;align-items:center;margin-left:auto}
+.cutoff-badge{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:13px;white-space:nowrap}
+.btn{font:600 13px var(--font);height:38px;padding:0 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);display:inline-flex;align-items:center;gap:7px;cursor:pointer;white-space:nowrap;transition:border-color .15s}
+.btn:hover{border-color:#aab2cf}.btn.sm2{height:34px;padding:0 12px}
+.more{position:relative}.more .menu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:210px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 10px 30px rgba(20,26,48,.18);flex-direction:column;gap:2px;z-index:70}
+.more.open .menu{display:flex}
+.menu button,.menu a{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;height:36px;padding:0 12px;border-radius:8px;font:600 13px var(--font);color:var(--text);cursor:pointer}
+.menu button:hover,.menu a:hover{background:var(--surface-2)}.menu .sep{height:1px;background:var(--border);margin:4px 2px}
+
+/* layout */
+.main{padding:14px 22px 20px}
+.pg{display:flex;flex-direction:column;gap:12px;min-height:0}.pg:not(.hidden){animation:fade .22s ease-out}
+@keyframes fade{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 1px 2px rgba(20,26,48,.04);padding:14px 18px;display:flex;flex-direction:column;min-height:0;min-width:0}
+.card h2{font:700 15px var(--font);margin:0 0 10px;flex:none}
+.ptitle{display:flex;justify-content:space-between;align-items:baseline;flex:none;gap:10px}.ptitle b{font-size:12px;letter-spacing:.08em;color:var(--primary);font-weight:700}.ptitle span{font-size:13px;color:var(--muted)}
+.pbar{display:flex;align-items:center;gap:10px;flex:none;margin:0 0 10px;min-width:0}
+.pbar .lbl{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;white-space:nowrap}
+.pbar .src{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.date-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;flex:1;min-width:0;scrollbar-width:thin}
+.date-tab{font:600 12px var(--font);height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;white-space:nowrap;flex:none;transition:background .15s,color .15s}
+.date-tab.active{background:var(--navy);border-color:var(--navy);color:#fff}.date-tab:hover:not(.active){border-color:var(--primary)}
+html[data-theme="dark"] .date-tab.active{background:#4a56c9;border-color:#4a56c9}
+.seg{display:inline-flex;background:var(--bg);border-radius:10px;padding:3px;gap:2px;flex:none}
+.seg button{font:600 12px var(--font);border:0;background:transparent;border-radius:8px;padding:7px 12px;color:var(--muted);cursor:pointer;transition:background .15s}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(20,26,48,.12)}
+html[data-theme="light"] .seg button.on{color:var(--navy)}
+.seg button.on::before,.date-tab.active::before{content:"";display:inline-block;width:8px;height:8px;margin-right:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.55);animation:dp 1.6s ease-out infinite;vertical-align:0}
+@keyframes dp{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+@media(prefers-reduced-motion:reduce){.seg button.on::before,.date-tab.active::before{animation:none}.pg:not(.hidden){animation:none}}
+
+/* KPI */
+.kp{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;flex:none}
+.k{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);border-left:5px solid var(--c,var(--primary))}
+.k .l{font-size:12px;font-weight:600;color:var(--muted)}.k .v{font-size:clamp(24px,2.7vw,36px);font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:4px 0 2px}.k .v small{font-size:.42em;font-weight:600;color:var(--muted);margin-left:3px;letter-spacing:0}.k .n{font-size:12px;color:var(--muted)}
+.k.os{--c:var(--os)}.k.cl{--c:var(--cl)}.k .v.cos{color:var(--os)}.k .v.ccl{color:var(--cl)}
+.kic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--navy-s);color:var(--primary)}.kic svg{width:21px;height:21px}
+.kic.os{background:color-mix(in srgb,var(--os) 16%,transparent);color:var(--os)}.kic.cl{background:color-mix(in srgb,var(--cl) 16%,transparent);color:var(--cl)}
+.kic.rd{background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red)}.kic.bl{background:color-mix(in srgb,var(--blue) 14%,transparent);color:var(--blue)}
+
+/* hero */
+.hero{flex:1;min-height:0;display:grid;grid-template-columns:65fr 35fr;gap:12px}
+.barx{display:flex;height:56px;border-radius:12px;overflow:hidden;gap:2px;flex:none}
+.barx div{display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;min-width:0;line-height:1.2;transition:flex .4s;overflow:hidden;white-space:nowrap}
+.barx div small{font-size:11px;font-weight:600;opacity:.92}
+.barx .bo{background:var(--os)}.barx .bc{background:var(--cl)}html[data-theme="dark"] .barx div{color:#10162e}
+.lgd{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:10px 0 8px}.lgd i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.bc-wrap{flex:1;min-height:170px;display:flex;flex-direction:column}
+.bc-plot{flex:1;min-height:0;position:relative;display:flex;align-items:stretch;gap:6px;padding-top:20px;border-bottom:1px solid var(--border);background-image:linear-gradient(to top,var(--grid) 1px,transparent 1px);background-size:100% 25%}
+.bc-col{flex:1;min-width:0;display:flex;align-items:flex-end;justify-content:center;gap:4px;cursor:default}
+.bc-bar{width:min(34px,42%);position:relative;border-radius:6px 6px 0 0;min-height:2px;transition:height .5s cubic-bezier(.2,.8,.2,1)}
+.bc-bar.o{background:var(--os)}.bc-bar.c{background:var(--cl)}
+.bc-bar span{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap;padding-bottom:2px}
+.bc-x{display:flex;gap:6px;padding-top:6px}.bc-x div{flex:1;min-width:0;text-align:center;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.ins{display:flex;flex-direction:column;overflow:auto;min-height:0;flex:1}
+.it{display:flex;gap:12px;align-items:flex-start;padding:9px 6px;border-bottom:1px solid var(--grid);border-radius:8px;transition:background .15s}.it:last-child{border:0}
+.it.clk{cursor:pointer}.it.clk:hover{background:var(--surface-2)}
+.it .kic{width:34px;height:34px}.it .kic svg{width:17px;height:17px}
+.it .t{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}.it .b{font-size:14px;font-weight:700;line-height:1.3;overflow-wrap:anywhere}.it .d{font-size:12px;color:var(--muted)}
+
+/* rincian & detail */
+.dh1,.dht{display:flex;gap:10px;align-items:center;flex:none;min-width:0;flex-wrap:wrap}
+.search-panel{display:flex;gap:6px;flex:1;min-width:180px;max-width:440px}
+.search-panel input{flex:1;height:36px;border:1px solid var(--border);border-radius:10px;padding:0 12px;font:13px var(--font);background:var(--surface);color:var(--text)}.search-panel input:focus{outline:2px solid var(--primary);outline-offset:-1px}
+.btn-clear{height:36px;border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:10px;padding:0 12px;cursor:pointer}
+.selected-chip{display:none;align-items:center;gap:8px;border-radius:999px;padding:5px 12px;background:var(--navy-s);border:1px solid var(--border);font-size:12px}.selected-chip.show{display:flex}.selected-chip b{color:var(--primary)}
+.selected-chip button{background:none;border:0;color:var(--muted);cursor:pointer;font-size:14px}
+.dhb{flex:1;min-height:0;display:grid;grid-template-columns:52fr 48fr;gap:12px}.dhb>.card{overflow:hidden}
+.scr{flex:1;min-height:0;overflow:auto}
+.section-title{font:700 15px var(--font);margin:0 0 10px;display:flex;align-items:baseline;gap:10px;flex:none}.section-title small{font-size:12px;color:var(--muted);font-weight:500}
+table.rank{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.rank th{position:sticky;top:0;z-index:2;background:var(--surface-2);font:700 11px var(--font);color:var(--muted);padding:9px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+.rank td{padding:8px 10px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+.rank th:first-child,.rank td:first-child{text-align:left}.rank td.nm{max-width:240px;overflow:hidden;text-overflow:ellipsis;font-weight:700;cursor:pointer}
+.rank th[data-sort],.dt th[data-isort]{cursor:pointer;user-select:none}.rank th[data-sort]:hover,.dt th[data-isort]:hover{color:var(--text)}
+.rank th.asc::after,.dt th.asc::after{content:" ▲";font-size:9px}.rank th.desc::after,.dt th.desc::after{content:" ▼";font-size:9px}
+.rank tbody tr{cursor:pointer}.rank tbody tr:hover td,.rank tr.sel td{background:var(--navy-s)}
+.c-os{color:var(--os);font-weight:700}.c-cl{color:var(--cl);font-weight:700}
+.bar-track{display:inline-block;width:70px;height:6px;background:var(--grid);border-radius:4px;overflow:hidden;vertical-align:middle;margin-right:6px}.bar-fill{display:block;height:100%;background:var(--primary)}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+.badge.os{background:color-mix(in srgb,var(--os) 16%,transparent);color:var(--os)}.badge.cl{background:color-mix(in srgb,var(--cl) 16%,transparent);color:var(--cl)}.badge.nt{background:var(--grid);color:var(--muted)}.badge.fx{background:color-mix(in srgb,var(--blue) 14%,transparent);color:var(--blue)}
+.dt{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+.dt th{position:sticky;top:0;z-index:2;background:var(--surface-2);color:var(--muted);font:600 10.5px var(--font);text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+.dt td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.35}.dt tbody tr:hover td{background:var(--surface-2)}
+.dt .r{text-align:right}.dt .nw{white-space:nowrap}.dt .wr{white-space:normal;overflow-wrap:anywhere;min-width:130px}.dt .md{font-weight:600}.dt .sub{display:block;font-size:11px;color:var(--muted);font-weight:500}.dt .mono{font-size:11px}
+.dt tr.note td{color:var(--muted)}
+.empty-note{padding:26px;color:var(--muted);text-align:center;font-size:13px}
+.fsb{width:34px;height:34px;padding:0!important;justify-content:center;flex:none}.fsb svg{width:16px;height:16px}
+.fs-on{position:fixed!important;inset:8px!important;z-index:250!important;background:var(--surface)!important;border-radius:12px;padding:14px 18px;overflow:auto;display:flex!important;flex-direction:column;box-shadow:0 0 0 100vmax rgba(10,14,30,.5)!important}
+.fs-on .scr{flex:1;min-height:0}
+
+/* overlay & toast & pager */
+.sheet-overlay{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s}
+.sheet-overlay.show{opacity:1;visibility:visible}
+.sheet{width:100%;max-width:640px;background:var(--surface);color:var(--text);border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:0;transform:translateY(16px);transition:transform .25s;padding:6px 18px 22px}
+.sheet-overlay.show .sheet{transform:none}.sheet-handle{width:40px;height:4px;border-radius:3px;background:var(--border);margin:8px auto 6px}
+.sheet-header{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0 12px}.sheet-eyebrow{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.sheet-title{font:700 19px var(--font);margin:2px 0 0}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);display:grid;place-items:center;cursor:pointer}
+.settings-body label{display:block;margin-bottom:14px;font-size:13px}.settings-body label span{display:block;margin-bottom:5px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.settings-body input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:9px 12px;font:13px var(--font)}
+.btn-primary{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:11px 16px;font:700 13px var(--font);cursor:pointer;width:100%}
+.toast{position:fixed;left:50%;bottom:70px;transform:translate(-50%,20px);z-index:4500;background:var(--navy);color:#fff;padding:10px 18px;border-radius:30px;font-size:13px;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:88vw;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+#pn{display:none;position:fixed;bottom:12px;right:18px;z-index:60;background:var(--navy);color:#fff;border-radius:999px;padding:4px;align-items:center;gap:4px;opacity:.85}
+#pn button{background:transparent;border:0;color:#fff;width:34px;height:30px;border-radius:50%;cursor:pointer;font-size:18px}#pn button:hover{background:rgba(255,255,255,.18)}#pn span{font-size:12px;font-weight:600;min-width:44px;text-align:center}
+body.pres #pn{display:flex}body.pres .topbar{padding:6px 22px}body.pres .brand .sub,body.pres .more,body.pres .cutoff-badge{display:none}body.pres .main{padding-bottom:52px}
+
+@media(min-width:1000px){html,body{height:100%;overflow:hidden}body{display:flex;flex-direction:column}.main{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px 22px 14px}.pg{flex:1}}
+@media(max-width:1500px){.brand .sub{display:none}}
+@media(max-width:1250px){.btn .tx{display:none}.btn{padding:0 11px}}
+@media(max-width:999px){
+  .topbar{flex-wrap:wrap;padding:8px 12px;gap:10px}.view-tabs{order:3;width:100%}.main{padding:10px 12px 40px}
+  .kp{grid-template-columns:1fr 1fr}.hero,.dhb{grid-template-columns:1fr;display:flex;flex-direction:column}
+  .bc-wrap{min-height:230px;flex:none}.card{overflow:auto}.dhb>.card{overflow:visible}.scr{max-height:60vh}
+  .k{padding:11px 12px;gap:10px}.kic{width:36px;height:36px}.pbar .src{display:none}
+}
+@media(max-width:560px){.kp{grid-template-columns:1fr}.cutoff-badge{display:none}.dt{font-size:11.5px}}
+@media print{.topbar,.main,#pn{display:none!important}}
+</style>
+</head>
+<body>
+<div id="app-splash">
+  <div class="splash-logo">KIM</div>
+  <div class="splash-title">RINGKASAN<span> OVER WO</span></div>
+  <div class="splash-sub">PT Karya Indah Multiguna</div>
+  <div class="splash-dots"><span></span><span></span><span></span></div>
+</div>
+<div id="data-banner" class="data-banner hidden"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">KIM</div>
+    <div><h1>Ringkasan Over WO</h1><div class="sub">Barang Over · Gudang Barang Jadi</div></div>
+  </div>
+  <nav class="view-tabs" id="view-tabs">
+    <button data-view="overview" class="active">Overview</button>
+    <button data-view="rincian">Rincian</button>
+    <button data-view="detail">Detail</button>
+  </nav>
+  <div class="ctl">
+    <span id="cutoff-badge" class="cutoff-badge hidden"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Periode: <b id="cutoff-value">—</b></span></span>
+    <button class="btn" id="btn-pres" title="Mode presentasi (layar penuh)"><svg class="i" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><span class="tx">Presentasi</span></button>
+    <div class="more" id="more">
+      <button class="btn" id="btn-more" aria-label="Aksi lainnya"><svg class="i" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></button>
+      <div class="menu">
+        <button id="btn-theme-toggle"><svg id="theme-icon-moon" class="i" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg id="theme-icon-sun" class="i hidden" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Theme</button>
+        <button id="btn-settings"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Sumber Data</button>
+        <button id="btn-refresh"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M3 21v-5h5"/></svg>Muat ulang data</button>
+        <div class="sep"></div>
+        <a href="index.html"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Menu utama</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="pbar" id="pbar"><span class="lbl">PERIODE</span><div class="date-tabs" id="period-tabs"></div><span class="src" id="src-info"></span></div>
+
+  <!-- 1 OVERVIEW -->
+  <section id="ov-section" class="pg">
+    <div class="ptitle"><b>OVERVIEW · BARANG OVER WO</b><span id="ov-per"></span></div>
+    <div class="kp" id="ov-kpi"></div>
+    <div class="hero">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0" id="ov-chart-t">Tonase per Tanggal</h2><div class="seg" id="ov-seg"><button data-m="ton" class="on">Tonase</button><button data-m="qty">Qty</button></div></div>
+        <div class="barx" id="ov-bar"></div>
+        <div class="lgd"><span><i style="background:var(--os)"></i>WO OS (Over Outstanding)</span><span><i style="background:var(--cl)"></i>WO Close</span></div>
+        <div class="bc-wrap" id="ov-chart"></div>
+      </div>
+      <div class="card"><h2>Insight</h2><div class="ins" id="ov-ins"></div></div>
+    </div>
+  </section>
+
+  <!-- 2 RINCIAN -->
+  <section id="rc-section" class="pg hidden">
+    <div class="dh1">
+      <div class="seg" id="dim-switch"><button data-dim="internal" class="on">Internal</button><button data-dim="sales">Sales</button><button data-dim="cust">Customer</button><button data-dim="shift">Shift</button></div>
+      <div class="search-panel"><input type="text" id="rc-search" placeholder="Cari nama, SO, WO, barang…" autocomplete="off" /><button class="btn-clear" id="rc-clear" title="Hapus pencarian">✕</button></div>
+      <div class="selected-chip" id="sel-chip">Menampilkan: <b id="sel-name"></b> <button id="sel-x" title="Hapus pilihan">✕</button></div>
+    </div>
+    <div class="dht"><div class="seg" id="rc-type"><button data-t="all" class="on">Semua</button><button data-t="out">WO OS</button><button data-t="close">WO Close</button></div><button class="btn sm2" id="rc-reset" style="margin-left:auto">Reset Filter</button></div>
+    <div class="dhb">
+      <div class="card">
+        <div class="section-title"><span id="rank-title">Tonase per Internal</span> <small id="rank-count"></small></div>
+        <div class="scr"><table class="rank"><thead id="rank-thead"></thead><tbody id="rank-tbody"></tbody></table></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><span id="item-title">Detail Item</span> <small id="item-count"></small></div>
+        <div class="scr" id="rc-items"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 DETAIL -->
+  <section id="dt-section" class="pg hidden">
+    <div class="card" id="dt-card" style="flex:1;min-height:0">
+      <div class="dh1" style="margin-bottom:10px">
+        <div class="seg" id="dt-type"><button data-t="all" class="on">Semua</button><button data-t="out">WO OS</button><button data-t="close">WO Close</button></div>
+        <div class="search-panel"><input type="text" id="dt-search" placeholder="Cari SO, WO, customer, barang, sales…" autocomplete="off" /><button class="btn-clear" id="dt-clear" title="Hapus pencarian">✕</button></div>
+        <span style="font-size:12px;color:var(--muted)" id="dt-count"></span>
+        <button class="btn sm2 fsb" id="dt-fs" title="Layar penuh" aria-label="Layar penuh" style="margin-left:auto"></button>
+      </div>
+      <div class="scr" id="dt-wrap"></div>
+    </div>
+  </section>
+</main>
+
+<div id="pn"><button id="pn-prev" aria-label="Sebelumnya">‹</button><span id="pn-c">1 / 3</span><button id="pn-next" aria-label="Berikutnya">›</button></div>
+
+<div id="settings-overlay" class="sheet-overlay">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div><div class="sheet-eyebrow">PENGATURAN</div><h2 class="sheet-title">Sumber Data</h2></div><button class="icon-btn" id="btn-close-settings">✕</button></div>
+    <div class="settings-body">
+      <label><span>Link CSV Google Sheet (STOCK GUDANG - WO OVER)</span><input type="text" id="set-csv-url" /></label>
+      <button class="btn-primary" id="btn-save-settings">Simpan &amp; Muat Ulang</button>
+      <p style="font-size:12px;color:var(--muted);margin-top:14px">Link bawaan sama dengan halaman Over WO. Jika gagal dimuat, dashboard memakai data tersimpan terakhir atau data bawaan.</p>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- Data cadangan (dipakai bila Google Sheet tidak bisa dijangkau) -->
+<script type="text/plain" id="csv-fallback">LAPORAN BARANG OVER OUTSTANDING - BPK. HERWANTO,,,,,,,,,,,,,,,,,LAPORAN BARANG OVER WO CLOSE - IBU. HELLEN,,,,,,,,,,,,,,,
+DEPARTEMEN GUDANG BARANG JADI | FORM INPUT DATA BARANG OVER,,,,,,,,,,,,,,,,,DEPARTEMEN GUDANG BARANG JADI | FORM INPUT DATA BARANG OVER,,,,,,,,,,,,,,,
+SUBTOTAL QTY OVER,,,,,,,,SUBTOTAL TONASE,,,,,,,,,SUBTOTAL QTY OVER,,,,,,,,SUBTOTAL TONASE,,,,,,,
+"14,020 PCS",,,,,,,,"2,695.69 KG",,,,,,,,,"31,770 PCS",,,,,,,,"5,235.13 KG",,,,,,,
+NO,TGL,SHIFT,SO,WO OVER,WO TERPAKAI,MESIN,INTERNAL,SALES,CUSTOMER,NAMA BARANG,MC,FIT,BERAT,QTY,TONASE,,NO,TGL,SHIFT,SO,WO,KETERANGAN,MESIN,INTERNAL,SALES,CUSTOMER,NAMA BARANG,MC,FIT,BERAT,QTY,TONASE
+1,06 Nov 2026,2,11-2026-00772,10-2026-02887,11-2026-00447,,PUTRA,FEBBY,"ARISU INDONESIA, PT",PA-0000048.COVER FAL 25,62804,1,0.19,300,57.30,,1,05 Nov 2026,1,10-2026-05178,10-2026-02858,,,KIKA,INDAH SIE,"BUMI CITRA JAYA, PT",230040_K.IND MI GRG HK 8x5 (KR,77422,1,0.25,325,82.49
+2,06 Nov 2026,3,10-2026-06751,10-2026-4038,10-2026-04041,,RATNA,KURNIAWAN,"STARKEMAS INDONESIA, PT",CB PO-DO-002,45919,1,0.27,300,81.30,,2,05 Nov 2026,1,10-2026-07175,10-2026-04064,,,RIZAL,SUSAN,"MENACOCO SARI, PT",CB.YEKO JELLY NATADECOCO 60X12,51817,1,0.24,350,84.81
+3,06 Nov 2026,3,10-2026-04372,11-2026-00210/00211,11-2026-00210/00211,,NUR,ROBERT,PT GODREJ CONSUMER PRODUCTS INDONESIA,20028987_M.BOX SANITER WIPES 5,57632,1,0.34,300,103.32,,3,05 Nov 2026,2,06-2026-06032,06-2026-00163,,,YOSEP,HASAN,"SURYA PELANGI SEJAHTERA, PT",BOX POLOS 1050x350x205MM,71513,1,1.66,110,182.80
+4,08 Nov 2026,1,11-2026-00804,10-2026-003028,11-2026-00804,,KIKA,SUSAN,"ARIRA PANGINDO, CV",CB.MAX'S FARM ORIGINAL CASA CH,61581,1,0.42,800,335.12,,4,05 Nov 2026,2,11-2026-00070,11-2026-00146,,,NUR,ROBERT,PT FORISA NUSAPERSADA,PEA.PIFYZ.001_POP ICE CHOCODRE,73235,1,0.49,200,97.80
+5,09 Nov 2026,3,09-2026-06106,09-2026-03609,09-2026-03610,,NUR,ROBERT,PT FORISA NUSAPERSADA,PEA.PIAYZ.023_POP ICE BIRU,72899,1,0.35,300,106.38,,5,05 Nov 2026,2,10-2026-06590,10-2026-03792,,,BAGUS,YONAS,"ICI PAINTS INDONESIA, PT",BOX CAT CATYLAC HI-GLOSS 8x0.9,52692,1,0.25,150,37.48
+6,11 Nov 2026,1,10-2026-04977,10-2026-02903,10-2026-02903,LT.1,ZAMRONI,KIREY ANGELA LIHA,"PT CISARUA MOUNTAIN DAIRY, TBK",PK100847 BOX UHT MILK 225ML RE,76792,1,0.17,12,"1,999.20",,6,05 Nov 2026,2,11-2026-00071,11-2026-00147,,,NUR,ROBERT,PT FORISA NUSAPERSADA,PEA.PJAYZ.000_POP JUSS,77510,1,0.22,125,27.81
+7,11 Nov 2026,2,11-2026-01401,11-2026-00856,11-2026-00856,SUN.5,YOSEP,IN HOUSE,"MULTI KEMASINDO GUNATAMA, PT",BOX JERIGEN 5 LITER,73748,1,0.65,20,13.07,,7,05 Nov 2026,2,11-2026-00060,11-2026-00034,,,NUR,ROBERT,PT GODREJ CONSUMER PRODUCTS INDONESIA,20009732 M.BOX PROCLIN BOTOL 5,46818,1,0.40,200,80.14
+8,12 Nov 2026,,TIDAK DAPAT,,,,,,,,,,,,,,8,05 Nov 2026,2,11-2026-00402,11-2026-00298,,,TIURMA,TUN WIE,ROSIDAH,"""MASTER KIPAS ANGIN 12"""" POLOS""",72293,1,1.16,500,578.30
+,,,,,,,,,,,,,,,,,9,05 Nov 2026,2,09-2026-01648,11-2026-00244,,,YOSEP,HASAN,"KERTAS PADALARANG, PT",BOX UANG LOGAM 500 R (NEW) TOP,76772,1,1.43,70,99.88
+,,,,,,,,,,,,,,,,,10,05 Nov 2026,2,10-2026-03764,10-2026-02029,,,KOKOM,EKO,"COCA-COLA BOTTLING INDONESIA, PT",13313526_TRAY MMPO 300x12 NEW,55537,1,0.04,21,842.10
+,,,,,,,,,,,,,,,,,11,05 Nov 2026,2,10-2026-05036,10-2026-02785,,,NUR,ROBERT,"NISSIN FOODS INDONESIA, PT",TA09685-1/KARTON CHM CUP NOODL,72707,1,0.32,150,48.68
+,,,,,,,,,,,,,,,,,12,05 Nov 2026,2,10-2026-05032,10-2026-2781,,,NUR,ROBERT,"NISSIN FOODS INDONESIA, PT",TA06511-4/KARTON JRK-2,73097,1,0.55,25,13.80
+,,,,,,,,,,,,,,,,,13,05 Nov 2026,3,10-2026-05037,10-2026-02786,,,NUR,ROBERT,"NISSIN FOODS INDONESIA, PT",TA09687DB-1/ KARTON CHYDB,74598,1,0.19,250,48.13
+,,,,,,,,,,,,,,,,,14,05 Nov 2026,3,10-2026-04210,10-2026-02335,,,TIURMA,TUN WIE,"NUAI UNGGUL ABADI, PT",DUS JAR (POLOS) BESAR,69325,1,2.18,50,108.81
+,,,,,,,,,,,,,,,,,15,05 Nov 2026,3,11-2026-00106,11-2026-00186,,,NUR,ROBERT,PT FORISA NUSAPERSADA,PEA.NJEYZ.A04_JELLY SHAKE,77520,1,0.15,325,49.95
+,,,,,,,,,,,,,,,,,16,06 Nov 2026,2,11-2026-00201,11-2026-00137,,,TIURMA,TUN WIE,"LEO JAYA MANDIRI, PT",INNER KINGSTON DF 1212 (KIPAS,72580,1,0.27,60,16.09
+,,,,,,,,,,,,,,,,,17,06 Nov 2026,2,10-2026-06806,10-2026-03847,,,TIURMA,TUN WIE,"CENTA BRASINDO ABADI CHEMICAL INDUSTRY, PT",KB.WHITE CRAFT CENTOP 540SL UK,65473,1,1.11,70,77.48
+,,,,,,,,,,,,,,,,,18,06 Nov 2026,2,10-2026-04979,10-2026-02754,,,PUTRA,FEBBY,"DELTA DJAKARTA TBK, PT",BOX AB 12x620ML + PARTISI (KRA,72713,1,0.39,4,"1,559.20"
+,,,,,,,,,,,,,,,,,19,07 Nov 2026,2,10-2026-04968,10-2026-02749,,,NUR,ROBERT,"NOVATECH KAYA KREASI, PT",INNER BOX WALL FLOWER,75780,1,0.07,"2,25",166.73
+,,,,,,,,,,,,,,,,,20,07 Nov 2026,2,09-2026-05067,10-2026-1825,,,KIKA,IN HOUSE,"KIDS PLAY INDONESIA, PT",QA62316W26AA 62316-91A8 KP 8 I,76800,1,0.19,25,4.67
+,,,,,,,,,,,,,,,,,21,07 Nov 2026,2,09-2026-05068,10-2026-1826,,,KIKA,IN HOUSE,"KIDS PLAY INDONESIA, PT",QA72316W26AA 72316-91A3 KP 8 I,76801,1,0.19,50,9.34
+,,,,,,,,,,,,,,,,,22,08 Nov 2026,2,09-2026-04392,10-2026-03895,,,AXEL,TEDDY,"FUMAKILLA INDONESIA, PT",M.BOX VLR 90 SAKURA BLOSSOM,68665,1,0.32,60,19.06
+,,,,,,,,,,,,,,,,,23,09 Nov 2026,1,09-2026-04396,10-2026-03896,,,AXEL,TEDDY,"FUMAKILLA INDONESIA, PT",M2-PH-16-45412_VAPE 12.1 LV LI,68667,1,0.32,40,12.71
+,,,,,,,,,,,,,,,,,24,09 Nov 2026,1,11-2026-00612,11-2026-00310,,,YOSEP,YULI,"SPARK INTEGRATED SOLUTIONS, PT",SF-BF 35035040,71854,1,0.18,450,82.80
+,,,,,,,,,,,,,,,,,25,09 Nov 2026,3,11-2026-00380,11-2026-00193,,,PUTRA,MARFIN,"DRAGON STAR INDONESIA, PT",BOX POLOS A60 7 WATT CUSTOM,69044,1,0.51,340,172.24
+,,,,,,,,,,,,,,,,,26,09 Nov 2026,3,10-2026-01017,10-2026-01995,,,TITA,FEBRY GRESMEDIKA,"ZINUS GLOBAL INDONESIA, PT",C-BOX.CLE-08T (WT),74190,1,1.81,85,153.52
+,,,,,,,,,,,,,,,,,27,10 Nov 2026,1,09-2026-00905,11-2026-00444,,,PUTRA,MARFIN,"ESTERINDO TRI CHEM,PT",BOX.3M GENERAL POLOS / SCOTCH,53042,1,0.25,60,15.29
+,,,,,,,,,,,,,,,,,28,11 Nov 2026,1,11-2026-01519,11-2026-01061,OVER,LT.3,YOSEP,HASAN,"SURYA PELANGI SEJAHTERA, PT",BOX BEAUTY WING WR RED MULLET,77609,1,0.78,40,31.16
+,,,,,,,,,,,,,,,,,29,11 Nov 2026,1,10-2026-07240,11-2026-00012,OVER,JUMBO.1,TIURMA,TUN WIE,NURMALA SARI,"""BOX WALL FAN 30"""" YASAKA (+ INN""",77548,1,1.41,150,212.04
+,,,,,,,,,,,,,,,,,30,11 Nov 2026,1,10-2026-06819,10-2026-04044,OVER,LT.2,RATNA,KURNIAWAN,"STARKEMAS INDONESIA, PT",BOX PO-DO-145,45915,1,0.64,20,12.74
+,,,,,,,,,,,,,,,,,31,11 Nov 2026,1,11-2026-01520,11-2026-01062,OVER,LT.3,YOSEP,HASAN,"SURYA PELANGI SEJAHTERA, PT",BOX BEAUTY WING WC BABY OCTOPU,77611,1,0.83,50,41.74
+,,,,,,,,,,,,,,,,,32,12 Nov 2026,1,10-2026-00675,11-2026-00281,OVER,JUMBO1,TITA,FEBRY GRESMEDIKA,"ZINUS DREAM INDONESIA, PT",C-BOX 10X.F-FOAM (ZU),67361,1,1.34,40,53.50
+,,,,,,,,,,,,,,,,,33,12 Nov 2026,1,10-2026-05705,10-2026-03151,OVER,JUMBO.3,AXEL,FEBBY,"QUANTUM TOSAN INTERNASIONAL, PT",SOFA BOX MAGIS 340x340x1100,75363,1,1.66,10,16.58
+,,,,,,,,,,,,,,,,,34,12 Nov 2026,1,11-2026-00382,11-2026-00194,OVER,AFG 3,PUTRA,MARFIN,"DRAGON STAR INDONESIA, PT",BOX POLOS A80 18 WATT CUSTOM,69040,1,1.39,140,195.27</script>
+
+<script>
+const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=668867028&single=true&output=csv';
+const STORAGE_KEY = 'ringkasanoverwo.settings', THEME_KEY = 'ringkasanoverwo.theme', CSV_CACHE_KEY = 'ringkasanoverwo.csv';
+const AUTO_REFRESH_MS = 5 * 60 * 1000, BLOCK = 16, RIGHT_START = 17;
+const PAGES = ['overview', 'rincian', 'detail'];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = s => { const v = parseFloat(String(s ?? '').replace(/,/g, '')); return isFinite(v) ? v : 0; };
+const fmtInt = n => Math.round(n).toLocaleString('en-US');
+const fmtDec = (n, d = 2) => n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+const short = n => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace('.0', '') + 'k' : String(Math.round(n));
+const pct = (a, b) => b ? (a / b * 100).toFixed(1) + '%' : '0%';
+const MONTHS = {jan:0,feb:1,mar:2,apr:3,mei:4,may:4,jun:5,jul:6,agu:7,aug:7,sep:8,okt:9,oct:9,nov:10,des:11,dec:11};
+function parseDate(s){ const m = String(s || '').trim().match(/^(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{4})$/); if (!m) return 0; const mo = MONTHS[m[2].toLowerCase()]; return mo === undefined ? 0 : new Date(+m[3], mo, +m[1]).getTime(); }
+const dShort = s => { const m = String(s).match(/^(\d{1,2})\s+([A-Za-z]{3})/); return m ? m[1] + ' ' + m[2] : s; };
+const personOf = t => { const p = String(t || '').split(' - '); return p.length > 1 ? p.slice(1).join(' - ') : ''; };
+
+/* ===== CSV ===== */
+function parseCSV(text){
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){ if (c === '"'){ if (text[i+1] === '"'){ f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ','){ row.push(f); f = ''; }
+    else if (c === '\n'){ row.push(f); rows.push(row); row = []; f = ''; }
+    else if (c !== '\r') f += c;
+  }
+  if (f !== '' || row.length){ row.push(f); rows.push(row); }
+  return rows;
+}
+const KEYS = {
+  out:   ['tgl','shift','so','wo','ref2','mesin','internal','sales','cust','nama','mc','fit','berat','qty','tonase'],
+  close: ['tgl','shift','so','wo','ref2','mesin','internal','sales','cust','nama','mc','fit','berat','qty','tonase']
+};
+/* Sebagian sel Qty di sheet tampil dalam ribuan (mis. "12" = 12.000, "2,25" = 2.250).
+   Dikoreksi dengan membandingkan berat × qty terhadap tonase; hasilnya cocok dengan subtotal sheet. */
+function fixQty(berat, qty, ton){
+  if (!(berat > 0 && ton > 0)) return {q:qty, k:1};
+  let best = Math.abs(berat * qty - ton) / ton, k = 1;
+  [10, 100, 1000].forEach(m => { const e = Math.abs(berat * qty * m - ton) / ton; if (e < best - 0.02 && e < 0.12){ best = e; k = m; } });
+  return {q:qty * k, k};
+}
+function buildDataset(text){
+  const rows = parseCSV(text);
+  const hi = rows.findIndex(r => (r[0] || '').trim().toUpperCase() === 'NO');
+  if (hi < 0) throw new Error('Header tabel tidak ditemukan');
+  const subRow = rows.slice(0, hi).find(r => /PCS/i.test(r[0] || '') || /PCS/i.test(r[RIGHT_START] || '')) || [];
+  const mkSub = off => ({qty:num(subRow[off]), ton:num(subRow[off + 8]), has:/PCS|KG/i.test((subRow[off] || '') + (subRow[off + 8] || ''))});
+  const out = {rows:[], title:(rows[0]?.[0] || '').trim(), sub:mkSub(0)};
+  const close = {rows:[], title:(rows[0]?.[RIGHT_START] || '').trim(), sub:mkSub(RIGHT_START)};
+  for (let i = hi + 1; i < rows.length; i++){
+    [[out, 0, 'out'], [close, RIGHT_START, 'close']].forEach(([ds, off, tab]) => {
+      const part = rows[i].slice(off, off + BLOCK).map(v => (v || '').trim());
+      if (!part.some(Boolean)) return;
+      const o = {_t:tab}; KEYS[tab].forEach((k, j) => o[k] = part[j + 1] || '');
+      o._date = parseDate(o.tgl); o._ton = num(o.tonase);
+      const f = fixQty(num(o.berat), num(o.qty), o._ton); o._qty = f.q; o._fix = f.k > 1;
+      o._note = !o.cust && !o.nama && !o._qty;
+      o._search = Object.values(o).join(' ').toLowerCase();
+      ds.rows.push(o);
+    });
+  }
+  return {out, close};
+}
+
+/* ===== State ===== */
+const state = { data:null, view:'overview', period:null, metric:'ton', dim:'internal', rtype:'all', dtype:'all', selected:null, q:'', dq:'', sortKey:'tot', sortDir:-1, isort:{k:'ton', d:-1}, dsort:{k:'date', d:1}, source:'', srcAt:'', settings:loadSettings() };
+const DIMS = {internal:'Internal', sales:'Sales', cust:'Customer', shift:'Shift'};
+const allRows = () => state.data ? [...state.data.out.rows, ...state.data.close.rows] : [];
+const inPeriod = r => !state.period || r.tgl === state.period;
+const realRows = (type) => allRows().filter(r => !r._note && inPeriod(r) && (!type || type === 'all' || r._t === type));
+const sum = (rs, f) => rs.reduce((a, r) => a + f(r), 0);
+const dimVal = (r, d) => d === 'shift' ? (r.shift ? 'Shift ' + r.shift : '-') : (r[d] || '-');
+
+function loadSettings(){ try{ const st = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); return {csvUrl: st.csvUrl || DEFAULT_CSV_URL}; }catch(e){ return {csvUrl: DEFAULT_CSV_URL}; } }
+function saveSettings(s){ state.settings = s; try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }catch(e){} }
+
+/* ===== Theme / toast ===== */
+function getTheme(){ return document.documentElement.getAttribute('data-theme') || 'light'; }
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  try{ localStorage.setItem(THEME_KEY, t); }catch(e){}
+  $('theme-icon-sun').classList.toggle('hidden', t !== 'dark'); $('theme-icon-moon').classList.toggle('hidden', t === 'dark');
+  const m = $('meta-theme-color'); if (m) m.content = t === 'dark' ? '#0f1428' : '#f3f5f9';
+}
+let toastT; function showToast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+
+/* ===== Render: chrome ===== */
+function periodsList(){
+  const set = new Map(); allRows().forEach(r => { if (r.tgl) set.set(r.tgl, r._date); });
+  return [...set.entries()].sort((a, b) => a[1] - b[1]).map(x => x[0]);
+}
+function periodLabel(){
+  if (state.period) return state.period;
+  const ps = periodsList(); if (!ps.length) return '—';
+  const a = ps[0], b = ps[ps.length - 1];
+  const ma = a.match(/^(\d+)\s+(\S+)\s+(\d+)$/), mb = b.match(/^(\d+)\s+(\S+)\s+(\d+)$/);
+  if (a === b) return a;
+  if (ma && mb && ma[2] === mb[2] && ma[3] === mb[3]) return ma[1] + '–' + mb[1] + ' ' + mb[2] + ' ' + mb[3];
+  return a + ' – ' + b;
+}
+function renderChrome(){
+  const ps = periodsList();
+  $('period-tabs').innerHTML = `<button class="date-tab${state.period ? '' : ' active'}" data-p="">Semua</button>` + ps.map(p => `<button class="date-tab${state.period === p ? ' active' : ''}" data-p="${esc(p)}">${esc(dShort(p))}</button>`).join('');
+  const act = $('period-tabs').querySelector('.active'); if (act && act.scrollIntoView) { try{ act.scrollIntoView({block:'nearest', inline:'center'}); }catch(e){} }
+  $('cutoff-value').textContent = periodLabel(); $('cutoff-badge').classList.remove('hidden');
+  $('src-info').textContent = state.source === 'live' ? 'Live · ' + state.srcAt : state.source === 'cache' ? 'Data tersimpan · ' + state.srcAt : 'Data bawaan';
+  document.querySelectorAll('#view-tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
+  const i = PAGES.indexOf(state.view); $('pn-c').textContent = (i + 1) + ' / ' + PAGES.length;
+  $('pbar').classList.toggle('hidden', false);
+}
+
+/* ===== Render: Overview ===== */
+const IC = {
+  box:'<svg class="i" viewBox="0 0 24 24"><path d="M3.5 9 12 4.5 20.5 9v8L12 21.5 3.5 17V9Z"/><path d="M12 13V8"/></svg>',
+  chk:'<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/></svg>',
+  stack:'<svg class="i" viewBox="0 0 24 24"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg>',
+  user:'<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+  bld:'<svg class="i" viewBox="0 0 24 24"><path d="M4 21V5l8-2v18M12 9l8 2v10M8 9h.01M8 13h.01M8 17h.01M16 15h.01M16 18h.01"/></svg>',
+  cog:'<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>',
+  clock:'<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  scale:'<svg class="i" viewBox="0 0 24 24"><path d="M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0L5 7ZM19 7l-3 7a3 3 0 0 0 6 0l-3-7Z"/></svg>'
+};
+function topBy(rows, d){
+  const m = new Map(); rows.forEach(r => { const k = dimVal(r, d); m.set(k, (m.get(k) || 0) + r._ton); });
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+}
+function renderOverview(){
+  const o = realRows('out'), c = realRows('close'), all = [...o, ...c];
+  const tO = sum(o, r => r._ton), tC = sum(c, r => r._ton), qO = sum(o, r => r._qty), qC = sum(c, r => r._qty), tAll = tO + tC;
+  const ds = state.data, noP = !state.period;
+  const chkNote = (calc, sub, unitD) => noP && sub.has ? (Math.abs(calc - sub) <= Math.max(0.5, sub * 0.002) ? 'sesuai subtotal sheet ✓' : 'subtotal sheet: ' + (unitD ? fmtDec(sub) : fmtInt(sub))) : '';
+  $('ov-per').textContent = periodLabel();
+  const pO = personOf(ds.out.title), pC = personOf(ds.close.title);
+  $('ov-kpi').innerHTML = [
+    ['os', IC.box, 'Tonase WO OS', fmtDec(tO), 'kg', 'cos', `${o.length} baris · ${pct(tO, tAll)} dari total${pO ? ' · ' + pO : ''}`, chkNote(tO, ds.out.sub.ton, true)],
+    ['cl', IC.chk, 'Tonase WO Close', fmtDec(tC), 'kg', 'ccl', `${c.length} baris · ${pct(tC, tAll)} dari total${pC ? ' · ' + pC : ''}`, chkNote(tC, ds.close.sub.ton, true)],
+    ['os', IC.stack, 'Qty WO OS', fmtInt(qO), 'pcs', 'cos', `rata-rata ${o.length ? fmtInt(qO / o.length) : 0} pcs / baris`, chkNote(qO, ds.out.sub.qty, false)],
+    ['cl', IC.stack, 'Qty WO Close', fmtInt(qC), 'pcs', 'ccl', `rata-rata ${c.length ? fmtInt(qC / c.length) : 0} pcs / baris`, chkNote(qC, ds.close.sub.qty, false)]
+  ].map(([cls, ic, l, v, u, vc, n, chk]) => `<div class="k ${cls}"><div class="kic ${cls}">${ic}</div><div style="min-width:0"><div class="l">${l}</div><div class="v ${vc}">${v}<small>${u}</small></div><div class="n">${esc(n)}</div>${chk ? `<div class="n" style="color:var(--${chk.indexOf('✓') > -1 ? 'cl' : 'red'})">${esc(chk)}</div>` : ''}</div></div>`).join('');
+
+  // komposisi
+  const q = state.metric === 'qty', vO = q ? qO : tO, vC = q ? qC : tC, vT = vO + vC || 1, u = q ? 'pcs' : 'kg';
+  $('ov-bar').innerHTML = `<div class="bo" style="flex:${Math.max(vO, vT * 0.02)}">WO OS ${(vO / vT * 100).toFixed(1)}%<small>${q ? fmtInt(vO) : fmtDec(vO)} ${u}</small></div><div class="bc" style="flex:${Math.max(vC, vT * 0.02)}">WO Close ${(vC / vT * 100).toFixed(1)}%<small>${q ? fmtInt(vC) : fmtDec(vC)} ${u}</small></div>`;
+  $('ov-chart-t').textContent = (q ? 'Qty' : 'Tonase') + ' per Tanggal';
+  document.querySelectorAll('#ov-seg button').forEach(b => b.classList.toggle('on', b.dataset.m === state.metric));
+
+  // chart per tanggal
+  const dates = periodsList().filter(d => !state.period || d === state.period);
+  const val = (rs, d) => sum(rs.filter(r => r.tgl === d), r => q ? r._qty : r._ton);
+  const cols = dates.map(d => ({d, o:val(o, d), c:val(c, d)}));
+  const mx = Math.max(1, ...cols.map(x => Math.max(x.o, x.c)));
+  const lab = v => v ? (q ? short(v) : fmtInt(v)) : '';
+  $('ov-chart').innerHTML = cols.length ? `<div class="bc-plot">${cols.map(x => `<div class="bc-col" title="${esc(x.d)} — OS ${q ? fmtInt(x.o) : fmtDec(x.o)} ${u} · Close ${q ? fmtInt(x.c) : fmtDec(x.c)} ${u}"><div class="bc-bar o" style="height:${x.o / mx * 100}%"><span>${lab(x.o)}</span></div><div class="bc-bar c" style="height:${x.c / mx * 100}%"><span>${lab(x.c)}</span></div></div>`).join('')}</div><div class="bc-x">${cols.map(x => `<div>${esc(dShort(x.d))}</div>`).join('')}</div>` : '<div class="empty-note">Belum ada data.</div>';
+
+  // insight
+  const ins = []; const add = (ic, cls, t, b, d, dim, name) => ins.push({ic, cls, t, b, d, dim, name});
+  if (all.length){
+    const tc = topBy(all, 'cust')[0], ts = topBy(all, 'sales')[0], ti = topBy(all, 'internal')[0], tsh = topBy(all, 'shift')[0];
+    add(IC.bld, 'bl', 'Customer terbesar', tc[0], `${fmtDec(tc[1])} kg · ${pct(tc[1], tAll)} dari total`, 'cust', tc[0]);
+    add(IC.user, 'os', 'Sales terbesar', ts[0], `${fmtDec(ts[1])} kg · ${pct(ts[1], tAll)} dari total`, 'sales', ts[0]);
+    add(IC.cog, 'cl', 'Internal terbesar', ti[0], `${fmtDec(ti[1])} kg · ${pct(ti[1], tAll)} dari total`, 'internal', ti[0]);
+    add(IC.clock, 'bl', 'Shift tersibuk', tsh[0], `${fmtDec(tsh[1])} kg · ${pct(tsh[1], tAll)} dari total`, 'shift', tsh[0]);
+    const hv = [...all].sort((a, b) => b._ton - a._ton)[0];
+    add(IC.scale, 'rd', 'Item terberat', hv.nama || '-', `${fmtDec(hv._ton)} kg · ${hv._t === 'out' ? 'WO OS' : 'WO Close'} · ${hv.cust || '-'}`, 'cust', hv.cust);
+    if (tO > 0 && tC > 0) add(IC.chk, 'cl', 'Rasio Close : OS', (tC / tO).toFixed(2) + '×', `WO Close ${fmtDec(tC)} kg vs WO OS ${fmtDec(tO)} kg`);
+  }
+  const notes = allRows().filter(r => r._note && inPeriod(r));
+  if (notes.length) add(IC.clock, 'os', 'Catatan sheet', notes.map(n => n.so || '-').join(', '), notes.map(n => (n._t === 'out' ? 'WO OS' : 'WO Close') + ' · ' + n.tgl).join(' | '));
+  const fx = all.filter(r => r._fix).length;
+  if (fx) add(IC.box, 'bl', 'Koreksi Qty', fx + ' baris', 'Qty di sheet tampil dalam ribuan; dikoreksi dari berat × tonase agar cocok subtotal');
+  $('ov-ins').innerHTML = ins.length ? ins.map((x, i) => `<div class="it${x.dim ? ' clk' : ''}" ${x.dim ? `data-i="${i}" tabindex="0" role="button"` : ''}><div class="kic ${x.cls}">${x.ic}</div><div style="min-width:0"><div class="t">${esc(x.t)}</div><div class="b">${esc(x.b)}</div><div class="d">${esc(x.d)}</div></div></div>`).join('') : '<div class="empty-note">Belum ada data.</div>';
+  state._ins = ins;
+}
+
+/* ===== Render: Rincian ===== */
+function rcScope(){
+  const terms = state.q.toLowerCase().split(/\s+/).filter(Boolean);
+  return realRows(state.rtype).filter(r => terms.every(t => r._search.includes(t) || dimVal(r, state.dim).toLowerCase().includes(t)));
+}
+function itemTable(rows, withCust){
+  if (!rows.length) return '<div class="empty-note">Tidak ada item.</div>';
+  const IS = state.isort, col = {date:r => r._date, type:r => r._t, so:r => r.so, nama:r => r.nama, qty:r => r._qty, ton:r => r._ton};
+  const f = col[IS.k] || col.ton;
+  rows = [...rows].sort((a, b) => { const x = f(a), y = f(b); return IS.d * (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), undefined, {numeric:true})); });
+  const th = (k, l, cls) => `<th class="${cls || ''}${IS.k === k ? (IS.d > 0 ? ' asc' : ' desc') : ''}" data-isort="${k}">${l}</th>`;
+  return `<table class="dt"><thead><tr>${th('date', 'Tgl')}${th('type', 'Tipe')}${th('so', 'SO / WO')}${th('nama', 'Barang')}${th('qty', 'Qty', 'r')}${th('ton', 'Tonase (kg)', 'r')}</tr></thead><tbody>${rows.map(r => `<tr><td class="nw">${esc(dShort(r.tgl))}</td><td><span class="badge ${r._t === 'out' ? 'os' : 'cl'}">${r._t === 'out' ? 'OS' : 'CL'}</span></td><td class="nw mono">${esc(r.so || '-')}<span class="sub">${esc(r.wo || '-')}</span></td><td class="wr md">${esc(r.nama || '-')}${withCust ? `<span class="sub">${esc(r.cust || '-')}</span>` : ''}</td><td class="r nw">${fmtInt(r._qty)}</td><td class="r nw c-${r._t === 'out' ? 'os' : 'cl'}">${fmtDec(r._ton)}</td></tr>`).join('')}</tbody></table>`;
+}
+function renderRincian(){
+  const scope = rcScope(), d = state.dim;
+  const m = new Map();
+  scope.forEach(r => { const k = dimVal(r, d); let g = m.get(k); if (!g) m.set(k, g = {name:k, n:0, os:0, cl:0, qty:0}); g.n++; g.qty += r._qty; if (r._t === 'out') g.os += r._ton; else g.cl += r._ton; });
+  let arr = [...m.values()].map(g => ({...g, tot:g.os + g.cl}));
+  const sk = state.sortKey, sd = state.sortDir;
+  arr.sort((a, b) => sk === 'name' ? sd * a.name.localeCompare(b.name, undefined, {numeric:true}) : sd * (a[sk] - b[sk]));
+  const tot = sum(arr, g => g.tot), mx = Math.max(1, ...arr.map(g => g.tot));
+  document.querySelectorAll('#dim-switch button').forEach(b => b.classList.toggle('on', b.dataset.dim === d));
+  document.querySelectorAll('#rc-type button').forEach(b => b.classList.toggle('on', b.dataset.t === state.rtype));
+  $('rank-title').textContent = 'Tonase per ' + DIMS[d]; $('rank-count').textContent = `${arr.length} ${DIMS[d].toLowerCase()} · ${fmtDec(tot)} kg`;
+  const th = (k, l) => `<th data-sort="${k}" class="${sk === k ? (sd > 0 ? 'asc' : 'desc') : ''}">${l}</th>`;
+  $('rank-thead').innerHTML = `<tr>${th('name', DIMS[d])}${th('n', 'Baris')}${th('os', 'WO OS (kg)')}${th('cl', 'WO Close (kg)')}${th('tot', 'Total (kg)')}${th('qty', 'Qty')}<th style="text-align:left">Porsi</th></tr>`;
+  $('rank-tbody').innerHTML = arr.length ? arr.map(g => `<tr data-name="${esc(g.name)}" class="${state.selected && state.selected.name === g.name && state.selected.dim === d ? 'sel' : ''}"><td class="nm" title="${esc(g.name)}">${esc(g.name)}</td><td>${g.n}</td><td class="c-os">${g.os ? fmtDec(g.os) : '–'}</td><td class="c-cl">${g.cl ? fmtDec(g.cl) : '–'}</td><td style="font-weight:800">${fmtDec(g.tot)}</td><td>${fmtInt(g.qty)}</td><td style="text-align:left"><span class="bar-track"><span class="bar-fill" style="width:${g.tot / mx * 100}%"></span></span>${pct(g.tot, tot)}</td></tr>`).join('') : '<tr><td colspan="7"><div class="empty-note">Tidak ada data yang cocok.</div></td></tr>';
+  const sel = state.selected && state.selected.dim === d ? state.selected : null;
+  $('sel-chip').classList.toggle('show', !!sel); if (sel) $('sel-name').textContent = sel.name;
+  const items = sel ? scope.filter(r => dimVal(r, d) === sel.name) : scope;
+  $('item-title').textContent = sel ? 'Detail Item — ' + sel.name : 'Detail Item (semua)';
+  $('item-count').textContent = `${items.length} baris · ${fmtDec(sum(items, r => r._ton))} kg`;
+  const keep = $('rc-items').scrollTop; $('rc-items').innerHTML = itemTable(items, d !== 'cust'); $('rc-items').scrollTop = keep;
+}
+
+/* ===== Render: Detail ===== */
+function renderDetail(){
+  const terms = state.dq.toLowerCase().split(/\s+/).filter(Boolean);
+  let rows = allRows().filter(r => inPeriod(r) && (state.dtype === 'all' || r._t === state.dtype) && terms.every(t => r._search.includes(t)));
+  const S = state.dsort, f = {date:r => r._date, type:r => r._t, shift:r => num(r.shift), so:r => r.so, wo:r => r.wo, mesin:r => r.mesin, internal:r => r.internal, sales:r => r.sales, cust:r => r.cust, nama:r => r.nama, berat:r => num(r.berat), qty:r => r._qty, ton:r => r._ton}[S.k] || (r => r._date);
+  rows = [...rows].sort((a, b) => { const x = f(a), y = f(b); return S.d * (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), undefined, {numeric:true})); });
+  document.querySelectorAll('#dt-type button').forEach(b => b.classList.toggle('on', b.dataset.t === state.dtype));
+  const real = rows.filter(r => !r._note);
+  $('dt-count').textContent = `${real.length} baris · ${fmtInt(sum(real, r => r._qty))} pcs · ${fmtDec(sum(real, r => r._ton))} kg`;
+  if (!rows.length){ $('dt-wrap').innerHTML = '<div class="empty-note">Data tidak ditemukan.</div>'; return; }
+  const th = (k, l, cls) => `<th class="${cls || ''}${S.k === k ? (S.d > 0 ? ' asc' : ' desc') : ''}" data-isort="${k}">${l}</th>`;
+  $('dt-wrap').innerHTML = `<table class="dt"><thead><tr>${th('type', 'Tipe')}${th('date', 'Tgl')}${th('shift', 'Shift')}${th('so', 'SO')}${th('wo', 'WO')}<th>WO Terpakai / Ket</th>${th('mesin', 'Mesin')}${th('internal', 'Internal')}${th('sales', 'Sales')}${th('cust', 'Customer')}${th('nama', 'Nama Barang')}${th('berat', 'Berat', 'r')}${th('qty', 'Qty', 'r')}${th('ton', 'Tonase (kg)', 'r')}</tr></thead><tbody>${rows.map(r => r._note ? `<tr class="note"><td><span class="badge ${r._t === 'out' ? 'os' : 'cl'}">${r._t === 'out' ? 'OS' : 'CL'}</span></td><td class="nw">${esc(dShort(r.tgl))}</td><td colspan="12"><span class="badge nt">${esc(r.so || 'Catatan')}</span></td></tr>` : `<tr><td><span class="badge ${r._t === 'out' ? 'os' : 'cl'}">${r._t === 'out' ? 'OS' : 'CL'}</span></td><td class="nw">${esc(dShort(r.tgl))}</td><td>${esc(r.shift || '-')}</td><td class="nw mono">${esc(r.so || '-')}</td><td class="nw mono">${esc(r.wo || '-')}</td><td class="nw mono">${esc(r.ref2 || '-')}</td><td class="nw">${esc(r.mesin || '-')}</td><td class="nw">${esc(r.internal || '-')}</td><td class="nw">${esc(r.sales || '-')}</td><td class="wr">${esc(r.cust || '-')}</td><td class="wr md">${esc(r.nama || '-')}</td><td class="r nw">${esc(r.berat || '-')}</td><td class="r nw">${fmtInt(r._qty)}${r._fix ? ' <span class="badge fx" title="Qty dikoreksi (sheet menampilkan ribuan)">koreksi</span>' : ''}</td><td class="r nw c-${r._t === 'out' ? 'os' : 'cl'}">${fmtDec(r._ton)}</td></tr>`).join('')}</tbody></table>`;
+}
+
+/* ===== Render: all / views ===== */
+function renderAll(){
+  if (!state.data) return;
+  renderChrome();
+  PAGES.forEach(p => { const el = {overview:'ov-section', rincian:'rc-section', detail:'dt-section'}[p]; $(el).classList.toggle('hidden', p !== state.view); });
+  if (state.view === 'overview') renderOverview(); else if (state.view === 'rincian') renderRincian(); else renderDetail();
+}
+function setView(v){ if (state.view === v) return; state.view = v; renderAll(); }
+
+/* ===== Data loading ===== */
+async function fetchCsv(url){
+  const sep = url.indexOf('?') >= 0 ? '&' : '?', ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, to = setTimeout(() => ctl && ctl.abort(), 20000);
+  try{
+    const res = await fetch(url + sep + '_=' + Date.now(), {cache:'no-store', signal: ctl ? ctl.signal : undefined});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const t = await res.text(); if (/^\s*</.test(t)) throw new Error('Respons bukan CSV (cek pengaturan publish sheet)');
+    return t;
+  } finally { clearTimeout(to); }
+}
+const hhmm = (d = new Date()) => d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+function applyCSV(text){
+  const d = buildDataset(text); state.data = d;
+  if (state.period && !periodsList().includes(state.period)) state.period = null;
+}
+function setBanner(h){ const b = $('data-banner'); if (!h){ b.classList.add('hidden'); b.innerHTML = ''; } else { b.classList.remove('hidden'); b.innerHTML = h; } }
+async function loadData(){
+  setBanner('');
+  try{
+    const t = await fetchCsv(state.settings.csvUrl); applyCSV(t); state.source = 'live'; state.srcAt = hhmm();
+    try{ localStorage.setItem(CSV_CACHE_KEY, JSON.stringify({t, at:Date.now()})); }catch(e){}
+  }catch(e){
+    console.warn('Gagal memuat Google Sheet:', e);
+    let ok = false;
+    try{ const c = JSON.parse(localStorage.getItem(CSV_CACHE_KEY) || 'null'); if (c && c.t){ applyCSV(c.t); state.source = 'cache'; state.srcAt = hhmm(new Date(c.at)); ok = true; } }catch(e2){}
+    if (!ok){ try{ applyCSV($('csv-fallback').textContent); state.source = 'fallback'; state.srcAt = ''; ok = true; }catch(e3){ console.error(e3); } }
+    setBanner((ok ? 'Tidak bisa terhubung ke Google Sheet — menampilkan ' + (state.source === 'cache' ? 'data tersimpan terakhir' : 'data bawaan') : 'Data tidak dapat dimuat') + ' <button id="banner-retry">Coba lagi</button>');
+    const rb = $('banner-retry'); if (rb) rb.onclick = () => loadData();
+  }
+  renderAll();
+}
+
+/* ===== Events ===== */
+const FS_IN = '<svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>', FS_OUT = '<svg class="i" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+$('dt-fs').innerHTML = FS_IN;
+$('dt-fs').addEventListener('click', () => { const on = $('dt-card').classList.toggle('fs-on'); $('dt-fs').innerHTML = on ? FS_OUT : FS_IN; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('dt-card').classList.contains('fs-on')){ $('dt-card').classList.remove('fs-on'); $('dt-fs').innerHTML = FS_IN; } }, true);
+$('view-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setView(b.dataset.view); });
+$('period-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.period = b.dataset.p || null; state.selected = null; renderAll(); });
+$('ov-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.metric = b.dataset.m; renderAll(); });
+function insGo(el){ const x = state._ins && state._ins[+el.dataset.i]; if (!x || !x.dim || !x.name) return; state.dim = x.dim; state.selected = {dim:x.dim, name:x.name}; state.q = ''; $('rc-search').value = ''; state.rtype = 'all'; setView('rincian'); }
+$('ov-ins').addEventListener('click', e => { const it = e.target.closest('.it.clk'); if (it) insGo(it); });
+$('ov-ins').addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const it = e.target.closest('.it.clk'); if (it){ e.preventDefault(); insGo(it); } });
+$('dim-switch').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.dim = b.dataset.dim; state.selected = null; state.sortKey = 'tot'; state.sortDir = -1; renderAll(); });
+$('rc-type').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.rtype = b.dataset.t; state.selected = null; renderAll(); });
+$('rank-thead').addEventListener('click', e => { const th = e.target.closest('th[data-sort]'); if (!th) return; const k = th.dataset.sort; if (state.sortKey === k) state.sortDir *= -1; else { state.sortKey = k; state.sortDir = k === 'name' ? 1 : -1; } renderAll(); });
+$('rank-tbody').addEventListener('click', e => { const tr = e.target.closest('tr[data-name]'); if (!tr) return; const n = tr.dataset.name; state.selected = state.selected && state.selected.name === n && state.selected.dim === state.dim ? null : {dim:state.dim, name:n}; renderAll(); });
+$('rc-items').addEventListener('click', e => { const th = e.target.closest('th[data-isort]'); if (!th) return; const k = th.dataset.isort, I = state.isort; if (I.k === k) I.d *= -1; else { I.k = k; I.d = (k === 'ton' || k === 'qty') ? -1 : 1; } renderAll(); });
+let st1, st2;
+$('rc-search').addEventListener('input', e => { clearTimeout(st1); st1 = setTimeout(() => { state.q = e.target.value.trim(); state.selected = null; renderAll(); }, 160); });
+$('rc-clear').addEventListener('click', () => { $('rc-search').value = ''; state.q = ''; renderAll(); });
+$('sel-x').addEventListener('click', () => { state.selected = null; renderAll(); });
+$('rc-reset').addEventListener('click', () => { state.q = ''; $('rc-search').value = ''; state.selected = null; state.rtype = 'all'; state.sortKey = 'tot'; state.sortDir = -1; renderAll(); });
+$('dt-type').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.dtype = b.dataset.t; renderAll(); });
+$('dt-search').addEventListener('input', e => { clearTimeout(st2); st2 = setTimeout(() => { state.dq = e.target.value.trim(); renderAll(); }, 160); });
+$('dt-clear').addEventListener('click', () => { $('dt-search').value = ''; state.dq = ''; renderAll(); });
+$('dt-wrap').addEventListener('click', e => { const th = e.target.closest('th[data-isort]'); if (!th) return; const k = th.dataset.isort, S = state.dsort; if (S.k === k) S.d *= -1; else { S.k = k; S.d = (k === 'ton' || k === 'qty' || k === 'berat') ? -1 : 1; } renderAll(); });
+$('btn-theme-toggle').addEventListener('click', () => applyTheme(getTheme() === 'dark' ? 'light' : 'dark'));
+$('btn-refresh').addEventListener('click', async () => { showToast('Memuat ulang data…'); await loadData(); if (state.source === 'live') showToast('Data diperbarui dari Google Sheet'); });
+$('btn-settings').addEventListener('click', () => { $('set-csv-url').value = state.settings.csvUrl; $('settings-overlay').classList.add('show'); document.body.classList.add('overlay-open'); });
+const closeSet = () => { $('settings-overlay').classList.remove('show'); document.body.classList.remove('overlay-open'); };
+$('btn-close-settings').addEventListener('click', closeSet);
+$('settings-overlay').addEventListener('click', e => { if (e.target === $('settings-overlay')) closeSet(); });
+$('btn-save-settings').addEventListener('click', async () => { saveSettings({csvUrl: $('set-csv-url').value.trim() || DEFAULT_CSV_URL}); closeSet(); await loadData(); });
+function uiPres(on){
+  if (on === undefined) on = !document.body.classList.contains('pres');
+  document.body.classList.toggle('pres', on);
+  if (on){ if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); }
+  else if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+}
+$('btn-pres').addEventListener('click', () => uiPres());
+const go = i => { state.view = PAGES[(i + PAGES.length) % PAGES.length]; renderAll(); };
+$('pn-prev').addEventListener('click', () => go(PAGES.indexOf(state.view) - 1)); $('pn-next').addEventListener('click', () => go(PAGES.indexOf(state.view) + 1));
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) document.body.classList.remove('pres'); });
+document.addEventListener('keydown', e => {
+  if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName || '') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if ($('settings-overlay').classList.contains('show')) return;
+  if (e.key === 'Escape'){ if (document.body.classList.contains('pres')) uiPres(false); $('more').classList.remove('open'); }
+  else if (e.key === 'ArrowRight') go(PAGES.indexOf(state.view) + 1); else if (e.key === 'ArrowLeft') go(PAGES.indexOf(state.view) - 1);
+});
+$('btn-more').addEventListener('click', e => { e.stopPropagation(); $('more').classList.toggle('open'); });
+document.addEventListener('click', e => { if (!e.target.closest('#more') || e.target.closest('.menu button,.menu a')) $('more').classList.remove('open'); });
+
+function hideSplash(){ const s = $('app-splash'); if (!s) return; s.classList.add('hide'); setTimeout(() => { if (s.parentNode) s.parentNode.removeChild(s); }, 500); }
+applyTheme(getTheme());
+// tampilkan data bawaan dulu supaya halaman langsung terisi, lalu ambil data live
+try{ applyCSV($('csv-fallback').textContent); state.source = 'fallback'; renderAll(); }catch(e){ console.error(e); }
+(async function init(){ try{ await loadData(); }catch(e){ console.error(e); setBanner('Terjadi kesalahan: ' + esc(e.message || e)); } setTimeout(hideSplash, 350); })();
+setInterval(() => { if (!document.hidden && state.source === 'live') loadData(); }, AUTO_REFRESH_MS);
+</script>
+</body>
+</html>
