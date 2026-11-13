@@ -176,7 +176,6 @@ tbody tr:hover{ background:var(--row-hover); }
 .tonase{ font-weight:600; color:var(--accent); }
 .badge{ display:inline-block; padding:3px 9px; border-radius:999px; font:600 11px var(--font-mono); background:rgba(var(--accent-rgb),.13); color:var(--accent); white-space:nowrap; }
 .badge.note{ background:rgba(100,116,139,.15); color:var(--muted); letter-spacing:.05em; }
-.badge.warn{ background:rgba(245,158,11,.16); color:var(--amber-dark); cursor:help; }
 .badge.over{ background:rgba(239,51,64,.12); color:#ef3340; }
 tr.is-note td{ color:var(--muted); }
 tfoot td{
@@ -423,7 +422,7 @@ body.fs-lock{overflow:hidden}
 
 <div id="toast" class="toast glass" role="status"></div>
 
-<!-- Data cadangan (dipakai jika Google Sheet tidak bisa dijangkau) -->
+<!-- Data cadangan (dipakai jika sumber data tidak bisa dijangkau) -->
 <script type="text/plain" id="csv-fallback">LAPORAN BARANG OVER OUTSTANDING - BPK. HERWANTO,,,,,,,,,,,,,,,,,LAPORAN BARANG OVER WO CLOSE - IBU. HELLEN,,,,,,,,,,,,,,,
 DEPARTEMEN GUDANG BARANG JADI | FORM INPUT DATA BARANG OVER,,,,,,,,,,,,,,,,,DEPARTEMEN GUDANG BARANG JADI | FORM INPUT DATA BARANG OVER,,,,,,,,,,,,,,,
 SUBTOTAL QTY OVER,,,,,,,,SUBTOTAL TONASE,,,,,,,,,SUBTOTAL QTY OVER,,,,,,,,SUBTOTAL TONASE,,,,,,,
@@ -571,9 +570,6 @@ function buildDataset(text){
       o._date = parseDate(o.tgl);
       o._qty = num(o.qty); o._ton = num(o.tonase);
       o._note = !o.cust && !o.nama && !o._qty;       // baris catatan (mis. "TIDAK DAPAT")
-      // qty × berat harus ≈ tonase; jika jauh meleset, qty di sheet kemungkinan terpotong format
-      o._warn = !o._note && num(o.berat) > 0 && Math.abs(o._qty * num(o.berat) - o._ton) > Math.max(0.05 * o._ton, 1);
-      o._impl = o._warn ? Math.round(o._ton / num(o.berat)) : 0;
       o._search = Object.values(o).join(' ').toLowerCase();
       ds.rows.push(o);
     });
@@ -650,15 +646,14 @@ function render(){
   const isFiltered = real.length !== all.length;
 
   const useSub = !isFiltered && ds.sub && ds.sub.has;
-  const warnN = all.filter(r => r._warn).length;
   $('kQty').textContent = fmtInt(useSub ? ds.sub.qty : sumQty);
   $('kTon').textContent = fmtDec(useSub ? ds.sub.ton : sumTon);
   $('kRows').textContent = fmtInt(real.length);
   const tq = all.reduce((s,r)=>s+r._qty,0), tt = all.reduce((s,r)=>s+r._ton,0);
   $('kQtyNote').textContent = isFiltered ? `dihitung dari baris tampil · total ${fmtInt(tq)} PCS`
-    : useSub ? `sesuai subtotal Google Sheet` + (warnN && Math.round(tq) !== Math.round(ds.sub.qty) ? ` · Σ baris tabel ${fmtInt(tq)}` : '') : 'seluruh data';
-  $('kTonNote').textContent = isFiltered ? `dihitung dari baris tampil · total ${fmtDec(tt)} KG` : useSub ? 'sesuai subtotal Google Sheet' : 'seluruh data';
-  $('kRowsNote').textContent = (isFiltered ? `dari total ${all.length} baris` : 'seluruh data') + (warnN ? ` · ⚠ ${warnN} qty perlu dicek` : '');
+    : useSub ? 'sesuai subtotal' : 'seluruh data';
+  $('kTonNote').textContent = isFiltered ? `dihitung dari baris tampil · total ${fmtDec(tt)} KG` : useSub ? 'sesuai subtotal' : 'seluruh data';
+  $('kRowsNote').textContent = (isFiltered ? `dari total ${all.length} baris` : 'seluruh data');
   $('badgeOut').textContent   = state.data.out.rows.filter(r=>!r._note).length;
   $('badgeClose').textContent = state.data.close.rows.filter(r=>!r._note).length;
   $('personOut').textContent   = personOf(state.data.out.title)   || 'WO OS';
@@ -685,7 +680,6 @@ function render(){
       if (!v) return `<td class="empty dim ${c.c||''}" data-label="${c.l}">–</td>`;
       if (c.f && !r._note) v = c.f(num(v));
       let inner = hl(v);
-      if (c.k === 'qty' && r._warn) inner = `<span class="badge warn" title="Qty × Berat tidak sama dengan Tonase. Qty seharusnya ± ${fmtInt(r._impl)}">⚠ ${inner}</span>`;
       if (c.k === 'ket' || (c.k === 'wo2' && /over/i.test(v))) inner = `<span class="badge over">${inner}</span>`;
       else if (c.k === 'shift') inner = `<span class="badge">${inner}</span>`;
       return `<td class="${c.c||''}" data-label="${c.l}">${inner}</td>`;
@@ -694,8 +688,7 @@ function render(){
   }).join('');
 
   const iQty = cols.findIndex(c => c.k === 'qty');
-  const warnRows = real.filter(r => r._warn).length;
-  const foot = `<tr><td class="lbl" colspan="${iQty}">Total ${isFiltered ? '(sesuai filter)' : '(Σ baris tabel)'} · ${real.length} baris${warnRows ? ' · ⚠ ' + warnRows + ' qty perlu dicek' : ''}</td>
+  const foot = `<tr><td class="lbl" colspan="${iQty}">Total ${isFiltered ? '(sesuai filter)' : '(Σ baris tabel)'} · ${real.length} baris</td>
     <td class="num">${fmtInt(sumQty)}</td><td class="num tonase">${fmtDec(sumTon)}</td></tr>`;
 
   const wrap = $('tableWrap');
@@ -739,7 +732,7 @@ function applyData(text, source){
 }
 async function loadData(manual){
   $('refreshBtn').classList.add('spin');
-  setStatus('load', 'Menyambung ke Google Sheet…');
+  setStatus('load', 'Menyambung ke sumber data…');
   try{
     const res = await fetch(GSHEET_URL + '&t=' + Date.now(), {cache:'no-store'});
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -747,9 +740,9 @@ async function loadData(manual){
     if (/^\s*<(!doctype|html)/i.test(text)) throw new Error('Respons bukan CSV');
     applyData(text, 'live');
     const t = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-    setStatus('live', 'Live · Google Sheet · ' + t);
+    setStatus('live', 'Live · diperbarui ' + t);
   }catch(err){
-    console.warn('Gagal memuat Google Sheet:', err);
+    console.warn('Gagal memuat data:', err);
     if (!state.data){
       try{ applyData($('csv-fallback').textContent, 'fallback'); }catch(e){ console.error(e); }
     }
@@ -831,7 +824,7 @@ const scopeSfx = () => rState.scope === 'all' ? '' : ' - ' + SCOPE_L[rState.scop
 function drawDates(d, P, w){
   const q = dState.m === 'qty';
   $('dateTitle').textContent = (q ? 'Qty' : 'Tonase') + ' per Tanggal';
-  $('dateSub').textContent = 'WO OS vs WO Close · ' + (q ? 'PCS · qty sesuai kolom sheet' : 'KG');
+  $('dateSub').textContent = 'WO OS vs WO Close · ' + (q ? 'PCS' : 'KG');
   document.querySelectorAll('#metricSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === dState.m));
   document.querySelectorAll('#dateLegend .lg').forEach(b => b.classList.toggle('off', dState.hide[b.dataset.s]));
   $('chDates').innerHTML = chDates(P, w, d.dates, {m:dState.m, hide:dState.hide, lg:false});
@@ -879,8 +872,7 @@ function xlSheet(wb, tab, rows){
   rows.forEach((r, i) => { const row = ws.getRow(5 + i); row.getCell(1).value = i + 1;
     cols.forEach((c, j) => { const cell = row.getCell(j + 2);
       if (NUMFMT[c.k]){ cell.value = num(r[c.k]) || null; cell.numFmt = NUMFMT[c.k]; } else cell.value = r[c.k] || '';
-      cell.border = {bottom:{style:'hair', color:{argb:'FFCBD5E1'}}}; });
-    if (r._warn) row.getCell(qi).fill = fill('FFFEF3C7'); });
+      cell.border = {bottom:{style:'hair', color:{argb:'FFCBD5E1'}}}; }); });
   const last = 4 + rows.length, tr = ws.getRow(last + 1);
   tr.getCell(1).value = 'TOTAL';
   ['qty', 'tonase'].forEach(k => { const ci = cols.findIndex(c => c.k === k) + 2, L = ws.getColumn(ci).letter;
@@ -901,7 +893,7 @@ function xlSummary(wb){
     rows.forEach(row => { row.forEach((v, i) => { const c = ws.getCell(r, i + 1); c.value = v; if (typeof v === 'number') c.numFmt = fm[i] || '#,##0.00'; }); r++; }); r++;
   };
   const so = d.sub.out, sc = d.sub.close;
-  table('Ringkasan (sesuai subtotal Google Sheet)', ['Laporan', 'Baris', 'Qty (PCS)', 'Tonase (KG)'],
+  table('Ringkasan', ['Laporan', 'Baris', 'Qty (PCS)', 'Tonase (KG)'],
     [['WO OS', d.o.length, so.q, so.t], ['WO Close', d.c.length, sc.q, sc.t], ['Total', d.all.length, so.q + sc.q, so.t + sc.t]], [, '#,##0', '#,##0', '#,##0.00']);
   table('Tonase per Tanggal', ['Tanggal', 'WO OS (KG)', 'WO Close (KG)', 'Total (KG)'], d.dates.map(x => [x.k, x.out, x.close, x.out + x.close]));
   table('Top 10 Customer' + scopeSfx(), ['Customer', 'Tonase (KG)'], d.cust.slice(0, 10).map(x => [x.k, x.v]));
@@ -938,13 +930,12 @@ async function pdfData(){
   doc.setTextColor(30); doc.setFontSize(9);
   doc.text(`Jumlah baris: ${rows.length}     Total Qty: ${fmtInt(q)} PCS     Total Tonase: ${fmtDec(t)} KG${isF ? '     (sesuai filter)' : ''}`, 10, 29);
   const right = {}; cols.forEach((c, i) => { if (['berat', 'qty', 'tonase'].includes(c.k)) right[i + 1] = {halign:'right'}; });
-  const body = rows.map((r, i) => [i + 1, ...cols.map(c => c.f ? c.f(num(r[c.k])) + (c.k === 'qty' && r._warn ? ' *' : '') : (r[c.k] || '-'))]);
+  const body = rows.map((r, i) => [i + 1, ...cols.map(c => c.f ? c.f(num(r[c.k])) : (r[c.k] || '-'))]);
   const foot = [['TOTAL', ...cols.map(c => c.k === 'qty' ? fmtInt(q) : c.k === 'tonase' ? fmtDec(t) : '')]];
   doc.autoTable({head:[['No', ...cols.map(c => c.l)]], body, foot, startY:33, theme:'grid', showFoot:'lastPage', margin:{left:8, right:8, bottom:14},
     styles:{fontSize:7, cellPadding:1.4, lineColor:[226, 232, 240], lineWidth:.1, textColor:[15, 23, 42]},
     headStyles:{fillColor:rgb, textColor:255, fontStyle:'bold', halign:'center'}, footStyles:{fillColor:[241, 245, 249], textColor:[15, 23, 42], fontStyle:'bold'},
     alternateRowStyles:{fillColor:[248, 250, 252]}, columnStyles:right});
-  if (rows.some(r => r._warn)){ doc.setFontSize(7); doc.setTextColor(150, 90, 0); doc.text('* Qty di sheet tampak terpotong (Qty x Berat tidak sama dengan Tonase) - mohon dicek.', 8, doc.lastAutoTable.finalY + 5); }
   pdfFooter(doc, 297, 210); doc.save(fname('pdf'));
 }
 const svgToPng = (svg, W, H) => new Promise((res, rej) => { const img = new Image();
