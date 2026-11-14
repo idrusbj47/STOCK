@@ -451,6 +451,24 @@
   #zoomView img{max-width:100%;max-height:100%;object-fit:contain;cursor:grab;transform-origin:50% 50%;will-change:transform;-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none;touch-action:none;}
   .zHint{position:absolute;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:6px 14px;border-radius:20px;pointer-events:none;white-space:nowrap;animation:zHintOut .5s 3.2s forwards;}
   @keyframes zHintOut{to{opacity:0;}}
+  /* ===== REVISI v2: zona bisa dilipat, filter laporan, kalender rentang ===== */
+  .grp-wrap{margin-top:8px;}
+  .grp-wrap:first-child{margin-top:0;}
+  .grp-wrap .grp-zona{margin:0;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;gap:8px;}
+  .grp-wrap .grp-zona .grp-t{flex:1;min-width:0;}
+  .grp-chev{flex:none;display:inline-block;font-size:12px;transition:transform .18s;}
+  .grp-wrap.open .grp-chev{transform:rotate(90deg);}
+  .grp-body{display:none;padding-top:2px;}
+  .grp-wrap.open .grp-body{display:block;}
+  .r-zbar{display:flex;gap:8px;margin:0 0 8px;}
+  .r-zbar .linkBtn{flex:1;padding:9px 8px;}
+  #anRange.an-seg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+  #anRange.an-seg3 button{min-width:0;padding:11px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #anRange.an-seg3 .an-ref{width:auto;font-size:13px;}
+  .cal-d.inr{box-shadow:inset 0 0 0 1.5px rgba(99,102,241,.6);}
+  #calGrid.rng .cal-d.none{pointer-events:auto;}
+  .cal-hint{margin:2px 2px 8px;font-size:12.5px;font-weight:700;color:var(--muted);}
+
   /* ===== ANALISA (tab Laporan) ===== */
   :root{--track:#eef0f6;--line:rgba(13,27,54,.08);--an-card:#ffffff;}
   body.dark{--track:#1b2842;--line:rgba(255,255,255,.08);--an-card:#111a2c;}
@@ -667,12 +685,13 @@
       <h2 style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;"><span>Laporan &amp; Analisa</span>
         <button class="goldBtn" id="goLapor" style="padding:9px 14px;font-size:13px;">🖨 &nbsp;Buat Laporan</button></h2>
       <p class="hint" style="font-size:13px;line-height:1.5;margin:0;">Ringkasan temuan menurut periode. Untuk cetak, PDF atau Excel, pakai tombol Buat Laporan.</p>
-      <div class="an-seg" id="anRange">
-        <button type="button" data-r="7">7 Hari</button>
-        <button type="button" data-r="30" class="on">30 Hari</button>
-        <button type="button" data-r="90">90 Hari</button>
-        <button type="button" data-r="0">Semua</button>
-        <button type="button" class="an-ref" id="anRefresh" title="Muat ulang analisa" aria-label="Muat ulang analisa">⟳</button>
+      <div class="an-seg an-seg3" id="anRange">
+        <button type="button" data-m="day" class="on" id="anBtnDay">📅 Hari</button>
+        <button type="button" data-m="range" id="anBtnRange">📅 Tgl A s/d B</button>
+        <button type="button" data-m="30">30 Hari</button>
+        <button type="button" data-m="90">90 Hari</button>
+        <button type="button" data-m="all">Semua</button>
+        <button type="button" class="an-ref" id="anRefresh" title="Muat ulang analisa" aria-label="Muat ulang analisa">⟳ Muat ulang</button>
       </div>
     </div>
     <div class="an-seg" id="anSub" style="margin:12px 0 0;"><button type="button" data-sub="an" class="on">Analisa</button><button type="button" data-sub="tl">Progres Tindak Lanjut</button></div>
@@ -756,7 +775,8 @@
       <button type="button" class="linkBtn" id="rReset">Terbaru</button>
     </div>
     <div class="an-seg" id="rStatus" style="margin:0 0 8px;"><button type="button" data-s="all" class="on">Semua</button><button type="button" data-s="open">Open (Belum)</button><button type="button" data-s="done">Close (Selesai)</button></div>
-    <div class="hint" id="rInfo" style="margin:0 0 4px;"></div>
+    <div class="hint" id="rInfo" style="margin:0 0 6px;"></div>
+    <div class="r-zbar"><button type="button" class="linkBtn" id="rOpenAll">▾ Buka semua zona</button><button type="button" class="linkBtn" id="rCloseAll">▸ Tutup semua zona</button></div>
     <div id="recentList"><div class="hint">Belum ada data / memuat…</div></div>
   </div>
 
@@ -850,7 +870,8 @@
 
 <div class="modal-overlay" id="calOverlay">
   <div class="modal-sheet">
-    <div class="cek-head"><h3>Pilih Tanggal Temuan</h3><button class="modal-close" id="calClose" type="button">✕</button></div>
+    <div class="cek-head"><h3 id="calHead">Pilih Tanggal Temuan</h3><button class="modal-close" id="calClose" type="button">✕</button></div>
+    <div class="cal-hint" id="calHint" style="display:none;"></div>
     <div class="cal-nav"><button type="button" id="calPrev" aria-label="Bulan sebelumnya">‹</button><b id="calTitle"></b><button type="button" id="calNext" aria-label="Bulan berikutnya">›</button></div>
     <div class="cal-wd"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
     <div class="cal-grid" id="calGrid"></div>
@@ -1843,17 +1864,31 @@
   const grpZonaLabel = r => { const z=(r.zona||"").trim(), a=(r.area||"").trim(); return (z||"Tanpa zona") + (a ? " — "+a : ""); };
   function grpCounts(rows){ const m=new Map(); rows.forEach(r=>{ const k=grpZonaKey(r); m.set(k,(m.get(k)||0)+1); }); return m; }
   // list ber-grup (layar): header zona/lokasi, lalu sub-header karu
-  function groupedListHtml(rows){
+  // opts.collapse = true -> header zona bisa dilipat (dipakai di Riwayat); opts.open = Set zona yang terbuka
+  function groupedListHtml(rows, opts){
+    opts = opts || {};
     const sorted = sortTemuan(rows), cnt = grpCounts(sorted);
     let h="", lz=null, lk=null;
     sorted.forEach(r=>{
       const zk=grpZonaKey(r), k=(r.kepala_regu||"").trim();
-      if(zk!==lz){ h+=`<div class="grp-zona"><span>${escapeHtml(grpZonaLabel(r))}</span><em>${cnt.get(zk)}</em></div>`; lz=zk; lk=null; }
+      if(zk!==lz){
+        if(opts.collapse && lz!==null) h+=`</div></div>`;
+        if(opts.collapse){
+          const isOpen = opts.open && opts.open.has(zk);
+          h+=`<div class="grp-wrap${isOpen?" open":""}" data-zk="${escapeHtml(zk)}"><div class="grp-zona" role="button" tabindex="0" aria-expanded="${isOpen?"true":"false"}"><span class="grp-chev">▸</span><span class="grp-t">${escapeHtml(grpZonaLabel(r))}</span><em>${cnt.get(zk)}</em></div><div class="grp-body">`;
+        } else {
+          h+=`<div class="grp-zona"><span>${escapeHtml(grpZonaLabel(r))}</span><em>${cnt.get(zk)}</em></div>`;
+        }
+        lz=zk; lk=null;
+      }
       if(k!==lk){ h+=`<div class="grp-karu">Karu: ${escapeHtml(k||"-")}</div>`; lk=k; }
       h+=itemHtml(r);
     });
+    if(opts.collapse && lz!==null) h+=`</div></div>`;
     return h;
   }
+  // status buka/tutup zona di Riwayat (bertahan selama tanggal yang sama)
+  let riDate = null; const riOpen = new Set();
 
   /* ---------------- RECENT LIST ---------------- */
   function itemHtml(r){
@@ -1927,7 +1962,7 @@
       let data;
       if(tgl){
         data = await fetchByDate(sb, tgl);
-        $("rInfo").textContent = data.length + " temuan pada " + fmtTgl(tgl);
+        $("rInfo").textContent = data.length + " temuan pada " + fmtTgl(tgl) + " · ketuk nama zona untuk membuka/menutup";
       } else {
         const r = await sb.from(CFG.sbTable).select("*").order("created_at",{ascending:false}).limit(20);
         if(r.error) throw r.error;
@@ -1938,7 +1973,8 @@
       else if(rStat==="done") data = data.filter(r=>r.tl_status);
       if(rStat!=="all") $("rInfo").textContent += " · " + data.length + (rStat==="done" ? " sudah ditindaklanjuti" : " belum ditindaklanjuti");
       if(!data.length){ box.innerHTML = '<div class="hint">' + (tgl ? "Tidak ada temuan pada tanggal ini." : "Belum ada temuan tersimpan.") + '</div>'; return; }
-      box.innerHTML = groupedListHtml(data);
+      if(tgl !== riDate){ riDate = tgl; riOpen.clear(); }
+      box.innerHTML = groupedListHtml(data, {collapse:true, open:riOpen});
       bindListActions(box);
     }catch(e){
       box.innerHTML = '<div class="hint">Gagal memuat riwayat: '+escapeHtml(e.message||String(e))+'</div>';
@@ -1950,7 +1986,39 @@
     document.querySelectorAll("#rStatus button").forEach(x=> x.classList.toggle("on", x===b));
     loadRecent();
   });
-  $("rReset").addEventListener("click", ()=>{ $("rTanggal").value = ""; calSetLabel(); loadRecent(); });
+  // pilih otomatis tanggal temuan paling baru
+  async function riwayatLatest(){
+    const sb = getSupabase();
+    if(sb){
+      try{
+        const { data } = await sb.from(CFG.sbTable).select("tanggal").order("tanggal",{ascending:false}).limit(1);
+        if(data && data[0] && data[0].tanggal) $("rTanggal").value = data[0].tanggal;
+      }catch(e){}
+    }
+    calSetLabel();
+    return loadRecent();
+  }
+  $("rReset").addEventListener("click", riwayatLatest);
+  // buka / tutup zona
+  $("recentList").addEventListener("click", e=>{
+    const hd = e.target.closest(".grp-zona"); if(!hd) return;
+    const w = hd.closest(".grp-wrap"); if(!w) return;
+    const on = w.classList.toggle("open");
+    hd.setAttribute("aria-expanded", on ? "true" : "false");
+    if(on) riOpen.add(w.dataset.zk); else riOpen.delete(w.dataset.zk);
+  });
+  $("recentList").addEventListener("keydown", e=>{
+    if((e.key==="Enter"||e.key===" ") && e.target.classList && e.target.classList.contains("grp-zona")){ e.preventDefault(); e.target.click(); }
+  });
+  function riSetAll(on){
+    document.querySelectorAll("#recentList .grp-wrap").forEach(w=>{
+      w.classList.toggle("open", on);
+      const h = w.querySelector(".grp-zona"); if(h) h.setAttribute("aria-expanded", on ? "true" : "false");
+      if(on) riOpen.add(w.dataset.zk); else riOpen.delete(w.dataset.zk);
+    });
+  }
+  $("rOpenAll").addEventListener("click", ()=> riSetAll(true));
+  $("rCloseAll").addEventListener("click", ()=> riSetAll(false));
 
   async function deleteTemuan(id, fotoUrls, btn){
     if(!currentSession){ alert("Anda harus login sebagai admin untuk menghapus temuan."); return; }
@@ -3044,7 +3112,36 @@
   window.addEventListener("resize", ()=>{ if(zv.classList.contains("show")){ zClamp(); zApply(false); } });
 
   /* ---------------- ANALISA (tab Laporan) ---------------- */
-  let anRows = null, anStamp = 0, anRange = 30, anKodeTab = "all", anLoading = false;
+  let anRows = null, anStamp = 0, anMode = "day", anFrom = "", anTo = "", anAuto = true, anKodeTab = "all", anLoading = false;
+  // mode: day (1 hari) | range (tgl A s/d B) | 30 | 90 | all.  Default: 1 hari = tanggal temuan terbaru.
+  const anDays = () => anMode==="30" ? 30 : anMode==="90" ? 90 : 0;
+  function anLatestDate(){ return (anRows && anRows.length && anRows[0].tanggal) || ""; }
+  // batas periode (string yyyy-mm-dd); null = semua data
+  function anBounds(){
+    if(anMode==="all") return null;
+    if(anMode==="day" || anMode==="range"){
+      const a = anFrom || anLatestDate(); if(!a) return null;
+      const b = anMode==="day" ? a : (anTo || a);
+      return { start: a <= b ? a : b, end: a <= b ? b : a };
+    }
+    const n = new Date(), t = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+    return { start: ymd(addDays(t, -(anDays()-1))), end: ymd(t) };
+  }
+  const fmtMed = t => parseYmd(t).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"});
+  function anPeriodText(paren){
+    const bd = anBounds(); if(!bd) return "Seluruh data tercatat";
+    const nd = Math.round((parseYmd(bd.end)-parseYmd(bd.start))/864e5) + 1;
+    if(anMode==="day") return parseYmd(bd.start).toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + " · 1 hari";
+    if(anMode==="range") return fmtMed(bd.start) + " s/d " + fmtMed(bd.end) + (paren ? " ("+nd+" hari)" : " · "+nd+" hari");
+    return fmtShort(bd.start)+" – "+fmtShort(bd.end)+(paren ? " ("+nd+" hari terakhir)" : " · "+nd+" hari terakhir");
+  }
+  // label tombol periode mengikuti pilihan
+  function anSyncBtns(){
+    document.querySelectorAll("#anRange button[data-m]").forEach(x=> x.classList.toggle("on", x.dataset.m===anMode));
+    const bd = anBounds(), d = $("anBtnDay"), r = $("anBtnRange");
+    if(d) d.textContent = (anMode==="day" && bd) ? "📅 " + fmtShort(bd.start) : "📅 Hari";
+    if(r) r.textContent = (anMode==="range" && bd) ? (bd.start===bd.end ? "📅 " + fmtShort(bd.start) : "📅 " + fmtShort(bd.start) + " s/d " + fmtShort(bd.end)) : "📅 Tgl A s/d B";
+  }
   const AN_PAL = ["#0ea5a4","#6366f1","#f59e0b","#f43f5e","#10b981","#8b5cf6","#0ea5e9"];
   const pad2 = n => String(n).padStart(2,"0");
   const ymd = d => d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
@@ -3076,10 +3173,8 @@
   }
   function anFiltered(){
     if(!anRows) return [];
-    if(!anRange) return anRows;
-    const n = new Date();
-    const start = ymd(addDays(new Date(n.getFullYear(), n.getMonth(), n.getDate()), -(anRange-1)));
-    return anRows.filter(r=> (r.tanggal||"") >= start);
+    const bd = anBounds(); if(!bd) return anRows;
+    return anRows.filter(r=>{ const t = r.tanggal||""; return t >= bd.start && t <= bd.end; });
   }
   // kelompokkan & hitung (kunci tidak peka huruf besar/kecil)
   function anGroup(rows, keysOf){
@@ -3109,9 +3204,14 @@
   // tren: harian / mingguan / bulanan menyesuaikan lebar periode, batang bertumpuk minor + mayor
   function anTrend(rows){
     const dates = rows.map(r=>r.tanggal).filter(Boolean).sort();
-    let end = parseYmd(ymd(new Date()));
-    const lastD = parseYmd(dates[dates.length-1]); if(lastD > end) end = lastD;
-    const start = anRange ? addDays(end, -(anRange-1)) : parseYmd(dates[0]);
+    const bd = anBounds();
+    let end, start;
+    if(bd && (anMode==="day" || anMode==="range")){ start = parseYmd(bd.start); end = parseYmd(bd.end); }
+    else {
+      end = parseYmd(ymd(new Date()));
+      const lastD = parseYmd(dates[dates.length-1]); if(lastD > end) end = lastD;
+      start = bd ? addDays(end, -(anDays()-1)) : parseYmd(dates[0]);
+    }
     const span = Math.round((end-start)/864e5) + 1;
     const mode = span <= 35 ? "d" : span <= 210 ? "w" : "m";
     const keyOf = t => {
@@ -3168,9 +3268,7 @@
     const body = $("anBody"); if(!body || !anRows) return;
     const rows = anFiltered(), total = rows.length;
     body.classList.remove("an-go","an-noanim");
-    const n0 = new Date();
-    const ptxt = anRange ? fmtShort(ymd(addDays(n0,-(anRange-1))))+" – "+fmtShort(ymd(n0))+" · "+anRange+" hari terakhir" : "Seluruh data tercatat";
-    const per = `<div class="an-period">${ptxt}</div>`;
+    const per = `<div class="an-period">${anPeriodText(false)}</div>`;
     if(!total){ body.innerHTML = per + '<div class="an-p" style="margin-top:12px"><div class="an-empty">Belum ada temuan pada periode ini.</div></div>'; return; }
 
     const mayor = rows.filter(isMayorRow).length, minor = total - mayor;
@@ -3204,7 +3302,7 @@
       + hl("📅","Hari tersibuk", td?fmtShort(td.key):"-", td?`${td.n} temuan · ${td.mayor} mayor`:"", "#f59e0b") + `</div>`;
 
     const tr = anTrend(rows);
-    const pTrend = anPanel("Tren Temuan", `Per ${tr.unit} · puncak ${tr.peak} temuan`, tr.html, "var(--gold)", "an-span2");
+    const pTrend = anMode==="day" ? "" : anPanel("Tren Temuan", `Per ${tr.unit} · puncak ${tr.peak} temuan`, tr.html, "var(--gold)", "an-span2");
 
     const rowsK = anKodeTab==="all" ? rows : rows.filter(r=> anKodeTab==="mayor" ? isMayorRow(r) : !isMayorRow(r));
     const kodeItems = anGroup(rowsK, r=>[(r.kode||"").trim().toUpperCase()]).slice(0,8).map(g=>{
@@ -3255,15 +3353,25 @@
     anLoading = true;
     try{
       anRows = await anFetchAll(); anStamp = Date.now();
+      // default: 1 hari = tanggal temuan terbaru (selama belum memilih sendiri)
+      if(anAuto && anMode==="day"){ const lt = anLatestDate(); if(lt){ anFrom = lt; anTo = lt; } }
+      anSyncBtns();
       renderAn(!hadCache ? true : false);
     }catch(e){
       if(!hadCache) $("anBody").innerHTML = '<div class="an-p" style="margin-top:12px"><div class="an-empty">Gagal memuat analisa: '+escapeHtml(e.message||String(e))+'</div></div>';
     }finally{ anLoading = false; }
   }
   $("anRange").addEventListener("click", e=>{
-    const b = e.target.closest("button[data-r]"); if(!b) return;
-    anRange = +b.dataset.r;
-    document.querySelectorAll("#anRange button[data-r]").forEach(x=> x.classList.toggle("on", x===b));
+    const b = e.target.closest("button[data-m]"); if(!b) return;
+    const m = b.dataset.m;
+    if(m==="day" || m==="range"){
+      if(!anFrom) anFrom = anLatestDate(); if(!anTo) anTo = anFrom;
+      anMode = m; anAuto = false; anSyncBtns();
+      if(anRows) renderAn(true);
+      openCal(m==="day" ? "anDay" : "anRange");
+      return;
+    }
+    anMode = m; anAuto = false; anSyncBtns();
     if(anRows) renderAn(true); else loadAnalytics();
   });
   $("anRefresh").addEventListener("click", ()=> loadAnalytics(true));
@@ -3281,6 +3389,7 @@
 
   /* ---------------- KALENDER PILIH TANGGAL (riwayat) ---------------- */
   let calY = null, calM = null, calToken = 0;
+  let calTarget = "riwayat", calPend = null;   // calPend = tanggal awal rentang yang menunggu tanggal akhir
   const calCache = new Map();
   const CAL_BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
   function calSetLabel(){
@@ -3305,13 +3414,14 @@
     calCache.set(key, out); return out;
   }
   // map = null -> sedang memuat
-  function calDraw(y, m, map, sel){
+  function calDraw(y, m, map, selA, selB){
     const offset = (new Date(y,m,1).getDay()+6)%7, nd = new Date(y,m+1,0).getDate(), today = ymd(new Date());
     let html = "", days = 0, total = 0;
     for(let i=0;i<offset;i++) html += '<span class="cal-d blank"></span>';
     for(let d=1; d<=nd; d++){
       const key = y+"-"+pad2(m+1)+"-"+pad2(d), info = map && map.get(key);
-      const cls = ["cal-d", !map ? "load" : info ? "has" : "none", key===today?"today":"", key===sel?"sel":""].join(" ");
+      const inRange = selA && selB && key>selA && key<selB;
+      const cls = ["cal-d", !map ? "load" : info ? "has" : "none", key===today?"today":"", (key===selA||key===selB)?"sel":"", inRange?"inr":""].join(" ");
       let extra = "", style = "";
       if(info){
         days++; total += info.n;
@@ -3323,23 +3433,44 @@
     const sum = !map ? "Memuat…" : days ? `${days} hari ada temuan · ${nfmt(total)} temuan bulan ini` : "Tidak ada temuan di bulan ini.";
     return { html, sum };
   }
+  // tanggal terpilih di kalender sesuai target
+  function calSel(){
+    if(calTarget==="anDay") return [anFrom||"", ""];
+    if(calTarget==="anRange"){
+      if(calPend) return [calPend, ""];
+      const bd = anBounds(); return bd ? [bd.start, bd.end] : ["",""];
+    }
+    return [$("rTanggal").value, ""];
+  }
+  function calSetupUi(){
+    const t = calTarget;
+    $("calHead").textContent = t==="anDay" ? "Pilih Hari" : t==="anRange" ? "Pilih Rentang Tanggal" : "Pilih Tanggal Temuan";
+    const hint = $("calHint");
+    if(t==="anRange"){ hint.style.display = "block"; hint.textContent = calPend ? "Ketuk tanggal AKHIR (atau ketuk tanggal yang sama untuk 1 hari)" : "Ketuk tanggal AWAL, lalu tanggal AKHIR"; }
+    else if(t==="anDay"){ hint.style.display = "block"; hint.textContent = "Ketuk tanggal yang bertanda (ada temuan)"; }
+    else hint.style.display = "none";
+    $("calGrid").classList.toggle("rng", t==="anRange");
+    $("calClear").textContent = t==="riwayat" ? "Hapus pilihan" : "Tanggal terbaru";
+  }
   async function renderCal(){
-    const my = ++calToken, y = calY, m = calM, sel = $("rTanggal").value;
+    const my = ++calToken, y = calY, m = calM, sl = calSel();
     $("calTitle").textContent = CAL_BULAN[m] + " " + y;
-    let r = calDraw(y, m, null, sel);
+    let r = calDraw(y, m, null, sl[0], sl[1]);
     $("calGrid").innerHTML = r.html; $("calSum").textContent = r.sum;
     try{
       const map = await calLoadMonth(y, m);
       if(my !== calToken) return;
-      r = calDraw(y, m, map, sel);
+      r = calDraw(y, m, map, sl[0], sl[1]);
       $("calGrid").innerHTML = r.html; $("calSum").textContent = r.sum;
     }catch(e){
       if(my === calToken) $("calSum").textContent = "Gagal memuat: " + (e.message||e);
     }
   }
-  async function openCal(){
+  async function openCal(target){
+    calTarget = (typeof target === "string") ? target : "riwayat"; calPend = null;
+    calSetupUi();
     $("calOverlay").classList.add("show");
-    const sel = $("rTanggal").value;
+    const sel = calSel()[0];
     if(sel){ const d = parseYmd(sel); calY = d.getFullYear(); calM = d.getMonth(); }
     else if(calY == null){
       const n = new Date(); calY = n.getFullYear(); calM = n.getMonth();
@@ -3354,24 +3485,78 @@
     renderCal();
   }
   function calShift(n){ const d = new Date(calY, calM+n, 1); calY = d.getFullYear(); calM = d.getMonth(); renderCal(); }
-  $("rTglBtn").addEventListener("click", openCal);
+  $("rTglBtn").addEventListener("click", ()=> openCal("riwayat"));
   $("calClose").addEventListener("click", ()=> $("calOverlay").classList.remove("show"));
   $("calPrev").addEventListener("click", ()=> calShift(-1));
   $("calNext").addEventListener("click", ()=> calShift(1));
   $("calNow").addEventListener("click", ()=>{ const n = new Date(); calY = n.getFullYear(); calM = n.getMonth(); renderCal(); });
-  $("calClear").addEventListener("click", ()=>{ $("rTanggal").value = ""; calSetLabel(); $("calOverlay").classList.remove("show"); loadRecent(); });
+  $("calClear").addEventListener("click", ()=>{
+    if(calTarget==="riwayat"){ $("rTanggal").value = ""; calSetLabel(); $("calOverlay").classList.remove("show"); loadRecent(); return; }
+    // laporan: kembali ke 1 hari = tanggal temuan terbaru
+    const lt = anLatestDate(); anMode = "day"; anAuto = true; if(lt){ anFrom = lt; anTo = lt; }
+    $("calOverlay").classList.remove("show"); anSyncBtns(); if(anRows) renderAn(true); else loadAnalytics(true);
+  });
   $("calGrid").addEventListener("click", e=>{
-    const b = e.target.closest(".cal-d[data-d]"); if(!b || b.classList.contains("none") || b.classList.contains("load")) return;
-    $("rTanggal").value = b.dataset.d; calSetLabel(); $("calOverlay").classList.remove("show"); loadRecent();
+    const b = e.target.closest(".cal-d[data-d]"); if(!b || b.classList.contains("load")) return;
+    if(b.classList.contains("none") && calTarget!=="anRange") return;
+    const d = b.dataset.d;
+    if(calTarget==="riwayat"){ $("rTanggal").value = d; calSetLabel(); $("calOverlay").classList.remove("show"); loadRecent(); return; }
+    if(calTarget==="anDay"){
+      anMode = "day"; anFrom = d; anTo = d; anAuto = false;
+      $("calOverlay").classList.remove("show"); anSyncBtns(); if(anRows) renderAn(true); else loadAnalytics(); return;
+    }
+    // rentang a s/d b: ketuk 2x
+    if(!calPend){ calPend = d; calSetupUi(); renderCal(); return; }
+    const a = calPend <= d ? calPend : d, z = calPend <= d ? d : calPend;
+    calPend = null; anMode = "range"; anFrom = a; anTo = z; anAuto = false;
+    $("calOverlay").classList.remove("show"); anSyncBtns(); if(anRows) renderAn(true); else loadAnalytics();
   });
 
   /* ---------------- NAVIGASI TAB + BERANDA ---------------- */
-  function showView(v){
+  let curView = "home";
+  function showView(v, push){
+    if(push !== false && v !== curView){ try{ history.pushState({v:v}, ""); }catch(e){} }
+    curView = v;
     document.querySelectorAll(".view").forEach(x=> x.classList.toggle("on", x.id==="v-"+v));
     document.querySelectorAll(".navItem").forEach(x=> x.classList.toggle("on", x.dataset.go===v));
     window.scrollTo({top:0, behavior:"smooth"});
     if(v==="lapor") loadAnalytics();
   }
+
+  /* ---------------- TOMBOL KEMBALI (HP): mundur 1 langkah, bukan langsung ke index.html ----------------
+     Tiap pindah tab = 1 langkah riwayat. Jendela (modal/kalender/foto) ikut ditutup dulu sebelum pindah tab. */
+  try{ history.replaceState({v:"home"}, ""); }catch(e){}
+  const ovlVisible = () => Array.from(document.querySelectorAll(".modal-overlay.show, #zoomView.show"));
+  let modalPushed = false, skipPop = false;
+  function ovlTop(list){
+    return list.slice().sort((a,b)=>{
+      const za = parseInt(getComputedStyle(a).zIndex)||0, zb = parseInt(getComputedStyle(b).zIndex)||0;
+      if(za!==zb) return za-zb;
+      return (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
+    }).pop();
+  }
+  function ovlCloseTop(){
+    const ov = ovlTop(ovlVisible()); if(!ov) return;
+    if(ov.id==="zoomView"){ $("zClose").click(); return; }
+    const btn = ov.querySelector(".modal-close, [id^='close'], [id$='Close']");
+    if(btn) btn.click(); else ov.classList.remove("show");
+  }
+  new MutationObserver(()=>{
+    const n = ovlVisible().length;
+    if(n>0 && !modalPushed){ try{ history.pushState({m:1}, ""); modalPushed = true; }catch(e){} }
+    else if(n===0 && modalPushed){ modalPushed = false; skipPop = true; try{ history.back(); }catch(e){ skipPop = false; } }
+  }).observe(document.body, {subtree:true, attributes:true, attributeFilter:["class"]});
+  window.addEventListener("popstate", e=>{
+    if(skipPop){ skipPop = false; return; }
+    if(ovlVisible().length){
+      modalPushed = false;
+      ovlCloseTop();
+      if(ovlVisible().length){ try{ history.pushState({m:1}, ""); modalPushed = true; }catch(err){} }
+      return;
+    }
+    const v = e.state && e.state.v;
+    if(v && v !== curView) showView(v, false);
+  });
   document.addEventListener("click", e=>{
     const g = e.target.closest("[data-go]"); if(g){ showView(g.dataset.go); return; }
     const c = e.target.closest("[data-click]"); if(c){ $(c.dataset.click).click(); }
@@ -3653,7 +3838,7 @@
     const karuG = tpGroup(rows, r=>(r.kepala_regu||"").trim(), r=>{
       const k = (r.kepala_regu||"").trim(); return { name: k || "~", label: `<b>${escapeHtml(k || "Tanpa karu")}</b>` }; });
     const n0 = new Date();
-    const ptxt = anRange ? fmtShort(ymd(addDays(n0,-(anRange-1))))+" – "+fmtShort(ymd(n0))+" ("+anRange+" hari terakhir)" : "Seluruh data tercatat";
+    const ptxt = anPeriodText(true);
     const tglNow = n0.toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
     body.innerHTML = `
       <div class="an-seg" id="tlShowSeg" style="margin-top:12px;"><button type="button" data-tls="open" class="${tlShow==="open"?"on":""}">Yang belum saja</button><button type="button" data-tls="all" class="${tlShow==="all"?"on":""}">Semua blok</button></div>
@@ -3841,7 +4026,7 @@
   if(!CFG.sbUrl || !CFG.sbKey){ openSettings(); }
   loadAllDb();
   initAuth();
-  loadRecent();
+  riwayatLatest();   // Riwayat langsung menampilkan tanggal temuan terbaru
 
 })();
 </script>
