@@ -242,7 +242,7 @@ body.pres #pn{display:flex}body.pres .topbar{padding:6px 22px}body.pres .brand .
     <div class="kt" id="ov-ket"></div>
     <div class="hero">
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0" id="ov-chart-t">Tonase per Tanggal</h2><div class="seg" id="ov-seg"><button data-m="ton" class="on">Tonase</button><button data-m="qty">Qty</button></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0" id="ov-chart-t">Tonase per Tanggal</h2><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><div class="seg" id="ov-view"><button data-v="rinci" class="on">Rinci</button><button data-v="total">Total</button></div><div class="seg" id="ov-seg"><button data-m="ton" class="on">Tonase</button><button data-m="qty">Qty</button></div></div></div>
         <div class="barx" id="ov-bar"></div>
         <div class="lgd" id="ov-lgd"></div>
         <div class="bc-wrap" id="ov-chart"></div>
@@ -656,7 +656,7 @@ NO,TGL,SHIFT,SO,WO OVER,WO TERPAKAI,MESIN,INTERNAL,SALES,CUSTOMER,NAMA BARANG,MC
 const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=668867028&single=true&output=csv';
 const STORAGE_KEY = 'ringkasanoverwo.settings', THEME_KEY = 'ringkasanoverwo.theme', CSV_CACHE_KEY = 'ringkasanoverwo.csv';
 const AUTO_REFRESH_MS = 5 * 60 * 1000, BLOCK = {out:16, close:17}, RIGHT_START = 17;
-const KET_L = {MASUK:'Masuk', DESTROY:'Destroy', SISA:'Sisa', OS:'WO OS'}, KET_C = {MASUK:'var(--km)', DESTROY:'var(--red)', SISA:'var(--blue)', OS:'var(--os)'}, KET_K = ['MASUK','DESTROY','SISA'];
+const KET_L = {MASUK:'Masuk', DESTROY:'Destroy', SISA:'Sisa', OS:'WO OS', CLOSE:'WO Close'}, KET_C = {MASUK:'var(--km)', DESTROY:'var(--red)', SISA:'var(--blue)', OS:'var(--os)', CLOSE:'var(--cl)'}, KET_K = ['MASUK','DESTROY','SISA'];
 // MASUK & DESTROY sesuai kolom KET. INT; selain itu (HABIS / kosong) dihitung SISA — sama seperti rumus di sheet
 const ketCat = v => { v = String(v || '').trim().toUpperCase(); return v === 'MASUK' ? 'MASUK' : v === 'DESTROY' ? 'DESTROY' : 'SISA'; };
 const ketBadge = v => { const c = ketCat(v); return v ? `<span class="badge ${c === 'MASUK' ? 'in' : c === 'DESTROY' ? 'ds' : 'sa'}">${esc(v)}</span>` : '-'; };
@@ -715,7 +715,7 @@ function buildDataset(text){
 }
 
 /* ===== State ===== */
-const state = { data:null, view:'overview', period:null, metric:'ton', dim:'internal', rtype:'all', dtype:'all', selected:null, ket:'', q:'', dq:'', sortKey:'tot', sortDir:-1, isort:{k:'ton', d:-1}, dsort:{k:'date', d:1}, source:'', srcAt:'', settings:loadSettings() };
+const state = { data:null, view:'overview', period:null, metric:'ton', dim:'internal', rtype:'all', dtype:'all', selected:null, ket:'', cview:'rinci', q:'', dq:'', sortKey:'tot', sortDir:-1, isort:{k:'ton', d:-1}, dsort:{k:'date', d:1}, source:'', srcAt:'', settings:loadSettings() };
 const DIMS = {internal:'Internal', sales:'Sales', cust:'Customer', shift:'Shift'};
 const allRows = () => state.data ? [...state.data.out.rows, ...state.data.close.rows] : [];
 const inPeriod = r => !state.period || r.tgl === state.period;
@@ -803,11 +803,15 @@ function renderOverview(){
     ? [{k:'OS', l:'WO OS (Over Outstanding)', c:'var(--os)', rows:o}]
     : state.ket
     ? [{k:state.ket, l:'WO Close · ' + KET_L[state.ket], c:KET_C[state.ket], rows:kc.filter(r => r._ket === state.ket)}]
+    : state.cview === 'total'
+    ? [{k:'OS', l:'WO OS (Over Outstanding)', c:'var(--os)', rows:o}, {k:'CLOSE', l:'WO Close (total)', c:'var(--cl)', rows:kc}]
     : [{k:'OS', l:'WO OS (Over Outstanding)', c:'var(--os)', rows:o}, ...KET_K.map(k => ({k, l:'Close · ' + KET_L[k], c:KET_C[k], rows:kc.filter(r => r._ket === k)}))];
   const sTot = series.map(x => sum(x.rows, vf)), vT = sum(sTot, x => x) || 1;
   $('ov-bar').innerHTML = series.map((x, i) => `<div style="background:${x.c};flex:${Math.max(sTot[i], vT * 0.02)}">${x.k === 'OS' ? 'WO OS' : KET_L[x.k]} ${(sTot[i] / vT * 100).toFixed(1)}%<small>${q ? fmtInt(sTot[i]) : fmtDec(sTot[i])} ${u}</small></div>`).join('');
   $('ov-lgd').innerHTML = series.map(x => `<span><i style="background:${x.c}"></i>${esc(x.l)}</span>`).join('');
   $('ov-chart-t').textContent = (q ? 'Qty' : 'Tonase') + ' per Tanggal' + (state.ket ? ' · ' + KET_L[state.ket] : '');
+  $('ov-view').style.display = state.ket ? 'none' : '';
+  document.querySelectorAll('#ov-view button').forEach(b => b.classList.toggle('on', b.dataset.v === state.cview));
   document.querySelectorAll('#ov-seg button').forEach(b => b.classList.toggle('on', b.dataset.m === state.metric));
 
   // chart per tanggal
@@ -950,6 +954,7 @@ $('period-tabs').addEventListener('click', e => { const b = e.target.closest('bu
 const setKet = k => { state.ket = state.ket === k ? '' : k; state.selected = null; renderAll(); };
 $('ket-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.ket = b.dataset.k; state.selected = null; renderAll(); });
 $('ov-ket').addEventListener('click', e => { const b = e.target.closest('.kc'); if (b) setKet(b.dataset.k); });
+$('ov-view').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.cview = b.dataset.v; renderAll(); });
 $('ov-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.metric = b.dataset.m; renderAll(); });
 function insGo(el){ const x = state._ins && state._ins[+el.dataset.i]; if (!x || !x.dim || !x.name) return; state.dim = x.dim; state.selected = {dim:x.dim, name:x.name}; state.q = ''; $('rc-search').value = ''; state.rtype = 'all'; setView('rincian'); }
 $('ov-ins').addEventListener('click', e => { const it = e.target.closest('.it.clk'); if (it) insGo(it); });
