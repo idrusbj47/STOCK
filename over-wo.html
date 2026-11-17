@@ -437,6 +437,16 @@ html[data-theme="dark"] .badge.warn{ color:#fbbf24; }
   .kchip .kv{ font-size:20px; } .kchip .kv small{ font-size:10px; }
   .kchip .kn{ font-size:9px; }
 }
+
+/* ===== Layar penuh per grafik ===== */
+.chart-card .cfs-btn{position:absolute;top:14px;right:14px;z-index:3;margin:0;width:36px;height:36px}
+.chart-card .ch-head,.chart-card>h3,.chart-card>p{padding-right:46px}
+.chart-card.cfs{position:fixed;inset:0;z-index:100;border:0;border-radius:0;box-shadow:none;overflow:auto;background:var(--bg);
+  padding:max(18px,env(safe-area-inset-top)) 26px 30px}
+.chart-card.cfs::after{display:none}
+.chart-card.cfs h3{font-size:28px}
+.chart-card.cfs .cfs-btn{top:max(16px,env(safe-area-inset-top))}
+@media (max-width:720px){.chart-card.cfs{padding:max(14px,env(safe-area-inset-top)) 12px 24px}}
 </style>
 </head>
 <body data-tab="out">
@@ -536,9 +546,9 @@ html[data-theme="dark"] .badge.warn{ color:#fbbf24; }
         <div class="seg" id="ketSeg"><button data-k="" class="on">Semua</button><button data-k="MASUK">Masuk</button><button data-k="DESTROY">Destroy</button><button data-k="SISA">Sisa</button></div>
         <span class="scope-n">Filter keterangan berlaku untuk data WO Close di semua grafik (kecuali grafik Keterangan)</span></div>
       <section class="charts">
-        <div class="chart-card"><h3>Top 10 Customer</h3><p id="pCust"></p><div id="chCust"></div></div>
-        <div class="chart-card"><h3>Top 10 Sales</h3><p id="pSales"></p><div id="chSales"></div></div>
-        <div class="chart-card"><h3>Top 10 Internal</h3><p id="pInt"></p><div id="chInt"></div></div>
+        <div class="chart-card"><h3 id="tCust">Top 10 Customer</h3><p id="pCust"></p><div id="chCust"></div></div>
+        <div class="chart-card"><h3 id="tSales">Top 10 Sales</h3><p id="pSales"></p><div id="chSales"></div></div>
+        <div class="chart-card"><h3 id="tInt">Top 10 Internal</h3><p id="pInt"></p><div id="chInt"></div></div>
         <div class="chart-card"><h3>Komposisi Shift</h3><p id="pShift"></p><div id="chShift"></div></div>
       </section>
     </div>
@@ -1328,13 +1338,24 @@ const dState = {m:'ton', hide:{out:false, close:false}};
 const rState = {scope:'all', ket:''};
 const SCOPE_L = {all:'Semua (WO OS + WO Close)', out:'WO OS', close:'WO Close'};
 const scopeSfx = () => (rState.scope === 'all' ? '' : ' - ' + SCOPE_L[rState.scope]) + (rState.ket ? ' - Ket. ' + KET_L[rState.ket] : '');
+const isFsC = id => $(id).closest('.chart-card').classList.contains('cfs');
+const fsH = off => Math.max(260, window.innerHeight - off);
+function setChartFs(card, on){
+  document.querySelectorAll('.chart-card.cfs').forEach(c => { if (c !== card) c.classList.remove('cfs'); });
+  card.classList.toggle('cfs', on); document.body.classList.toggle('fs-lock', on);
+  card.querySelector('.cfs-btn').innerHTML = on ? FS_OFF : FS_ON;
+  card.querySelector('.cfs-btn').title = on ? 'Keluar layar penuh' : 'Layar penuh';
+  if (on){ try{ card.requestFullscreen && card.requestFullscreen().catch(() => {}); }catch(e){} card.scrollTop = 0; }
+  else if (document.fullscreenElement){ document.exitFullscreen().catch(() => {}); }
+  renderReport();
+}
 function drawDates(d, P, w){
   const q = dState.m === 'qty';
   $('dateTitle').textContent = (q ? 'Qty' : 'Tonase') + ' per Tanggal';
   $('dateSub').textContent = 'WO OS vs WO Close · ' + (q ? 'PCS' : 'KG');
   document.querySelectorAll('#metricSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === dState.m));
   document.querySelectorAll('#dateLegend .lg').forEach(b => b.classList.toggle('off', dState.hide[b.dataset.s]));
-  $('chDates').innerHTML = chDates(P, w, d.dates, {m:dState.m, hide:dState.hide, lg:false});
+  $('chDates').innerHTML = chDates(P, w, d.dates, {m:dState.m, hide:dState.hide, lg:false, H:isFsC('chDates') ? fsH(160) : 250});
 }
 $('metricSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; dState.m = b.dataset.m; renderReport(); });
 $('dateLegend').addEventListener('click', e => { const b = e.target.closest('.lg'); if (!b) return; const k = b.dataset.s, other = k === 'out' ? 'close' : 'out';
@@ -1352,16 +1373,18 @@ function renderReport(){
   document.querySelectorAll('#ketSeg button').forEach(b => b.classList.toggle('on', b.dataset.k === rState.ket));
   $('pKet').textContent = 'Share tonase Masuk / Destroy / Sisa · KG';
   $('pKetD').textContent = 'Tonase WO Close per tanggal · KG';
-  $('chKet').innerHTML = chDonut(P, W('chKet'), d.ket, {cols:KET_KEYS.map(k => KET_C[k]), two:true, H:170, R:52, SW:26});
-  $('chKetD').innerHTML = chGroup(P, W('chKetD'), d.ketDates, {H:200});
+  $('chKet').innerHTML = chDonut(P, W('chKet'), d.ket, isFsC('chKet') ? {cols:KET_KEYS.map(k => KET_C[k]), two:true, H:Math.min(fsH(140), 380), R:110, SW:54} : {cols:KET_KEYS.map(k => KET_C[k]), two:true, H:170, R:52, SW:26});
+  $('chKetD').innerHTML = chGroup(P, W('chKetD'), d.ketDates, {H:isFsC('chKetD') ? fsH(140) : 200});
   drawDates(d, P, W('chDates'));
   const sl = SCOPE_L[rState.scope], col = {all:C.blue, out:C.out, close:C.close}[rState.scope];
   document.querySelectorAll('#scopeSeg button').forEach(b => b.classList.toggle('on', b.dataset.s === rState.scope));
   [['pCust', 'Tonase customer'], ['pSales', 'Tonase sales'], ['pInt', 'Tonase internal'], ['pShift', 'Share tonase per shift']].forEach(([i, t]) => $(i).textContent = `${t} · KG · ${sl}`);
-  $('chCust').innerHTML = chBars(P, W('chCust'), d.cust.slice(0, 10), col);
-  $('chSales').innerHTML = chBars(P, W('chSales'), d.sales.slice(0, 10), col);
-  $('chInt').innerHTML = chBars(P, W('chInt'), d.internal.slice(0, 10), col);
-  $('chShift').innerHTML = chDonut(P, W('chShift'), d.shift);
+  const nb = id => isFsC(id) ? 20 : 10, bo = id => isFsC(id) ? {rh:Math.max(30, Math.min(44, Math.floor((fsH(140)) / 20))), fs:13} : {};
+  [['tCust','Customer'],['tSales','Sales'],['tInt','Internal']].forEach(([i, n], j) => $(i).textContent = 'Top ' + nb(['chCust','chSales','chInt'][j]) + ' ' + n);
+  $('chCust').innerHTML = chBars(P, W('chCust'), d.cust.slice(0, nb('chCust')), col, bo('chCust'));
+  $('chSales').innerHTML = chBars(P, W('chSales'), d.sales.slice(0, nb('chSales')), col, bo('chSales'));
+  $('chInt').innerHTML = chBars(P, W('chInt'), d.internal.slice(0, nb('chInt')), col, bo('chInt'));
+  $('chShift').innerHTML = chDonut(P, W('chShift'), d.shift, isFsC('chShift') ? {H:Math.min(fsH(140), 380), R:110, SW:54} : {});
 }
 $('themeToggle').addEventListener('click', () => { if (state.tab === 'report') renderReport(); });
 let rzT; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => state.tab === 'report' && render(), 150); });
@@ -1543,9 +1566,14 @@ function setFs(on){
   else if (document.fullscreenElement){ document.exitFullscreen().catch(() => {}); }
 }
 $('btnFs').innerHTML = FS_ON;
+document.querySelectorAll('#reportView .chart-card').forEach(card => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'fs-btn cfs-btn'; b.title = 'Layar penuh'; b.setAttribute('aria-label', 'Layar penuh'); b.innerHTML = FS_ON;
+  b.addEventListener('click', () => setChartFs(card, !card.classList.contains('cfs'))); card.appendChild(b);
+});
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement){ const c = document.querySelector('.chart-card.cfs'); if (c) setChartFs(c, false); } });
 $('btnFs').addEventListener('click', () => setFs(!$('tableCard').classList.contains('fs')));
 document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && $('tableCard').classList.contains('fs')) setFs(false); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('tableCard').classList.contains('fs')) setFs(false); });
+document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if ($('tableCard').classList.contains('fs')) setFs(false); const c = document.querySelector('.chart-card.cfs'); if (c) setChartFs(c, false); });
 $('btnXlsx').addEventListener('click', e => busy(e.currentTarget, exportXlsx));
 $('btnPdfAll').addEventListener('click', e => busy(e.currentTarget, pdfAll));
 $('btnPdf').addEventListener('click', e => busy(e.currentTarget, () => state.tab === 'report' ? pdfReport() : pdfData()));
