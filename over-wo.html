@@ -1200,7 +1200,13 @@ function moveInd(anim){
   ind.style.backgroundColor = `rgba(${c},.2)`; ind.style.borderColor = `rgba(${c},.42)`;
   if (!anim){ void ind.offsetWidth; ind.style.transition = ''; }
 }
-window.addEventListener('resize', () => moveInd(false));
+/* Penanda ikut ukuran nav: ukur ulang setelah layout & transisi item selesai (bukan saat resize berlangsung) */
+let indT;
+const reIndicator = () => { moveInd(false); requestAnimationFrame(() => moveInd(false)); clearTimeout(indT); indT = setTimeout(() => moveInd(false), 280); };
+window.addEventListener('resize', reIndicator);
+window.addEventListener('orientationchange', reIndicator);
+if (window.ResizeObserver){ const ro = new ResizeObserver(reIndicator); const nv = document.querySelector('.nav'); ro.observe(nv); nv.querySelectorAll('.nav-item').forEach(i => ro.observe(i)); }
+document.querySelector('.nav').addEventListener('transitionend', e => { if (e.target.classList && e.target.classList.contains('nav-item')) moveInd(false); });
 window.addEventListener('load', () => moveInd(false));
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => moveInd(false));
 let tmr;
