@@ -233,7 +233,7 @@ body.pres #pn{display:flex}body.pres .topbar{padding:6px 22px}body.pres .brand .
 
 <main class="main">
   <div class="pbar" id="pbar"><span class="lbl">PERIODE</span><div class="date-tabs" id="period-tabs"></div><span class="src" id="src-info"></span></div>
-  <div class="pbar2" id="ketbar"><span class="lbl">KET. WO CLOSE</span><div class="seg" id="ket-seg"><button data-k="" class="on">Semua</button><button data-k="MASUK">Masuk</button><button data-k="DESTROY">Destroy</button><button data-k="SISA">Sisa</button></div></div>
+  <div class="pbar2" id="ketbar"><span class="lbl">TAMPILKAN</span><div class="seg" id="ket-seg"><button data-k="" class="on">Semua</button><button data-k="OS">WO OS</button><button data-k="MASUK">Masuk</button><button data-k="DESTROY">Destroy</button><button data-k="SISA">Sisa</button></div></div>
 
   <!-- 1 OVERVIEW -->
   <section id="ov-section" class="pg">
@@ -656,7 +656,7 @@ NO,TGL,SHIFT,SO,WO OVER,WO TERPAKAI,MESIN,INTERNAL,SALES,CUSTOMER,NAMA BARANG,MC
 const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j4Cqe_GMUSWz9ekUU8HHkL2BP3npZjx0M8CU2re5-FVTz7zRBKVY-YKnovF5GBxPUbBh/pub?gid=668867028&single=true&output=csv';
 const STORAGE_KEY = 'ringkasanoverwo.settings', THEME_KEY = 'ringkasanoverwo.theme', CSV_CACHE_KEY = 'ringkasanoverwo.csv';
 const AUTO_REFRESH_MS = 5 * 60 * 1000, BLOCK = {out:16, close:17}, RIGHT_START = 17;
-const KET_L = {MASUK:'Masuk', DESTROY:'Destroy', SISA:'Sisa'}, KET_C = {MASUK:'var(--km)', DESTROY:'var(--red)', SISA:'var(--blue)'}, KET_K = ['MASUK','DESTROY','SISA'];
+const KET_L = {MASUK:'Masuk', DESTROY:'Destroy', SISA:'Sisa', OS:'WO OS'}, KET_C = {MASUK:'var(--km)', DESTROY:'var(--red)', SISA:'var(--blue)', OS:'var(--os)'}, KET_K = ['MASUK','DESTROY','SISA'];
 // MASUK & DESTROY sesuai kolom KET. INT; selain itu (HABIS / kosong) dihitung SISA — sama seperti rumus di sheet
 const ketCat = v => { v = String(v || '').trim().toUpperCase(); return v === 'MASUK' ? 'MASUK' : v === 'DESTROY' ? 'DESTROY' : 'SISA'; };
 const ketBadge = v => { const c = ketCat(v); return v ? `<span class="badge ${c === 'MASUK' ? 'in' : c === 'DESTROY' ? 'ds' : 'sa'}">${esc(v)}</span>` : '-'; };
@@ -719,7 +719,8 @@ const state = { data:null, view:'overview', period:null, metric:'ton', dim:'inte
 const DIMS = {internal:'Internal', sales:'Sales', cust:'Customer', shift:'Shift'};
 const allRows = () => state.data ? [...state.data.out.rows, ...state.data.close.rows] : [];
 const inPeriod = r => !state.period || r.tgl === state.period;
-const inKet = r => !state.ket || r._t !== 'close' || r._ket === state.ket;
+// pilihan tampilan: Semua | WO OS saja | WO Close dengan keterangan tertentu (Masuk / Destroy / Sisa)
+const inKet = r => !state.ket || (state.ket === 'OS' ? r._t === 'out' : r._t === 'close' && r._ket === state.ket);
 const realRows = (type, skipKet) => allRows().filter(r => !r._note && inPeriod(r) && (skipKet || inKet(r)) && (!type || type === 'all' || r._t === type));
 const sum = (rs, f) => rs.reduce((a, r) => a + f(r), 0);
 const dimVal = (r, d) => d === 'shift' ? (/^[123]$/.test(String(r.shift).trim()) ? 'Shift ' + String(r.shift).trim() : '-') : (r[d] || '-');
@@ -782,12 +783,12 @@ function renderOverview(){
   const o = realRows('out'), c = realRows('close'), all = [...o, ...c];
   const tO = sum(o, r => r._ton), tC = sum(c, r => r._ton), qO = sum(o, r => r._qty), qC = sum(c, r => r._qty), tAll = tO + tC;
   const ds = state.data, noP = !state.period;
-  const chkNote = (calc, sub, unitD, isC) => noP && sub.has && !(isC && state.ket) ? (Math.abs(calc - sub) <= Math.max(0.5, sub * 0.002) ? 'sesuai subtotal sheet ✓' : 'subtotal sheet: ' + (unitD ? fmtDec(sub) : fmtInt(sub))) : '';
+  const chkNote = (calc, sub, unitD, isC) => noP && sub.has && !state.ket ? (Math.abs(calc - sub) <= Math.max(0.5, sub * 0.002) ? 'sesuai subtotal sheet ✓' : 'subtotal sheet: ' + (unitD ? fmtDec(sub) : fmtInt(sub))) : '';
   $('ov-per').textContent = periodLabel();
   const pO = personOf(ds.out.title), pC = personOf(ds.close.title);
   $('ov-kpi').innerHTML = [
     ['os', IC.box, 'Tonase WO OS', fmtDec(tO), 'kg', 'cos', `${o.length} baris · ${pct(tO, tAll)} dari total${pO ? ' · ' + pO : ''}`, chkNote(tO, ds.out.sub.ton, true)],
-    ['cl', IC.chk, 'Tonase WO Close', fmtDec(tC), 'kg', 'ccl', `${c.length} baris · ${pct(tC, tAll)} dari total${state.ket ? ' · Ket. ' + KET_L[state.ket] : ''}${pC ? ' · ' + pC : ''}`, chkNote(tC, ds.close.sub.ton, true, true)],
+    ['cl', IC.chk, 'Tonase WO Close', fmtDec(tC), 'kg', 'ccl', `${c.length} baris · ${pct(tC, tAll)} dari total${state.ket && state.ket !== 'OS' ? ' · Ket. ' + KET_L[state.ket] : ''}${pC ? ' · ' + pC : ''}`, chkNote(tC, ds.close.sub.ton, true, true)],
     ['os', IC.stack, 'Qty WO OS', fmtInt(qO), 'pcs', 'cos', `rata-rata ${o.length ? fmtInt(qO / o.length) : 0} pcs / baris`, chkNote(qO, ds.out.sub.qty, false)],
     ['cl', IC.stack, 'Qty WO Close', fmtInt(qC), 'pcs', 'ccl', `rata-rata ${c.length ? fmtInt(qC / c.length) : 0} pcs / baris`, chkNote(qC, ds.close.sub.qty, false, true)]
   ].map(([cls, ic, l, v, u, vc, n, chk]) => `<div class="k ${cls}"><div class="kic ${cls}">${ic}</div><div style="min-width:0"><div class="l">${l}</div><div class="v ${vc}">${v}<small>${u}</small></div><div class="n">${esc(n)}</div>${chk ? `<div class="n" style="color:var(--${chk.indexOf('✓') > -1 ? 'cl' : 'red'})">${esc(chk)}</div>` : ''}</div></div>`).join('');
@@ -798,7 +799,9 @@ function renderOverview(){
 
   // seri grafik: bila keterangan dipilih -> hanya kategori itu; "Semua" -> OS + Masuk + Destroy + Sisa
   const q = state.metric === 'qty', u = q ? 'pcs' : 'kg', vf = r => q ? r._qty : r._ton;
-  const series = state.ket
+  const series = state.ket === 'OS'
+    ? [{k:'OS', l:'WO OS (Over Outstanding)', c:'var(--os)', rows:o}]
+    : state.ket
     ? [{k:state.ket, l:'WO Close · ' + KET_L[state.ket], c:KET_C[state.ket], rows:kc.filter(r => r._ket === state.ket)}]
     : [{k:'OS', l:'WO OS (Over Outstanding)', c:'var(--os)', rows:o}, ...KET_K.map(k => ({k, l:'Close · ' + KET_L[k], c:KET_C[k], rows:kc.filter(r => r._ket === k)}))];
   const sTot = series.map(x => sum(x.rows, vf)), vT = sum(sTot, x => x) || 1;
