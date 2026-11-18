@@ -56,6 +56,10 @@ body.is-admin .chip{background:#16a34a}
 .tbtn{width:42px;height:42px;border:0;background:none;color:#fff;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
 .tbtn:hover{background:rgba(255,255,255,.1)}
 .tbtn svg.i{width:22px;height:22px}
+.tbtn.back{border:1px solid rgba(255,255,255,.25);text-decoration:none;flex:none;margin-right:-4px}
+.rh>div:first-child{min-width:0;flex:1}
+.rh b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rh .tools{flex-wrap:nowrap;flex:none}
 
 /* ===== Hero ===== */
 .hero{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;padding:32px 0 24px}
@@ -183,6 +187,40 @@ dialog.rd form{display:flex;flex-direction:column;height:100%}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,30px);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:12px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.25s var(--ease);z-index:99}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
+/* ===== Desktop: seluruh tampilan muat satu layar ===== */
+@media(min-width:861px){
+  body{height:100dvh;min-height:600px}
+  main{flex:1;min-height:0;padding-bottom:16px}
+  main>.wrap,.layout{height:100%}
+  .layout{grid-template-rows:minmax(0,1fr)}
+  .side{position:static;align-self:start;max-height:100%;display:flex;flex-direction:column}
+  .nav{overflow-y:auto;min-height:0;scrollbar-width:thin}
+  .sh,.sinfo,.sadm{flex:none}
+  .panel-wrap,#panel{height:100%;min-height:0}
+  .pc{height:100%;display:flex;flex-direction:column}
+  .pc>.ph,.pc>.abar,.pc>.docs,.pc>.dket{flex:none}
+  .pc.empty{justify-content:center;align-items:center}
+  .vwrap{flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:0}
+  .frame{flex:1;min-height:0;display:flex;padding:12px}
+  .viewer{flex:1;min-width:0;min-height:0}
+  .track,.slide{height:100%}
+  .slide img{width:100%;height:100%;max-height:none;min-height:0;object-fit:contain}
+  .pbar{flex:none;padding:10px 8px 12px}
+  .hero{padding:clamp(12px,2.2vh,28px) 0 clamp(12px,2vh,22px)}
+  .hero h2{font-size:clamp(34px,5.4vh,56px)}
+  .ph{padding:clamp(12px,1.8vh,20px) 24px}
+  .foot{padding:10px 0}
+}
+@media(min-width:861px) and (max-height:820px){
+  .hero p{display:none}
+  .hero h2{font-size:38px}
+  .st{padding:8px 16px}
+  .st b{font-size:28px}
+  .st svg.i{width:32px;height:32px}
+  .pico svg.i{width:40px;height:40px}
+  .pt h3{font-size:28px}
+}
+
 /* ===== Tablet / HP: kategori pindah ke bawah ===== */
 @media(max-width:1060px){
   .hero h2{font-size:46px}
@@ -214,7 +252,13 @@ dialog.rd form{display:flex;flex-direction:column;height:100%}
   .ind{border-radius:16px}
   .ni{flex:1 0 82px;flex-direction:column;justify-content:center;gap:4px;height:64px;padding:6px 10px;border-radius:16px;font-size:11.5px;font-weight:600;text-align:center}
   .ni .nic{width:auto}.ni .nic svg.i{width:24px;height:24px}
-  .ni .nl{flex:none;max-width:100%;line-height:1.15}
+  .ni .nl{flex:none;max-width:100%;line-height:1.15;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+  .rh{padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));gap:8px}
+  .rh b{font-size:18px}
+  .rh .tools{gap:6px}
+  .rh .ib{width:40px;height:40px}
+  .rh [data-a="fs"]{display:none}
+  .rb{padding:8px;gap:8px}
   .ni .chev{display:none}
   .ni.add{margin-top:0;height:64px;flex:0 0 72px}
   .ni.add .nic svg.i{width:22px;height:22px}
@@ -243,6 +287,7 @@ dialog.rd form{display:flex;flex-direction:column;height:100%}
 <body>
 
 <header class="top"><div class="wrap">
+  <a class="tbtn back" href="index.html" aria-label="Kembali ke menu utama" title="Kembali ke menu utama"><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
   <a class="logo" href="index.html" aria-label="SBJ Apps"><b>SBJ</b><span>SBJ Apps</span></a>
   <span class="vsep"></span>
   <div class="crumb">
