@@ -177,6 +177,15 @@ dialog::backdrop{background:rgba(8,13,25,.55);backdrop-filter:blur(3px)}
 .pw{position:relative}.pw input{padding-right:46px}
 .pw button{position:absolute;right:4px;top:3px;width:36px;height:36px;border:0;background:none;color:var(--muted);cursor:pointer}
 .mf{display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px}
+.icp{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+.ic{cursor:pointer;display:block}
+.ic input{position:absolute;opacity:0;pointer-events:none}
+.ic span{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px 8px;border:1px solid var(--border);border-radius:12px;background:var(--s2);color:var(--muted);transition:all .2s var(--ease)}
+.ic span svg.i{width:26px;height:26px;stroke-width:1.7}
+.ic small{font-size:10.5px;font-weight:600;text-align:center;line-height:1.1}
+.ic:hover span{border-color:var(--teal);color:var(--text)}
+.ic input:checked+span{background:var(--teal);border-color:var(--teal);color:#fff;transform:scale(1.04)}
+.ic input:focus-visible+span{outline:2px solid var(--teal);outline-offset:2px}
 .prog{font:500 12px/1.6 var(--fm);color:var(--muted)}
 dialog.rd{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;margin:0;border-radius:0}
 dialog.rd form{display:flex;flex-direction:column;height:100%}
@@ -349,7 +358,36 @@ const IC={
   grid:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'
 };
 const svg=p=>`<svg class="i" viewBox="0 0 24 24">${p}</svg>`;
-const iconFor=n=>{n=(n||'').toLowerCase();return /struktur|organisasi/.test(n)?IC.org:/forklift|operator/.test(n)?IC.fork:/rak|zona|pic/.test(n)?IC.rack:IC.grid;};
+/* Pustaka ikon kategori */
+const IK={
+  org:{l:'Struktur',p:IC.org},
+  jobdesk:{l:'Jobdesk',p:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12.5l2 2 4-4M9 18h6"/>'},
+  map:{l:'Denah',p:'<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14"/>'},
+  support:{l:'Support',p:'<path d="M4 14v-2a8 8 0 0116 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/><path d="M19 20c0 1.5-2 2-5 2"/>'},
+  fork:{l:'Forklift',p:IC.fork},
+  rack:{l:'Rak',p:IC.rack},
+  warehouse:{l:'Gudang',p:'<path d="M3 21V9l9-5 9 5v12M7 21v-7h10v7M7 17.5h10"/>'},
+  box:{l:'Stok',p:'<path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10"/>'},
+  truck:{l:'Pengiriman',p:'<path d="M2 6h11v10H2zM13 10h4l4 3v3h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>'},
+  scan:{l:'Barcode',p:'<path d="M4 7V5a1 1 0 011-1h2M17 4h2a1 1 0 011 1v2M20 17v2a1 1 0 01-1 1h-2M7 20H5a1 1 0 01-1-1v-2M8 8v8M12 8v8M16 8v8"/>'},
+  chart:{l:'Laporan',p:'<path d="M4 4v16h16M8 16v-4M12 16V8M16 16v-6"/>'},
+  people:{l:'Tim',p:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0112 0M16 5a3 3 0 010 6M18 14a6 6 0 013 6"/>'},
+  clock:{l:'Shift',p:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'},
+  safety:{l:'K3 / Safety',p:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>'},
+  alert:{l:'Peringatan',p:'<path d="M12 3l10 18H2zM12 10v5M12 18h.01"/>'},
+  book:{l:'SOP',p:'<path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM4 19a2 2 0 012-2h13M9 7h6"/>'},
+  tools:{l:'Maintenance',p:'<path d="M14.5 6.5a4 4 0 00-5 5L3.5 17.5l3 3 6-6a4 4 0 005-5l-2.5 2.5-2.5-.5-.5-2.5z"/>'},
+  megaphone:{l:'Info',p:'<path d="M3 10v4h3l8 4V6L6 10zM17 9a4 4 0 010 6M19 6a8 8 0 010 12"/>'},
+  phone:{l:'Kontak',p:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"/>'},
+  grid:{l:'Lainnya',p:IC.grid}
+};
+const autoKey=n=>{n=(n||'').toLowerCase();
+  return /struktur|organisasi/.test(n)?'org':/jobdesk|tugas|job/.test(n)?'jobdesk':/denah|layout|peta|area/.test(n)?'map':/support|bantuan|needed|helpdesk/.test(n)?'support':
+  /forklift|operator/.test(n)?'fork':/rak|zona|pic/.test(n)?'rack':/safety|k3|apd/.test(n)?'safety':/sop|prosedur/.test(n)?'book':/shift|jadwal/.test(n)?'clock':/laporan|report/.test(n)?'chart':'grid';};
+const lsIk=()=>{try{return JSON.parse(localStorage.getItem('sbj.profil.ikon')||'{}');}catch(e){return{};}};
+const setLsIk=(id,k)=>{try{const m=lsIk();m[id]=k;localStorage.setItem('sbj.profil.ikon',JSON.stringify(m));}catch(e){}};
+const ikKey=t=>[t.ikon,lsIk()[t.id]].find(k=>k&&IK[k])||autoKey(t.nama);
+const tabIcon=t=>IK[ikKey(t)].p;
 let tt;function toast(m){const el=$('#toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),2200);}
 const mob=()=>matchMedia('(max-width:860px)').matches;
 
@@ -411,10 +449,10 @@ function renderStats(){
 }
 
 function renderNav(animate){
-  const sig=D.tab.map(t=>t.id+'|'+t.nama).join('~');
+  const sig=D.tab.map(t=>t.id+'|'+t.nama+'|'+ikKey(t)).join('~');
   if(sig!==navSig){
     navSig=sig;
-    $('#navItems').innerHTML=D.tab.map(t=>`<button class="ni" data-t="${t.id}"><span class="nic">${svg(iconFor(t.nama))}</span><span class="nl">${esc(t.nama)}</span><span class="chev">${svg(IC.r)}</span></button>`).join('')+
+    $('#navItems').innerHTML=D.tab.map(t=>`<button class="ni" data-t="${t.id}"><span class="nic">${svg(tabIcon(t))}</span><span class="nl">${esc(t.nama)}</span><span class="chev">${svg(IC.r)}</span></button>`).join('')+
       `<button class="ni add adm" data-a="tabadd"><span class="nic">${svg(IC.plus)}</span><span class="nl">Kategori</span></button>`;
   }
   document.querySelectorAll('#navItems .ni[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tab));
@@ -460,7 +498,7 @@ function panel(){
   const d=docs.find(x=>x.id===S.doc),i=D.tab.indexOf(t),p=d?pages(d):[];
   if(S.pg>=p.length)S.pg=0;
   const yr=d&&d.tanggal?new Date(d.tanggal+'T00:00:00').getFullYear():'';
-  const head=`<div class="ph"><span class="pico">${svg(iconFor(t.nama))}</span><div class="pt"><h3>${esc(t.nama)}</h3>
+  const head=`<div class="ph"><span class="pico">${svg(tabIcon(t))}</span><div class="pt"><h3>${esc(t.nama)}</h3>
     <div class="meta"><span>${svg(IC.doc)}Dokumen departemen</span>${d?`<span>${svg(IC.doc)}${p.length} halaman</span>`:''}${yr?`<span>${svg(IC.cal)}Berlaku ${yr}</span>`:''}</div></div>
     ${d?`<div class="ptools"><button class="btn out" data-a="read" data-id="${d.id}">${svg(IC.full)}Layar Penuh</button></div>`:''}</div>`;
   const abar=`<div class="abar adm">
@@ -501,14 +539,22 @@ document.addEventListener('keydown',e=>{
 /* ===== Kategori (admin) ===== */
 function tabForm(id,preset){
   const t=id?D.tab.find(x=>x.id===id):null;
-  $('#frm').innerHTML=`<div class="mh"><div class="eyebrow">Menu Kategori</div><h3>${t?'Ubah Nama Kategori':'Tambah Kategori'}</h3></div><div class="mb"><div class="fld w"><label>Nama Kategori *</label><input name="nama" value="${esc(t?t.nama:preset||'')}" maxlength="40" required></div></div><div class="mf"><button class="btn" type="button" data-a="close">Batal</button><button class="btn pri" type="submit">Simpan</button></div>`;
+  const cur=t?ikKey(t):autoKey(preset||'');
+  $('#frm').innerHTML=`<div class="mh"><div class="eyebrow">Menu Kategori</div><h3>${t?'Ubah Kategori':'Tambah Kategori'}</h3></div><div class="mb"><div class="fld w"><label>Nama Kategori *</label><input name="nama" id="tnama" value="${esc(t?t.nama:preset||'')}" maxlength="40" required></div>
+  <div class="fld w"><label>Ikon</label><div class="icp">${Object.entries(IK).map(([k,v])=>`<label class="ic" title="${esc(v.l)}"><input type="radio" name="ikon" value="${k}" ${k===cur?'checked':''}><span>${svg(v.p)}<small>${esc(v.l)}</small></span></label>`).join('')}</div></div></div><div class="mf"><button class="btn" type="button" data-a="close">Batal</button><button class="btn pri" type="submit">Simpan</button></div>`;
+  let touched=!!t;
+  $('#frm').querySelectorAll('input[name=ikon]').forEach(r=>r.addEventListener('change',()=>{touched=true;}));
+  $('#tnama').addEventListener('input',e=>{if(touched)return;const r=$('#frm').querySelector(`input[name=ikon][value="${autoKey(e.target.value)}"]`);if(r)r.checked=true;});
   $('#frm').onsubmit=async e=>{
-    e.preventDefault();const nama=String(new FormData($('#frm')).get('nama')).trim();
-    const q=t?sb.from('profil_tab').update({nama}).eq('id',t.id):sb.from('profil_tab').insert({nama,urutan:D.tab.length}).select().single();
-    const {data,error}=await q;
-    if(error)return toast('Gagal menyimpan: '+error.message);
-    if(!t&&data)setTab(data.id);
-    await load();$('#dlg').close();render();toast('Kategori tersimpan');
+    e.preventDefault();const f=new FormData($('#frm')),nama=String(f.get('nama')).trim(),ikon=f.get('ikon')||'grid';
+    const run=pl=>t?sb.from('profil_tab').update(pl).eq('id',t.id).select().single():sb.from('profil_tab').insert({...pl,urutan:D.tab.length}).select().single();
+    let r=await run({nama,ikon}),warn=false;
+    if(r.error&&/ikon/i.test(r.error.message)){r=await run({nama});warn=!r.error;}
+    if(r.error)return toast('Gagal menyimpan: '+r.error.message);
+    if(r.data)setLsIk(r.data.id,ikon);
+    if(!t&&r.data)setTab(r.data.id);
+    await load();$('#dlg').close();render();
+    toast(warn?"Tersimpan. Kolom 'ikon' belum ada di Supabase, ikon hanya tampil di perangkat ini":'Kategori tersimpan');
   };
   $('#dlg').showModal();
 }
