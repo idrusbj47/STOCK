@@ -448,12 +448,19 @@ html[data-theme="dark"] .badge.warn{ color:#fbbf24; }
 .chart-card.cfs .cfs-btn{top:max(16px,env(safe-area-inset-top))}
 @media (max-width:720px){.chart-card.cfs{padding:max(14px,env(safe-area-inset-top)) 12px 24px}}
 
+/* ===== Filter pilih (solo) legenda & tanggal ===== */
+.lg.all{background:none;border-style:dashed;color:var(--muted);padding:7px 12px;margin-left:auto;gap:6px}
+.lg.all svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.lg.all.act{color:var(--accent);border:1px solid var(--accent);background:rgba(var(--accent-rgb),.1)}
+.lg.all:not(.act){opacity:.55}
+svg [data-x]{cursor:pointer}
+#subDet th.sortable{cursor:pointer}
 /* ===== Sub-tab WO Close ===== */
 .subtabs{display:flex;margin-bottom:14px;max-width:100%;overflow-x:auto}
 .subtabs button{white-space:nowrap}
 .badge.pg{background:rgba(245,158,11,.16);color:#b45309}.badge.sisa{background:rgba(22,136,248,.13);color:#1688f8}
 .ketkpis.sub4{grid-template-columns:repeat(auto-fit,minmax(165px,1fr))}
-.det-tools{display:none;flex-wrap:wrap;gap:10px;align-items:center;padding:6px 16px 12px}
+.det-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:6px 16px 12px}
 .table-card.fs .det-tools{display:flex;padding:6px 12px 10px}
 .det-tools .field{width:auto;min-width:150px;max-width:260px;flex:0 1 auto;height:40px}
 .det-tools .search{flex:1 1 200px;min-width:160px}
@@ -538,7 +545,7 @@ html[data-theme="dark"] .badge.warn{ color:#fbbf24; }
         <div class="legend" id="subLegend"></div><div id="chSub"></div></div></section>
       <section class="table-card"><div class="table-title"><h3 id="subTblT"></h3><span id="subTblS"></span><button type="button" class="fs-btn tfs-btn" aria-label="Layar penuh" title="Layar penuh"></button></div><div class="table-wrap" id="subSum"></div></section>
       <section class="table-card" id="detCard"><div class="table-title"><h3>Detail Data</h3><span id="subDetS"></span><button type="button" class="fs-btn tfs-btn" aria-label="Layar penuh" title="Layar penuh"></button></div>
-      <div class="det-tools" id="detTools"><select id="dfInt" class="field" aria-label="Filter internal"></select><select id="dfSales" class="field" aria-label="Filter sales"></select><select id="dfCust" class="field" aria-label="Filter customer"></select><select id="dfUmur" class="field" aria-label="Filter umur WO"></select>
+      <div class="det-tools" id="detTools"><select id="dfInt" class="field" aria-label="Filter internal"></select><select id="dfSales" class="field" aria-label="Filter sales"></select><select id="dfCust" class="field" aria-label="Filter customer"></select><select id="dfUmur" class="field" aria-label="Filter umur WO"></select><select id="dfKet" class="field" aria-label="Filter keterangan"></select>
         <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="dfQ" class="field" type="search" placeholder="Cari…" autocomplete="off"></div><button type="button" id="dfReset" class="btn-reset">Reset</button></div>
       <div class="table-wrap" id="subDet"></div></section>
     </div>
@@ -585,7 +592,7 @@ html[data-theme="dark"] .badge.warn{ color:#fbbf24; }
         <div class="chart-card wide">
           <div class="ch-head"><div><h3 id="dateTitle">Tonase per Tanggal</h3><p id="dateSub"></p></div>
             <div class="seg" id="metricSeg"><button data-m="ton" class="on">Tonase</button><button data-m="qty">Qty</button></div></div>
-          <div class="legend" id="dateLegend"><button class="lg" data-s="out"><i style="background:#f59e0b"></i><span>WO OS</span></button><button class="lg" data-s="close"><i style="background:#0d9488"></i><span>WO Close</span></button></div>
+          <div class="legend" id="dateLegend"><button class="lg" data-s="out"><i style="background:#f59e0b"></i><span>WO OS</span></button><button class="lg" data-s="close"><i style="background:#0d9488"></i><span>WO Close</span></button><button type="button" class="lg all" id="dateAll" data-s="__all" title="Tampilkan semua"><svg viewBox="0 0 24 24"><path d="M3 12s3.6-7 9-7 9 7 9 7-3.6 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/></svg><span>Tampilkan semua</span></button></div>
           <div id="chDates"></div></div>
         </section>
       <section class="charts">
@@ -1334,6 +1341,10 @@ const trunc = (s, n) => s.length > n ? s.slice(0, n - 1) + '…' : s;
 function niceMax(v){ if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))), f = v / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
 const svgWrap = (P, W, H, body) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;max-width:100%;height:auto" font-family="Inter,Arial,sans-serif">${P.solid ? `<rect width="${W}" height="${H}" fill="${P.bg}"/>` : ''}${body}</svg>`;
 
+const xon = (xs, k) => !xs || !xs.size || xs.has(String(k));
+const xAttr = k => `data-x="${esc(String(k))}"`;
+const xCol = (xa, x, t, w, h) => `<rect ${xa} x="${x}" y="${t}" width="${w}" height="${h}" fill="transparent"/>`;
+const xLab = (xa, on, x, y, fs, fill, txt) => `<text ${xa} x="${x}" y="${y}" text-anchor="middle" font-size="${fs}" fill="${fill}"${on ? '' : ' text-decoration="line-through" opacity=".4"'}>${txt}<title>Klik: tampilkan hanya ini</title></text>`;
 function chDates(P, W, agg, o = {m:'ton', hide:{}, lg:false}){
   const q = o.m === 'qty', u = q ? 'PCS' : 'KG', H = o.H || 250, l = 44, r = 8, t = o.lg ? 28 : 14, b = 30, iw = W - l - r, ih = H - t - b;
   const vis = [['out', C.out, 'WO OS'], ['close', C.close, 'WO Close']].filter(x => !o.hide[x[0]]);
@@ -1343,11 +1354,12 @@ function chDates(P, W, agg, o = {m:'ton', hide:{}, lg:false}){
   for (let i = 0; i <= 4; i++){ const y = t + ih - ih * i / 4;
     s += `<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" stroke="${P.g}"/><text x="${l-6}" y="${y+4}" text-anchor="end" font-size="10" fill="${P.m}">${short(mx*i/4)}</text>`; }
   const gw = iw / Math.max(agg.length, 1), bw = Math.min(vis.length > 1 ? 24 : 34, gw / (vis.length + 1.6));
-  agg.forEach((a, i) => { const cx = l + gw * i + gw / 2;
-    vis.forEach(([k, c], j) => { const v = val(a, k), h = ih * v / mx, x = cx - vis.length * bw / 2 + j * bw;
-      s += `<rect x="${x}" y="${t+ih-h}" width="${bw-1}" height="${h}" rx="3" fill="${c}"><title>${a.k}: ${q ? fmtInt(v) : fmtDec(v)} ${u}</title></rect>`;
-      if (gw > 46 && v > 0) s += `<text x="${x+(bw-1)/2}" y="${t+ih-h-4}" text-anchor="middle" font-size="9" fill="${P.m}">${short(v)}</text>`; });
-    s += `<text x="${cx}" y="${H-10}" text-anchor="middle" font-size="10" fill="${P.m}">${a.k.slice(0,6)}</text>`; });
+  agg.forEach((a, i) => { const cx = l + gw * i + gw / 2, on = xon(o.xs, a.k), xa = xAttr(a.k);
+    s += xCol(xa, l + gw * i, t, gw, ih);
+    if (on) vis.forEach(([k, c], j) => { const v = val(a, k), h = ih * v / mx, x = cx - vis.length * bw / 2 + j * bw;
+      s += `<rect ${xa} x="${x}" y="${t+ih-h}" width="${bw-1}" height="${h}" rx="3" fill="${c}"><title>${a.k}: ${q ? fmtInt(v) : fmtDec(v)} ${u}</title></rect>`;
+      if (gw > 46 && v > 0) s += `<text ${xa} x="${x+(bw-1)/2}" y="${t+ih-h-4}" text-anchor="middle" font-size="9" fill="${P.m}">${short(v)}</text>`; });
+    s += xLab(xa, on, cx, H - 10, 10, P.m, esc(a.k.slice(0, 6))); });
   if (o.lg) vis.forEach(([k, c, n], j) => { const x = l + j * 105; s += `<rect x="${x}" y="4" width="10" height="10" rx="3" fill="${c}"/><text x="${x+15}" y="13" font-size="11" fill="${P.t}">${n}</text>`; });
   return svgWrap(P, W, H, s);
 }
@@ -1379,26 +1391,27 @@ function chGroup(P, W, agg, o = {}){
   for (let i = 0; i <= 4; i++){ const y = t + ih - ih * i / 4;
     s += `<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" stroke="${P.g}"/><text x="${l-6}" y="${y+4}" text-anchor="end" font-size="10" fill="${P.m}">${short(mx*i/4)}</text>`; }
   const gw = iw / Math.max(agg.length, 1), bw = Math.min(14, gw / 5);
-  agg.forEach((a, i) => { const cx = l + gw * i + gw / 2;
-    if (!o.line) KS.forEach((k, j) => { const v = a[k], h = ih * v / mx, x = cx - KS.length * bw / 2 + j * bw;
-      s += `<rect x="${x}" y="${t+ih-h}" width="${bw-1}" height="${h}" rx="2" fill="${SUB_C[k]}"><title>${a.k} · ${SUB_L[k]}: ${fmtDec(v)} KG</title></rect>`; });
-    s += `<text x="${cx}" y="${H-10}" text-anchor="middle" font-size="10" fill="${P.m}">${a.k.slice(0,6)}</text>`; });
-  if (o.line) KS.forEach(k => { const pts = agg.map((a, i) => [l + gw * i + gw / 2, t + ih - ih * a[k] / mx, a[k], a.k]);
+  agg.forEach((a, i) => { const cx = l + gw * i + gw / 2, on = xon(o.xs, a.k), xa = xAttr(a.k);
+    s += xCol(xa, l + gw * i, t, gw, ih);
+    if (!o.line && on) KS.forEach((k, j) => { const v = a[k], h = ih * v / mx, x = cx - KS.length * bw / 2 + j * bw;
+      s += `<rect ${xa} x="${x}" y="${t+ih-h}" width="${bw-1}" height="${h}" rx="2" fill="${SUB_C[k]}"><title>${a.k} · ${SUB_L[k]}: ${fmtDec(v)} KG</title></rect>`; });
+    s += xLab(xa, on, cx, H - 10, 10, P.m, esc(a.k.slice(0, 6))); });
+  if (o.line) KS.forEach(k => { const pts = agg.map((a, i) => [l + gw * i + gw / 2, t + ih - ih * a[k] / mx, a[k], a.k]).filter(p => xon(o.xs, p[3]));
     s += `<polyline fill="none" stroke="${SUB_C[k]}" stroke-width="2.2" stroke-linejoin="round" points="${pts.map(p => p[0] + ',' + p[1]).join(' ')}"/>`
-      + pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3.4" fill="${SUB_C[k]}"><title>${p[3]} · ${SUB_L[k]}: ${fmtDec(p[2])} KG</title></circle>`).join(''); });
+      + pts.map(p => `<circle ${xAttr(p[3])} cx="${p[0]}" cy="${p[1]}" r="3.4" fill="${SUB_C[k]}"><title>${p[3]} · ${SUB_L[k]}: ${fmtDec(p[2])} KG</title></circle>`).join(''); });
   if (!o.nolg) SUBK.forEach((k, j) => { const x = l + j * 120; s += `<rect x="${x}" y="4" width="10" height="10" rx="3" fill="${SUB_C[k]}"/><text x="${x+15}" y="13" font-size="11" fill="${P.t}">${SUB_L[k]}</text>`; });
   return svgWrap(P, W, H, s);
 }
 function reportData(){
-  const o = realRows('out'), c0 = realRows('close'), c = rState.ket ? c0.filter(r => subCats(r._ket).includes(rState.ket)) : c0, all = [...o, ...c], base = rState.scope === 'out' ? o : rState.scope === 'close' ? c : all;
+  const dsel = r => !dSel.size || dSel.has(r.tgl), oA = realRows('out'), c0A = realRows('close'), o = oA.filter(dsel), c0 = c0A.filter(dsel), kf = rs => rState.ket ? rs.filter(r => subCats(r._ket).includes(rState.ket)) : rs, c = kf(c0), all = [...o, ...c], allFull = [...oA, ...kf(c0A)], base = rState.scope === 'out' ? o : rState.scope === 'close' ? c : all;
   const by = k => { const m = new Map(); base.forEach(r => m.set(r[k] || '-', (m.get(r[k] || '-') || 0) + r._ton)); return [...m].map(([k, v]) => ({k, v})); };
-  const desc = (a, b) => b.v - a.v, sub = (t, rs) => { const x = state.data[t].sub; if (t === 'close' && rState.ket) return {q: sumBy(rs, r => r._qty), t: sumBy(rs, r => r._ton)}; return {q: x.has ? x.qty : sumBy(rs, r => r._qty), t: x.has ? x.ton : sumBy(rs, r => r._ton)}; };
-  const dates = [...new Set(all.map(r => r.tgl))].sort((a, b) => parseDate(a) - parseDate(b))
-    .map(d => ({k:d, out:sumBy(o.filter(r => r.tgl === d), r => r._ton), close:sumBy(c.filter(r => r.tgl === d), r => r._ton), outQ:sumBy(o.filter(r => r.tgl === d), r => r._qty), closeQ:sumBy(c.filter(r => r.tgl === d), r => r._qty)}));
+  const desc = (a, b) => b.v - a.v, sub = (t, rs) => { const x = state.data[t].sub; if ((t === 'close' && rState.ket) || dSel.size) return {q: sumBy(rs, r => r._qty), t: sumBy(rs, r => r._ton)}; return {q: x.has ? x.qty : sumBy(rs, r => r._qty), t: x.has ? x.ton : sumBy(rs, r => r._ton)}; };
+  const cF = kf(c0A), dates = [...new Set(allFull.map(r => r.tgl))].sort((a, b) => parseDate(a) - parseDate(b))
+    .map(d => ({k:d, out:sumBy(oA.filter(r => r.tgl === d), r => r._ton), close:sumBy(cF.filter(r => r.tgl === d), r => r._ton), outQ:sumBy(oA.filter(r => r.tgl === d), r => r._qty), closeQ:sumBy(cF.filter(r => r.tgl === d), r => r._qty)}));
   return {o, c, all, dates, cust:by('cust').sort(desc), sales:by('sales').sort(desc), internal:by('internal').sort(desc),
     shift:by('shift').sort((a, b) => a.k.localeCompare(b.k)).map(x => ({k:/^\d+$/.test(x.k) ? 'Shift ' + x.k : x.k, v:x.v})),
     ketAll:ketAggR(c0), ket:ketAggR(c0).filter(x => x.key !== 'PD'),
-    ketDates:[...new Set(c0.map(r => r.tgl))].sort((a, b) => parseDate(a) - parseDate(b)).map(d => { const rs = c0.filter(r => r.tgl === d), x = {k:d}; SUBK.forEach(k => x[k] = sumBy(rs.filter(r => subCats(r._ket).includes(k)), r => r._ton)); return x; }), sub:{out:sub('out', o), close:sub('close', c)}};
+    ketDates:[...new Set(c0A.map(r => r.tgl))].sort((a, b) => parseDate(a) - parseDate(b)).map(d => { const rs = c0A.filter(r => r.tgl === d), x = {k:d}; SUBK.forEach(k => x[k] = sumBy(rs.filter(r => subCats(r._ket).includes(k)), r => r._ton)); return x; }), sub:{out:sub('out', o), close:sub('close', c)}};
 }
 function ketAggR(rows){
   const o = {}; SUBK.forEach(k => o[k] = {key:k, k:SUB_L[k], v:0, q:0, n:0});
@@ -1409,7 +1422,18 @@ const DK = ['MASUK','DESTROY','PENGAJUAN','SISA'];
 const chH = (min, max, f) => Math.max(min, Math.min(max, Math.round(window.innerHeight * f)));
 const dState = {m:'ton', hide:{out:false, close:false}};
 const kdState = {t:'bar', hide:{}};
-const legendHtml = (keys, hide, extra, cm) => keys.map(k => `<button type="button" class="lg${hide[k] ? ' off' : ''}" data-k="${k}" title="Klik untuk tampil / sembunyikan"><i style="background:${k === 'TOTAL' ? '#7c3aed' : (cm || KET_C)[k]}"></i><span>${k === 'TOTAL' ? 'Total' : (extra || KET_L)[k]}</span></button>`).join('');
+const dSel = new Set();
+function soloToggle(hide, keys, k){
+  const vis = keys.filter(x => !hide[x]);
+  if (vis.length === keys.length) keys.forEach(x => hide[x] = x !== k);
+  else if (hide[k]) hide[k] = false;
+  else if (vis.length === 1) keys.forEach(x => hide[x] = false);
+  else hide[k] = true;
+}
+const EYE = '<svg viewBox="0 0 24 24"><path d="M3 12s3.6-7 9-7 9 7 9 7-3.6 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+const allBtn = act => `<button type="button" class="lg all${act ? ' act' : ''}" data-k="__all" title="Tampilkan semua">${EYE}<span>Tampilkan semua</span></button>`;
+const xClick = (e, set, fn) => { const t = e.target.closest('[data-x]'); if (!t) return; const k = t.getAttribute('data-x'); set.has(k) ? set.delete(k) : set.add(k); fn(); };
+const legendHtml = (keys, hide, extra, cm, act) => keys.map(k => `<button type="button" class="lg${hide[k] ? ' off' : ''}" data-k="${k}" title="Klik untuk tampil / sembunyikan"><i style="background:${k === 'TOTAL' ? '#7c3aed' : (cm || KET_C)[k]}"></i><span>${k === 'TOTAL' ? 'Total' : (extra || KET_L)[k]}</span></button>`).join('') + allBtn(act);
 const rState = {scope:'all', ket:''};
 const SCOPE_L = {all:'Semua (WO OS + WO Close)', out:'WO OS', close:'WO Close'};
 const scopeSfx = () => (rState.scope === 'all' ? '' : ' - ' + SCOPE_L[rState.scope]) + (rState.ket ? ' - Ket. ' + SUB_L[rState.ket] : '');
@@ -1429,13 +1453,17 @@ function drawDates(d, P, w){
   $('dateTitle').textContent = (q ? 'Qty' : 'Tonase') + ' per Tanggal';
   $('dateSub').textContent = 'WO OS vs WO Close · ' + (q ? 'PCS' : 'KG');
   document.querySelectorAll('#metricSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === dState.m));
-  document.querySelectorAll('#dateLegend .lg').forEach(b => b.classList.toggle('off', dState.hide[b.dataset.s]));
-  $('chDates').innerHTML = chDates(P, w, d.dates, {m:dState.m, hide:dState.hide, lg:false, H:isFsC('chDates') ? fsH(160) : chH(250, 400, .36)});
+  document.querySelectorAll('#dateLegend .lg:not(.all)').forEach(b => b.classList.toggle('off', dState.hide[b.dataset.s]));
+  $('dateAll').classList.toggle('act', dSel.size > 0 || dState.hide.out || dState.hide.close);
+  if (dSel.size) $('dateSub').textContent += ' · terpilih: ' + [...dSel].sort((a, b) => parseDate(a) - parseDate(b)).join(', ');
+  $('chDates').innerHTML = chDates(P, w, d.dates, {m:dState.m, hide:dState.hide, xs:dSel, lg:false, H:isFsC('chDates') ? fsH(160) : chH(250, 400, .36)});
 }
 $('metricSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; dState.m = b.dataset.m; renderReport(); });
-$('dateLegend').addEventListener('click', e => { const b = e.target.closest('.lg'); if (!b) return; const k = b.dataset.s, other = k === 'out' ? 'close' : 'out';
-  if (!dState.hide[k] && dState.hide[other]) return toast('Minimal satu seri harus tampil');
-  dState.hide[k] = !dState.hide[k]; renderReport(); });
+$('dateLegend').addEventListener('click', e => { const b = e.target.closest('.lg'); if (!b) return;
+  if (b.dataset.s === '__all'){ dState.hide = {out:false, close:false}; dSel.clear(); } else soloToggle(dState.hide, ['out', 'close'], b.dataset.s);
+  renderReport(); });
+$('chDates').addEventListener('click', e => xClick(e, dSel, renderReport));
+$('chKetD').addEventListener('click', e => xClick(e, dSel, renderReport));
 $('ketSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; rState.ket = b.dataset.k; renderReport(); });
 $('scopeSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; rState.scope = b.dataset.s; renderReport(); });
 function renderReport(){
@@ -1449,9 +1477,9 @@ function renderReport(){
   $('pKet').textContent = 'Share tonase Masuk / Destroy / Sisa Pengajuan / Sisa · KG (Pengajuan Destroy = Destroy + Sisa Pengajuan)';
   $('pKetD').textContent = 'Tonase WO Close per tanggal · KG';
   $('chKet').innerHTML = chDonut(P, W('chKet'), d.ket, isFsC('chKet') ? {cols:DK.map(k => SUB_C[k]), two:true, H:Math.min(fsH(140), 380), R:110, SW:54} : {cols:DK.map(k => SUB_C[k]), two:true, H:170, R:52, SW:26});
-  $('ketDLg').innerHTML = legendHtml(SUBK, kdState.hide, SUB_L, SUB_C);
+  $('ketDLg').innerHTML = legendHtml(SUBK, kdState.hide, SUB_L, SUB_C, dSel.size > 0 || Object.values(kdState.hide).some(Boolean));
   document.querySelectorAll('#ketDT button').forEach(b => b.classList.toggle('on', b.dataset.t === kdState.t));
-  $('chKetD').innerHTML = chGroup(P, W('chKetD'), d.ketDates, {H:isFsC('chKetD') ? fsH(190) : chH(230, 380, .33), hide:kdState.hide, line:kdState.t === 'line', nolg:true});
+  $('chKetD').innerHTML = chGroup(P, W('chKetD'), d.ketDates, {H:isFsC('chKetD') ? fsH(190) : chH(230, 380, .33), hide:kdState.hide, xs:dSel, line:kdState.t === 'line', nolg:true});
   drawDates(d, P, W('chDates'));
   const sl = SCOPE_L[rState.scope], col = {all:C.blue, out:C.out, close:C.close}[rState.scope];
   document.querySelectorAll('#scopeSeg button').forEach(b => b.classList.toggle('on', b.dataset.s === rState.scope));
@@ -1463,7 +1491,8 @@ function renderReport(){
   $('chInt').innerHTML = chBars(P, W('chInt'), d.internal.slice(0, nb('chInt')), col, bo('chInt'));
   $('chShift').innerHTML = chDonut(P, W('chShift'), d.shift, isFsC('chShift') ? {H:Math.min(fsH(140), 380), R:110, SW:54} : {});
 }
-$('ketDLg').addEventListener('click', e => { const b = e.target.closest('.lg'); if (!b) return; kdState.hide[b.dataset.k] = !kdState.hide[b.dataset.k]; renderReport(); });
+$('ketDLg').addEventListener('click', e => { const b = e.target.closest('.lg'); if (!b) return;
+  if (b.dataset.k === '__all'){ kdState.hide = {}; dSel.clear(); } else soloToggle(kdState.hide, SUBK, b.dataset.k); renderReport(); });
 $('ketDT').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; kdState.t = b.dataset.t; renderReport(); });
 $('themeToggle').addEventListener('click', () => { if (state.tab === 'report') renderReport(); else if (state.tab === 'close' && state.sub !== 'all') renderSub(); });
 let rzT; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => (state.tab === 'report' || (state.tab === 'close' && state.sub !== 'all')) && render(), 150); });
@@ -1585,7 +1614,7 @@ async function pdfReport(docIn){
   let y = doc.lastAutoTable.finalY + 8;
   if (y + dmm + 8 > LIM){ doc.addPage('a4', 'landscape'); y = 16; }
   title((dState.m === 'qty' ? 'Qty (PCS)' : 'Tonase (KG)') + ' per Tanggal', 8, y);
-  doc.addImage(await svgToPng(chDates(PAL_PDF, DW, d.dates, {m:dState.m, hide:dState.hide, lg:true, H:DH}), DW, DH), 'PNG', 8, y + 2, PW - 16, dmm);
+  doc.addImage(await svgToPng(chDates(PAL_PDF, DW, d.dates, {m:dState.m, hide:dState.hide, xs:dSel, lg:true, H:DH}), DW, DH), 'PNG', 8, y + 2, PW - 16, dmm);
   /* Top 10 & komposisi: WO OS dan WO Close ditampilkan berdampingan, ringkas */
   const CW = 136.5, GX = 8 + CW + 8, W = 460, B = {rh:17, fs:10};
   const rows = [
@@ -1603,7 +1632,7 @@ async function pdfReport(docIn){
     doc.addImage(await svgToPng(sv.close, W, H), 'PNG', GX, y + 1.5, CW, mm);
     y += mm + 8;
   }
-  { const ka = d.ket, KH = 170, svA = chDonut(PAL_PDF, W, ka, {cols:DK.map(k => SUB_C[k]), two:true, H:KH, R:52, SW:26}), svB = chGroup(PAL_PDF, W, d.ketDates, {H:KH}), mm = CW * KH / W;
+  { const ka = d.ket, KH = 170, svA = chDonut(PAL_PDF, W, ka, {cols:DK.map(k => SUB_C[k]), two:true, H:KH, R:52, SW:26}), svB = chGroup(PAL_PDF, W, d.ketDates, {H:KH, hide:kdState.hide, xs:dSel}), mm = CW * KH / W;
     if (y + mm + 14 > LIM){ doc.addPage('a4', 'landscape'); y = 14; }
     title('Keterangan WO Close - Masuk / Destroy / Sisa', 8, y); y += 5;
     title('Share tonase (KG)', 8, y); title('Tonase per tanggal (KG)', GX, y);
@@ -1632,6 +1661,47 @@ async function pdfAll(){
   const n = doc.getNumberOfPages();
   for (let i = 1; i <= n; i++){ const [w, h] = dims[i] || [297, 210]; doc.setPage(i); doc.setFontSize(7.5); doc.setTextColor(120); doc.text('Gudang Barang Jadi · Over WO', 10, h - 5); doc.text(`Hal ${i} / ${n}`, w - 10, h - 5, {align:'right'}); }
   doc.save(`Over-WO_Semua-Menu_${todayStr()}.pdf`);
+}
+async function pdfSub(){
+  await loadLib(LIB.pdf); await loadLib(LIB.at);
+  const X = subCtx(), {gs, gsS, T, A, katK, dr, m} = X, on = state.sub === 'onim';
+  if (!gs.length) throw new Error('tidak ada data untuk diekspor');
+  const doc = new window.jspdf.jsPDF({orientation:'landscape', unit:'mm', format:'a4'}), PW = 297, rgb = [13, 148, 136];
+  pdfBand(doc, PW, rgb, (on ? 'MONITORING ONIM PER UMUR WO' : 'LAPORAN MINGGUAN SHIFT 1/2/3') + ' · WO CLOSE', personOf(state.data.close.title) + (state.subSel.size ? '  |  Terpilih: ' + gsS.map(g => g.lbl).join(', ') : ''));
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  doc.autoTable({startY:27, theme:'grid', margin:{left:8, right:8}, styles:{fontSize:8, cellPadding:1.6, halign:'center'},
+    head:[[...katK.map(k => SUB_L[k]), 'Total']], body:[[...katK.map(k => fmtDec(A[k].ton) + ' KG'), fmtDec(T.ton) + ' KG'], [...katK.map(k => `${A[k].n} baris · ${fmtInt(A[k].qty)} PCS`), `${T.n} baris · ${fmtInt(T.qty)} PCS`]],
+    headStyles:{fillColor:rgb, textColor:255}, didParseCell: d => { if (d.section === 'head' && d.column.index < katK.length) d.cell.styles.fillColor = hex(SUB_C[katK[d.column.index]]); }});
+  let y = doc.lastAutoTable.finalY + 6;
+  const CW = 900, CH = 330, cmm = (PW - 16) * CH / CW;
+  if (y + cmm + 8 > 198){ doc.addPage('a4', 'landscape'); y = 14; }
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(15, 23, 42);
+  doc.text((m === 'ton' ? 'Tonase (KG)' : m === 'qty' ? 'Qty (PCS)' : 'Jumlah baris') + ' per ' + (on ? 'Umur WO' : 'Minggu'), 8, y);
+  const ks = (state.subT === 'line' ? [...SUBK, 'TOTAL'] : SUBK).filter(k => !state.subHide[k]); let lx = 110;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+  ks.forEach(k => { doc.setFillColor(...hex(k === 'TOTAL' ? '#7c3aed' : SUB_C[k])); doc.rect(lx, y - 3, 3, 3, 'F'); doc.setTextColor(15, 23, 42); const lb = k === 'TOTAL' ? 'Total' : SUB_L[k]; doc.text(lb, lx + 4.5, y - .3); lx += doc.getTextWidth(lb) + 11; });
+  const svg = (state.subT === 'line' ? chLine : chStack)(PAL_PDF, CW, gs, m, CH, state.subHide, state.subSel);
+  doc.addImage(await svgToPng(svg, CW, CH), 'PNG', 8, y + 2, PW - 16, cmm);
+  doc.addPage('a4', 'landscape');
+  const right = {}; const numFrom = on ? 2 : 1;
+  doc.autoTable({startY:14, theme:'grid', margin:{left:8, right:8, bottom:14}, showFoot:'lastPage',
+    head:[[on ? 'Umur WO' : 'Minggu', ...(on ? ['Bulan WO'] : []), ...katK.map(k => SUB_L[k]), 'Total']],
+    body:gsS.map(g => [g.lbl, ...(on ? [g.sub || '-'] : []), ...katK.map(k => fmtN(g[k][m], m)), fmtN(g.tot[m], m)]),
+    foot:[['TOTAL', ...(on ? [''] : []), ...katK.map(k => fmtN(A[k][m], m)), fmtN(T[m], m)]],
+    styles:{fontSize:8, cellPadding:1.5, lineColor:[226, 232, 240], lineWidth:.1}, headStyles:{fillColor:rgb, textColor:255, halign:'center'}, footStyles:{fillColor:[241, 245, 249], textColor:[15, 23, 42], fontStyle:'bold'},
+    columnStyles:Object.fromEntries([...Array(katK.length + 1).keys()].map(i => [i + numFrom, {halign:'right'}]))});
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(15, 23, 42);
+  let dy = doc.lastAutoTable.finalY + 8; if (dy > 190){ doc.addPage('a4', 'landscape'); dy = 14; }
+  doc.text('Detail Data' + (Object.values(state.detF).some(Boolean) || state.subQ ? ' (sesuai filter)' : '') + ' · ' + dr.length + ' baris', 8, dy);
+  const rc = {9:{halign:'right'}, 10:{halign:'right'}};
+  doc.autoTable({startY:dy + 2, theme:'grid', margin:{left:8, right:8, bottom:14}, showFoot:'lastPage',
+    head:[['No', ...DETCOLS.map(c => c[1])]],
+    body:dr.map((r, i) => [i + 1, ...DETCOLS.map(([k]) => k === '_k' ? SUB_L[r._ket] : k === 'qty' ? fmtInt(num(r[k])) : k === 'tonase' ? fmtDec(num(r[k])) : (r[k] || '-'))]),
+    foot:[['TOTAL', ...DETCOLS.map(([k]) => k === 'qty' ? fmtInt(sumBy(dr, r => r._qty)) : k === 'tonase' ? fmtDec(sumBy(dr, r => r._ton)) : '')]],
+    styles:{fontSize:7, cellPadding:1.3, lineColor:[226, 232, 240], lineWidth:.1, textColor:[15, 23, 42]}, headStyles:{fillColor:rgb, textColor:255, halign:'center'},
+    footStyles:{fillColor:[241, 245, 249], textColor:[15, 23, 42], fontStyle:'bold'}, alternateRowStyles:{fillColor:[248, 250, 252]},
+    columnStyles:{10:{halign:'right'}, 11:{halign:'right'}}});
+  pdfFooter(doc, PW, 210); doc.save(fname('pdf'));
 }
 const FS_ON = '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>', FS_OFF = '<svg viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
 let fsPh = null;
@@ -1701,30 +1771,31 @@ function subAxes(P, W, H, mx, l, r, t, ih){ let s = '';
   for (let i = 0; i <= 4; i++){ const y = t + ih - ih * i / 4;
     s += `<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" stroke="${P.g}"/><text x="${l-6}" y="${y+4}" text-anchor="end" font-size="10" fill="${P.m}">${short(mx*i/4)}</text>`; }
   return s; }
-function subXLbl(P, g, cx, H){ return `<text x="${cx}" y="${H-22}" text-anchor="middle" font-size="10" fill="${P.m}">${esc(g.lbl)}</text>`
-  + (g.sub ? `<text x="${cx}" y="${H-9}" text-anchor="middle" font-size="9" fill="${P.m}">WO ${esc(trunc(g.sub, 18))}</text>` : ''); }
-function chStack(P, W, gs, m, H, hide = {}){
+function subXLbl(P, g, cx, H, on = true, xa = ''){ return xLab(xa, on, cx, H - 22, 10, P.m, esc(g.lbl))
+  + (g.sub ? `<text x="${cx}" y="${H-9}" text-anchor="middle" font-size="9" fill="${P.m}"${on ? '' : ' opacity=".4"'}>WO ${esc(trunc(g.sub, 18))}</text>` : ''); }
+function chStack(P, W, gs, m, H, hide = {}, xs){
   const l = 44, r = 8, t = 18, b = 38, iw = W - l - r, ih = H - t - b, vk = SUBK.filter(k => !hide[k]);
   const mx = niceMax(Math.max(1, ...gs.flatMap(g => vk.map(k => g[k][m]))));
   let s = subAxes(P, W, H, mx, l, r, t, ih);
   const gw = iw / Math.max(gs.length, 1), bw = Math.min(32, gw * .84 / Math.max(vk.length, 1));
-  gs.forEach((g, i) => { const cx = l + gw * i + gw / 2;
-    vk.forEach((k, j) => { const v = g[k][m], h = ih * v / mx, x = cx - vk.length * bw / 2 + j * bw;
-      if (h > 0){ s += `<rect x="${x}" y="${t+ih-h}" width="${bw-1}" height="${h}" rx="2" fill="${SUB_C[k]}"><title>${esc(g.lbl)} · ${SUB_L[k]}: ${fmtM(v, m)}</title></rect>`;
-        if (bw >= 15) s += `<text x="${x+(bw-1)/2}" y="${t+ih-h-4}" text-anchor="middle" font-size="8" fill="${P.m}">${short(v)}</text>`; } });
-    s += subXLbl(P, g, cx, H); });
+  gs.forEach((g, i) => { const cx = l + gw * i + gw / 2, on = xon(xs, g.key), xa = xAttr(g.key);
+    s += xCol(xa, l + gw * i, t, gw, ih);
+    if (on) vk.forEach((k, j) => { const v = g[k][m], h = ih * v / mx, x = cx - vk.length * bw / 2 + j * bw;
+      if (h > 0){ s += `<rect ${xa} x="${x}" y="${t+ih-h}" width="${bw-1}" height="${h}" rx="2" fill="${SUB_C[k]}"><title>${esc(g.lbl)} · ${SUB_L[k]}: ${fmtM(v, m)}</title></rect>`;
+        if (bw >= 15) s += `<text ${xa} x="${x+(bw-1)/2}" y="${t+ih-h-4}" text-anchor="middle" font-size="8" fill="${P.m}">${short(v)}</text>`; } });
+    s += subXLbl(P, g, cx, H, on, xa); });
   return svgWrap(P, W, H, s);
 }
-function chLine(P, W, gs, m, H, hide = {}){
+function chLine(P, W, gs, m, H, hide = {}, xs){
   const l = 44, r = 14, t = 18, b = 38, iw = W - l - r, ih = H - t - b, ks = [...SUBK, 'TOTAL'].filter(k => !hide[k]);
   const val = (g, k) => k === 'TOTAL' ? g.tot[m] : g[k][m], mx = niceMax(Math.max(1, ...gs.flatMap(g => ks.map(k => val(g, k)))));
   let s = subAxes(P, W, H, mx, l, r, t, ih);
   const gw = iw / Math.max(gs.length, 1);
-  gs.forEach((g, i) => { s += subXLbl(P, g, l + gw * i + gw / 2, H); });
+  gs.forEach((g, i) => { const xa = xAttr(g.key); s += xCol(xa, l + gw * i, t, gw, ih); s += subXLbl(P, g, l + gw * i + gw / 2, H, xon(xs, g.key), xa); });
   ks.forEach(k => { const c = k === 'TOTAL' ? '#7c3aed' : SUB_C[k], nm = k === 'TOTAL' ? 'Total' : SUB_L[k];
-    const pts = gs.map((g, i) => [l + gw * i + gw / 2, t + ih - ih * val(g, k) / mx, val(g, k), g.lbl]);
+    const pts = gs.map((g, i) => [l + gw * i + gw / 2, t + ih - ih * val(g, k) / mx, val(g, k), g.lbl, g.key]).filter(p => xon(xs, p[4]));
     s += `<polyline fill="none" stroke="${c}" stroke-width="2.4" stroke-linejoin="round" ${k === 'TOTAL' ? 'stroke-dasharray="6 4"' : ''} points="${pts.map(p => p[0] + ',' + p[1]).join(' ')}"/>`
-      + pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3.8" fill="${c}"><title>${esc(p[3])} · ${nm}: ${fmtM(p[2], m)}</title></circle>`
+      + pts.map(p => `<circle ${xAttr(p[4])} cx="${p[0]}" cy="${p[1]}" r="3.8" fill="${c}"><title>${esc(p[3])} · ${nm}: ${fmtM(p[2], m)}</title></circle>`
         + (gw > 60 && p[2] > 0 && k !== 'TOTAL' ? `<text x="${p[0]}" y="${p[1]-8}" text-anchor="middle" font-size="9" fill="${c}">${short(p[2])}</text>` : '')).join(''); });
   return svgWrap(P, W, H, s);
 }
@@ -1734,52 +1805,78 @@ function dlt(cur, prev){
   const p = (cur - prev) / prev * 100;
   return Math.abs(p) < 5 ? '<span class="dl eq">● tetap</span>' : p > 0 ? `<span class="dl up">▲ ${p.toFixed(0)}%</span>` : `<span class="dl dn">▼ ${Math.abs(p).toFixed(0)}%</span>`;
 }
+const detF0 = () => ({internal:'', sales:'', cust:'', umur:'', ket:''});
+state.detF = detF0(); state.detSort = {k:null, dir:1}; state.subSel = new Set();
+const DETCOLS = [['tgl','Tgl','nowrap mono'], ['wo','WO','mono'], ['umur','Umur WO','nowrap'], ['_k','Keterangan',''], ['woin','WO In','mono'], ['cust','Customer','cust'], ['nama','Nama Barang','name'], ['internal','Internal','nowrap'], ['sales','Sales','nowrap'], ['qty','Qty','num'], ['tonase','Tonase','num tonase']];
+function detSortRows(rs){
+  const {k, dir} = state.detSort; if (!k) return rs;
+  const key = r => k === 'tgl' ? r._date : (k === 'qty' || k === 'tonase') ? num(r[k]) : k === '_k' ? SUB_L[r._ket] : (r[k] || '');
+  return [...rs].sort((a, b) => { const x = key(a), y = key(b);
+    return dir * (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), undefined, {numeric:true, sensitivity:'base'})); });
+}
+function subCtx(){
+  const m = state.subM, vis = SUBK.filter(k => !state.subHide[k]), katK = vis.length ? vis : SUBK;
+  const base = subRows(), rows = base.filter(r => subCats(r._ket).some(k => katK.includes(k)));
+  const gs = subGroups(rows), sel = state.subSel;
+  [...sel].forEach(k => { if (!gs.some(g => String(g.key) === k)) sel.delete(k); });
+  const gsS = sel.size ? gs.filter(g => sel.has(String(g.key))) : gs, selRows = gsS.flatMap(g => g.rows);
+  const T = {ton:0, qty:0, n:0}, A = {}; SUBK.forEach(k => A[k] = {ton:0, qty:0, n:0});
+  selRows.forEach(r => { [...subCats(r._ket).map(k => A[k]), T].forEach(c => { c.ton += r._ton; c.qty += r._qty; c.n++; }); });
+  const terms = state.subQ.toLowerCase().split(/\s+/).filter(Boolean);
+  const dr = detSortRows(selRows.filter(r => terms.every(t => r._search.includes(t)) && Object.entries(state.detF).every(([k, v]) => !v || (k === 'ket' ? subCats(r._ket).includes(v) : r[k] === v))));
+  return {m, katK, base, rows, gs, gsS, selRows, T, A, dr};
+}
 function renderSub(){
   const on = state.sub === 'onim', m = state.subM, P = PAL();
   const all = scopeRows(), months = [...new Set(all.map(r => monIdx(r._date)))].sort((a, b) => a - b);
   const sel = $('subMonth'); sel.innerHTML = '<option value="">Semua Bulan</option>' + months.map(i => `<option value="${i}">${monLbl(i)}</option>`).join('');
   if (!months.map(String).includes(state.subMonth)) state.subMonth = ''; sel.value = state.subMonth;
   document.querySelectorAll('#subM button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
-  const rows = subRows(), gs = subGroups(rows);
+  const X = subCtx(), {gs, gsS, T, A, katK, selRows} = X;
   $('subNote').textContent = on
-    ? 'Per Umur WO (kolom UMUR WO di sheet). Pengajuan Destroy = PENGAJUAN DESTROY + DESTROY; Sisa Pengajuan = hanya PENGAJUAN DESTROY; Sisa = kosong / HABIS. Karena Pengajuan Destroy mencakup Destroy, kolom Total ≠ jumlah kolom.'
-    : 'Shift 1/2/3 per minggu (Senin–Minggu). Pengajuan Destroy = PENGAJUAN DESTROY + DESTROY; Sisa Pengajuan = hanya PENGAJUAN DESTROY; Sisa = kosong / HABIS. Karena Pengajuan Destroy mencakup Destroy, kolom Total ≠ jumlah kolom.';
-  const T = {ton:0, qty:0, n:0}, A = {}; SUBK.forEach(k => A[k] = {ton:0, qty:0, n:0});
-  rows.forEach(r => { [...subCats(r._ket).map(k => A[k]), T].forEach(c => { c.ton += r._ton; c.qty += r._qty; c.n++; }); });
-  $('subKpis').innerHTML = SUBK.map(k => `<div class="kchip st" style="--kc:${SUB_C[k]}"><div class="kl"><i></i>${SUB_L[k]}</div><div class="kv">${fmtDec(A[k].ton)}<small>KG</small></div><div class="kn">${A[k].n} baris · ${fmtInt(A[k].qty)} PCS · ${(A[k].ton / (T.ton || 1) * 100).toFixed(1)}%</div></div>`).join('')
+    ? 'Per Umur WO (kolom UMUR WO di sheet). Pengajuan Destroy = PENGAJUAN DESTROY + DESTROY; Sisa Pengajuan = hanya PENGAJUAN DESTROY; Sisa = kosong / HABIS. Karena Pengajuan Destroy mencakup Destroy, kolom Total ≠ jumlah kolom. Klik keterangan di legenda atau label umur/minggu pada grafik untuk menampilkan hanya itu.'
+    : 'Shift 1/2/3 per minggu (Senin–Minggu). Pengajuan Destroy = PENGAJUAN DESTROY + DESTROY; Sisa Pengajuan = hanya PENGAJUAN DESTROY; Sisa = kosong / HABIS. Karena Pengajuan Destroy mencakup Destroy, kolom Total ≠ jumlah kolom. Klik keterangan di legenda atau label minggu pada grafik untuk menampilkan hanya itu.';
+  $('subKpis').innerHTML = katK.map(k => `<div class="kchip st" style="--kc:${SUB_C[k]}"><div class="kl"><i></i>${SUB_L[k]}</div><div class="kv">${fmtDec(A[k].ton)}<small>KG</small></div><div class="kn">${A[k].n} baris · ${fmtInt(A[k].qty)} PCS · ${(A[k].ton / (T.ton || 1) * 100).toFixed(1)}%</div></div>`).join('')
     + `<div class="kchip st" style="--kc:#7c3aed"><div class="kl"><i></i>Total</div><div class="kv">${fmtDec(T.ton)}<small>KG</small></div><div class="kn">${T.n} baris · ${fmtInt(T.qty)} PCS</div></div>`;
-  const tr = trendOf(gs, m), te = $('subTrend'); te.className = 'trend ' + tr.c; te.textContent = (on ? 'Makin tua umur WO: ' : 'Tren mingguan: ') + tr.t;
+  const tr = trendOf(gsS, m), te = $('subTrend'); te.className = 'trend ' + tr.c; te.textContent = (on ? 'Makin tua umur WO: ' : 'Tren mingguan: ') + tr.t;
   $('subTitle').textContent = on ? 'Monitoring ONIM per Umur WO' : 'Laporan Mingguan';
-  $('subSub').textContent = (m === 'ton' ? 'Tonase KG' : m === 'qty' ? 'Qty PCS' : 'Jumlah baris') + ' · Masuk Gudang / Pengajuan Destroy / Destroy / Sisa Pengajuan / Sisa';
+  $('subSub').textContent = (m === 'ton' ? 'Tonase KG' : m === 'qty' ? 'Qty PCS' : 'Jumlah baris') + ' · Masuk Gudang / Pengajuan Destroy / Destroy / Sisa Pengajuan / Sisa' + (state.subSel.size ? ' · terpilih: ' + gsS.map(g => g.lbl).join(', ') : '');
   document.querySelectorAll('#subT button').forEach(b => b.classList.toggle('on', b.dataset.t === state.subT));
-  $('subLegend').innerHTML = legendHtml(state.subT === 'line' ? [...SUBK, 'TOTAL'] : SUBK, state.subHide, SUB_L, SUB_C);
-  $('chSub').innerHTML = gs.length ? (state.subT === 'line' ? chLine : chStack)(P, Math.max(280, Math.floor($('chSub').clientWidth || 700)), gs, m, isFsC('chSub') ? fsH(190) : chH(280, 460, .42), state.subHide) : '<div class="empty-state"><b>Belum ada data</b>Tidak ada baris untuk sub-tab ini.</div>';
+  $('subLegend').innerHTML = legendHtml(state.subT === 'line' ? [...SUBK, 'TOTAL'] : SUBK, state.subHide, SUB_L, SUB_C, state.subSel.size > 0 || Object.values(state.subHide).some(Boolean));
+  $('chSub').innerHTML = gs.length ? (state.subT === 'line' ? chLine : chStack)(P, Math.max(280, Math.floor($('chSub').clientWidth || 700)), gs, m, isFsC('chSub') ? fsH(190) : chH(280, 460, .42), state.subHide, state.subSel) : '<div class="empty-state"><b>Belum ada data</b>Tidak ada baris untuk pilihan ini.</div>';
   $('subTblT').textContent = on ? 'Rekap per Umur WO' : 'Rekap per Minggu'; $('subTblS').textContent = metricName(m);
-  const head = `<th>${on ? 'Umur WO' : 'Minggu'}</th>${on ? '<th>Bulan WO</th>' : ''}${SUBK.map(k => `<th class="num">${SUB_L[k]}</th>`).join('')}<th class="num">Total</th><th class="num">Δ vs sebelumnya</th>`;
+  const head = `<th>${on ? 'Umur WO' : 'Minggu'}</th>${on ? '<th>Bulan WO</th>' : ''}${katK.map(k => `<th class="num">${SUB_L[k]}</th>`).join('')}<th class="num">Total</th><th class="num">Δ vs sebelumnya</th>`;
   let prev = null;
-  const body = gs.map(g => { const d = dlt(g.tot[m], g.key === 'x' ? null : prev); if (g.key !== 'x') prev = g.tot[m];
-    return `<tr><td class="name" data-label="${on ? 'Umur WO' : 'Minggu'}">${esc(g.lbl)}</td>${on ? `<td class="mono" data-label="Bulan WO">${esc(g.sub || '–')}</td>` : ''}${SUBK.map(k => `<td class="num" data-label="${SUB_L[k]}">${fmtN(g[k][m], m)}</td>`).join('')}<td class="num tonase" data-label="Total">${fmtN(g.tot[m], m)}</td><td class="num" data-label="Δ">${d}</td></tr>`; }).join('');
-  const ft = `<tr><td class="lbl" colspan="${on ? 2 : 1}">Total · ${gs.length} kelompok</td>${SUBK.map(k => `<td class="num">${fmtN(A[k][m], m)}</td>`).join('')}<td class="num tonase">${fmtN(T[m], m)}</td><td></td></tr>`;
-  $('subSum').innerHTML = gs.length ? `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot>${ft}</tfoot></table>` : '';
+  const body = gsS.map(g => { const d = dlt(g.tot[m], g.key === 'x' ? null : prev); if (g.key !== 'x') prev = g.tot[m];
+    return `<tr><td class="name" data-label="${on ? 'Umur WO' : 'Minggu'}">${esc(g.lbl)}</td>${on ? `<td class="mono" data-label="Bulan WO">${esc(g.sub || '–')}</td>` : ''}${katK.map(k => `<td class="num" data-label="${SUB_L[k]}">${fmtN(g[k][m], m)}</td>`).join('')}<td class="num tonase" data-label="Total">${fmtN(g.tot[m], m)}</td><td class="num" data-label="Δ">${d}</td></tr>`; }).join('');
+  const ft = `<tr><td class="lbl" colspan="${on ? 2 : 1}">Total · ${gsS.length} kelompok</td>${katK.map(k => `<td class="num">${fmtN(A[k][m], m)}</td>`).join('')}<td class="num tonase">${fmtN(T[m], m)}</td><td></td></tr>`;
+  $('subSum').innerHTML = gsS.length ? `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot>${ft}</tfoot></table>` : '';
   [['dfInt','internal','Semua Internal'], ['dfSales','sales','Semua Sales'], ['dfCust','cust','Semua Customer'], ['dfUmur','umur','Semua Umur WO']].forEach(([id, k, lb]) => {
-    const v = [...new Set(rows.map(r => r[k]).filter(Boolean))].sort((x, y) => x.localeCompare(y, undefined, {numeric:true}));
+    const v = [...new Set(selRows.map(r => r[k]).filter(Boolean))].sort((x, y) => x.localeCompare(y, undefined, {numeric:true}));
     if (!v.includes(state.detF[k])) state.detF[k] = '';
     $(id).innerHTML = `<option value="">${lb}</option>` + v.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join(''); $(id).value = state.detF[k]; });
+  $('dfKet').innerHTML = '<option value="">Semua Keterangan</option>' + SUBK.map(k => `<option value="${k}">${SUB_L[k]}</option>`).join(''); $('dfKet').value = state.detF.ket;
+  const X2 = subCtx(), dr = X2.dr;
   if (document.activeElement !== $('dfQ')) $('dfQ').value = state.subQ;
   const fAct = Object.values(state.detF).some(Boolean);
-  const terms = state.subQ.toLowerCase().split(/\s+/).filter(Boolean), dr = rows.filter(r => terms.every(t => r._search.includes(t)) && Object.entries(state.detF).every(([k, v]) => !v || r[k] === v));
-  $('subCount').textContent = `${dr.length} / ${rows.length} DATA`; $('subDetS').textContent = personOf(state.data.close.title) + (fAct ? ' · filter aktif' : '');
-  const D = [['tgl','Tgl','nowrap mono'], ['wo','WO','mono'], ['umur','Umur WO','nowrap'], ['_k','Keterangan',''], ['woin','WO In','mono'], ['cust','Customer','cust'], ['nama','Nama Barang','name'], ['internal','Internal','nowrap'], ['sales','Sales','nowrap'], ['qty','Qty','num'], ['tonase','Tonase','num tonase']];
-  $('subDet').innerHTML = dr.length ? `<table><thead><tr>${D.map(c => `<th${/num/.test(c[2]) ? ' class="num"' : ''}>${c[1]}</th>`).join('')}</tr></thead><tbody>${dr.map(r => `<tr>${D.map(([k, l, c]) => {
+  $('subCount').textContent = `${dr.length} / ${selRows.length} DATA`; $('subDetS').textContent = personOf(state.data.close.title) + (fAct ? ' · filter aktif' : '');
+  const {k: sk, dir: sd} = state.detSort, wrap = $('subDet'), keep = wrap.scrollTop;
+  wrap.innerHTML = dr.length ? `<table><thead><tr>${DETCOLS.map(c => `<th class="sortable${/num/.test(c[2]) ? ' num' : ''}" tabindex="0" data-k="${c[0]}">${c[1]}<span class="arr">${sk === c[0] ? (sd > 0 ? '▲' : '▼') : ''}</span></th>`).join('')}</tr></thead><tbody>${dr.map(r => `<tr>${DETCOLS.map(([k, l, c]) => {
     if (k === '_k') return `<td data-label="${l}"><span class="badge ${BADGE[r._ket]}">${SUB_L[r._ket]}</span></td>`;
     let v = r[k]; if (!v) return `<td class="empty dim ${c}" data-label="${l}">–</td>`; if (k === 'qty') v = fmtInt(num(v)); else if (k === 'tonase') v = fmtDec(num(v));
-    return `<td class="${c}" data-label="${l}">${esc(v)}</td>`; }).join('')}</tr>`).join('')}</tbody></table>` : '<div class="empty-state"><b>Data tidak ditemukan</b>Coba ubah kata kunci.</div>';
+    return `<td class="${c}" data-label="${l}">${esc(v)}</td>`; }).join('')}</tr>`).join('')}</tbody></table>` : '<div class="empty-state"><b>Data tidak ditemukan</b>Coba ubah kata kunci / filter.</div>';
+  wrap.scrollTop = keep;
 }
 const metricName = m => m === 'ton' ? 'Tonase · KG' : m === 'qty' ? 'Qty · PCS' : 'Jumlah baris';
-$('subTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.sub = b.dataset.sub; state.subMonth = ''; state.detF = {internal:'', sales:'', cust:'', umur:''};
+$('subTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.sub = b.dataset.sub; state.subMonth = ''; state.detF = detF0(); state.subSel.clear(); state.detSort = {k:null, dir:1};
   document.querySelectorAll('#subTabs button').forEach(x => x.classList.toggle('on', x === b)); render(); });
 $('subT').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.subT = b.dataset.t; renderSub(); });
-$('subLegend').addEventListener('click', e => { const b = e.target.closest('.lg'); if (!b) return; state.subHide[b.dataset.k] = !state.subHide[b.dataset.k]; renderSub(); });
+$('subLegend').addEventListener('click', e => { const b = e.target.closest('.lg'); if (!b) return;
+  if (b.dataset.k === '__all'){ state.subHide = {}; state.subSel.clear(); } else soloToggle(state.subHide, state.subT === 'line' ? [...SUBK, 'TOTAL'] : SUBK, b.dataset.k); renderSub(); });
+$('chSub').addEventListener('click', e => xClick(e, state.subSel, renderSub));
+$('subDet').addEventListener('click', e => { const th = e.target.closest('th.sortable'); if (!th) return; const k = th.dataset.k;
+  state.detSort = state.detSort.k === k ? {k, dir:-state.detSort.dir} : {k, dir:1}; renderSub(); });
+$('subDet').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('th.sortable')){ e.preventDefault(); e.target.click(); } });
 function setTblFs(card, on){
   document.querySelectorAll('#subView .table-card.fs').forEach(c => { if (c !== card) c.classList.remove('fs'); });
   card.classList.toggle('fs', on); document.body.classList.toggle('fs-lock', on);
@@ -1790,16 +1887,16 @@ function setTblFs(card, on){
 document.querySelectorAll('.tfs-btn').forEach(b => { b.innerHTML = FS_ON; b.addEventListener('click', () => { const c = b.closest('.table-card'); setTblFs(c, !c.classList.contains('fs')); }); });
 document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement){ const c = document.querySelector('#subView .table-card.fs'); if (c) setTblFs(c, false); } });
 document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; const c = document.querySelector('#subView .table-card.fs'); if (c) setTblFs(c, false); });
-[['dfInt','internal'], ['dfSales','sales'], ['dfCust','cust'], ['dfUmur','umur']].forEach(([id, k]) => $(id).addEventListener('change', e => { state.detF[k] = e.target.value; renderSub(); }));
+[['dfInt','internal'], ['dfSales','sales'], ['dfCust','cust'], ['dfUmur','umur'], ['dfKet','ket']].forEach(([id, k]) => $(id).addEventListener('change', e => { state.detF[k] = e.target.value; renderSub(); }));
 $('dfQ').addEventListener('input', e => { state.subQ = e.target.value.trim(); $('subQ').value = e.target.value; clearTimeout(subT); subT = setTimeout(renderSub, 120); });
-$('dfReset').addEventListener('click', () => { state.detF = {internal:'', sales:'', cust:'', umur:''}; state.subQ = ''; $('subQ').value = ''; renderSub(); });
+$('dfReset').addEventListener('click', () => { state.detF = detF0(); state.detSort = {k:null, dir:1}; state.subQ = ''; $('subQ').value = ''; renderSub(); });
 $('subM').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.subM = b.dataset.m; renderSub(); });
-$('subMonth').addEventListener('change', e => { state.subMonth = e.target.value; renderSub(); });
+$('subMonth').addEventListener('change', e => { state.subMonth = e.target.value; state.subSel.clear(); renderSub(); });
 let subT; $('subQ').addEventListener('input', e => { clearTimeout(subT); subT = setTimeout(() => { state.subQ = e.target.value.trim(); renderSub(); }, 120); });
 
 $('btnXlsx').addEventListener('click', e => busy(e.currentTarget, exportXlsx));
 $('btnPdfAll').addEventListener('click', e => busy(e.currentTarget, pdfAll));
-$('btnPdf').addEventListener('click', e => busy(e.currentTarget, () => state.tab === 'report' ? pdfReport() : pdfData()));
+$('btnPdf').addEventListener('click', e => busy(e.currentTarget, () => state.tab === 'report' ? pdfReport() : (state.tab === 'close' && state.sub !== 'all') ? pdfSub() : pdfData()));
 
 // tampilkan data cadangan dulu agar halaman langsung terisi, lalu ambil data live
 try{ applyData($('csv-fallback').textContent, 'fallback'); }catch(e){ console.error(e); }
