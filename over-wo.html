@@ -464,6 +464,19 @@ html[data-theme="dark"] .badge.warn{ color:#fbbf24; }
 .sub-note{margin:0 0 12px;font-size:12px;color:var(--muted)}
 #subView .table-card{margin-bottom:16px}#subView .charts{margin-bottom:16px}
 @media (max-width:720px){.ketkpis,.ketkpis.sub4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpis.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:1100px){.kpis.k5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:720px){.kpis.k5{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* ===== Layar komputer: pakai lebar penuh ===== */
+@media (min-width:901px){
+  .page{max-width:none;padding-inline:clamp(24px,2.6vw,56px)}
+  .layout{grid-template-columns:clamp(236px,15vw,300px) minmax(0,1fr);gap:clamp(22px,1.8vw,34px)}
+  .table-wrap{max-height:max(380px,calc(100vh - 290px))}
+}
+@media (min-width:1700px){
+  .charts:has(#chCust){grid-template-columns:repeat(4,minmax(0,1fr))}
+  .kpis:not(.k4) .kpi-value{font-size:52px}
+}
 </style>
 </head>
 <body data-tab="out">
@@ -561,11 +574,12 @@ html[data-theme="dark"] .badge.warn{ color:#fbbf24; }
     </div>
     <div id="reportView" hidden>
       <section class="kpis k4"><div class="kpi"><div class="kpi-label">Tonase WO OS</div><div class="kpi-value"><span id="rk1">0</span><small>KG</small></div><div class="kpi-note" id="rn1"></div></div><div class="kpi"><div class="kpi-label">Tonase WO Close</div><div class="kpi-value"><span id="rk2">0</span><small>KG</small></div><div class="kpi-note" id="rn2"></div></div><div class="kpi"><div class="kpi-label">Qty WO OS</div><div class="kpi-value"><span id="rk3">0</span><small>PCS</small></div><div class="kpi-note" id="rn3"></div></div><div class="kpi"><div class="kpi-label">Qty WO Close</div><div class="kpi-value"><span id="rk4">0</span><small>PCS</small></div><div class="kpi-note" id="rn4"></div></div></section>
-      <section class="kpis k4" id="ketKpisR">
+      <section class="kpis k4 k5" id="ketKpisR">
         <div class="kpi" style="--accent:#16a34a;--accent-rgb:22,163,74"><div class="kpi-label">Masuk Gudang · WO Close</div><div class="kpi-value"><span id="rm1">0</span><small>KG</small></div><div class="kpi-note" id="rmn1"></div></div>
         <div class="kpi" style="--accent:#f59e0b;--accent-rgb:245,158,11"><div class="kpi-label">Pengajuan Destroy · WO Close</div><div class="kpi-value"><span id="rm2">0</span><small>KG</small></div><div class="kpi-note" id="rmn2"></div></div>
         <div class="kpi" style="--accent:#ef3340;--accent-rgb:239,51,64"><div class="kpi-label">Destroy · WO Close</div><div class="kpi-value"><span id="rm3">0</span><small>KG</small></div><div class="kpi-note" id="rmn3"></div></div>
-        <div class="kpi" style="--accent:#1688f8;--accent-rgb:22,136,248"><div class="kpi-label">Sisa · WO Close</div><div class="kpi-value"><span id="rm4">0</span><small>KG</small></div><div class="kpi-note" id="rmn4"></div></div>
+        <div class="kpi" style="--accent:#ec4899;--accent-rgb:236,72,153"><div class="kpi-label">Sisa Pengajuan · WO Close</div><div class="kpi-value"><span id="rm4">0</span><small>KG</small></div><div class="kpi-note" id="rmn4"></div></div>
+        <div class="kpi" style="--accent:#1688f8;--accent-rgb:22,136,248"><div class="kpi-label">Sisa · WO Close</div><div class="kpi-value"><span id="rm5">0</span><small>KG</small></div><div class="kpi-note" id="rmn5"></div></div>
       </section>
       <section class="charts">
         <div class="chart-card wide">
@@ -581,7 +595,7 @@ html[data-theme="dark"] .badge.warn{ color:#fbbf24; }
       <div class="scope glass"><span class="scope-l">Tampilkan grafik</span>
         <div class="seg" id="scopeSeg"><button data-s="all" class="on">Semua</button><button data-s="out">OS</button><button data-s="close">CL</button></div>
         <span class="scope-l">Ket. WO Close</span>
-        <div class="seg" id="ketSeg"><button data-k="" class="on">Semua</button><button data-k="MASUK">Masuk</button><button data-k="PENGAJUAN">Pengajuan</button><button data-k="DESTROY">Destroy</button><button data-k="SISA">Sisa</button></div>
+        <div class="seg" id="ketSeg"><button data-k="" class="on">Semua</button><button data-k="MASUK">Masuk</button><button data-k="PD">Pengajuan Destroy</button><button data-k="DESTROY">Destroy</button><button data-k="PENGAJUAN">Sisa Pengajuan</button><button data-k="SISA">Sisa</button></div>
         <span class="scope-n">Filter keterangan berlaku untuk data WO Close di semua grafik (kecuali grafik Keterangan)</span></div>
       <section class="charts">
         <div class="chart-card"><h3 id="tCust">Top 10 Customer</h3><p id="pCust"></p><div id="chCust"></div></div>
@@ -1359,7 +1373,7 @@ function chDonut(P, W, items, o = {}){
 }
 function chGroup(P, W, agg, o = {}){
   const H = o.H || 230, l = 44, r = 8, t = 24, b = 30, iw = W - l - r, ih = H - t - b;
-  const KS = KET_KEYS.filter(k => !(o.hide || {})[k]);
+  const KS = SUBK.filter(k => !(o.hide || {})[k]);
   const mx = niceMax(Math.max(1, ...agg.flatMap(a => KS.map(k => a[k]))));
   let s = '';
   for (let i = 0; i <= 4; i++){ const y = t + ih - ih * i / 4;
@@ -1367,31 +1381,38 @@ function chGroup(P, W, agg, o = {}){
   const gw = iw / Math.max(agg.length, 1), bw = Math.min(14, gw / 5);
   agg.forEach((a, i) => { const cx = l + gw * i + gw / 2;
     if (!o.line) KS.forEach((k, j) => { const v = a[k], h = ih * v / mx, x = cx - KS.length * bw / 2 + j * bw;
-      s += `<rect x="${x}" y="${t+ih-h}" width="${bw-1}" height="${h}" rx="2" fill="${KET_C[k]}"><title>${a.k} · ${KET_L[k]}: ${fmtDec(v)} KG</title></rect>`; });
+      s += `<rect x="${x}" y="${t+ih-h}" width="${bw-1}" height="${h}" rx="2" fill="${SUB_C[k]}"><title>${a.k} · ${SUB_L[k]}: ${fmtDec(v)} KG</title></rect>`; });
     s += `<text x="${cx}" y="${H-10}" text-anchor="middle" font-size="10" fill="${P.m}">${a.k.slice(0,6)}</text>`; });
   if (o.line) KS.forEach(k => { const pts = agg.map((a, i) => [l + gw * i + gw / 2, t + ih - ih * a[k] / mx, a[k], a.k]);
-    s += `<polyline fill="none" stroke="${KET_C[k]}" stroke-width="2.2" stroke-linejoin="round" points="${pts.map(p => p[0] + ',' + p[1]).join(' ')}"/>`
-      + pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3.4" fill="${KET_C[k]}"><title>${p[3]} · ${KET_L[k]}: ${fmtDec(p[2])} KG</title></circle>`).join(''); });
-  if (!o.nolg) KET_KEYS.forEach((k, j) => { const x = l + j * 120; s += `<rect x="${x}" y="4" width="10" height="10" rx="3" fill="${KET_C[k]}"/><text x="${x+15}" y="13" font-size="11" fill="${P.t}">${KET_L[k]}</text>`; });
+    s += `<polyline fill="none" stroke="${SUB_C[k]}" stroke-width="2.2" stroke-linejoin="round" points="${pts.map(p => p[0] + ',' + p[1]).join(' ')}"/>`
+      + pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3.4" fill="${SUB_C[k]}"><title>${p[3]} · ${SUB_L[k]}: ${fmtDec(p[2])} KG</title></circle>`).join(''); });
+  if (!o.nolg) SUBK.forEach((k, j) => { const x = l + j * 120; s += `<rect x="${x}" y="4" width="10" height="10" rx="3" fill="${SUB_C[k]}"/><text x="${x+15}" y="13" font-size="11" fill="${P.t}">${SUB_L[k]}</text>`; });
   return svgWrap(P, W, H, s);
 }
 function reportData(){
-  const o = realRows('out'), c0 = realRows('close'), c = rState.ket ? c0.filter(r => r._ket === rState.ket) : c0, all = [...o, ...c], base = rState.scope === 'out' ? o : rState.scope === 'close' ? c : all;
+  const o = realRows('out'), c0 = realRows('close'), c = rState.ket ? c0.filter(r => subCats(r._ket).includes(rState.ket)) : c0, all = [...o, ...c], base = rState.scope === 'out' ? o : rState.scope === 'close' ? c : all;
   const by = k => { const m = new Map(); base.forEach(r => m.set(r[k] || '-', (m.get(r[k] || '-') || 0) + r._ton)); return [...m].map(([k, v]) => ({k, v})); };
   const desc = (a, b) => b.v - a.v, sub = (t, rs) => { const x = state.data[t].sub; if (t === 'close' && rState.ket) return {q: sumBy(rs, r => r._qty), t: sumBy(rs, r => r._ton)}; return {q: x.has ? x.qty : sumBy(rs, r => r._qty), t: x.has ? x.ton : sumBy(rs, r => r._ton)}; };
   const dates = [...new Set(all.map(r => r.tgl))].sort((a, b) => parseDate(a) - parseDate(b))
     .map(d => ({k:d, out:sumBy(o.filter(r => r.tgl === d), r => r._ton), close:sumBy(c.filter(r => r.tgl === d), r => r._ton), outQ:sumBy(o.filter(r => r.tgl === d), r => r._qty), closeQ:sumBy(c.filter(r => r.tgl === d), r => r._qty)}));
   return {o, c, all, dates, cust:by('cust').sort(desc), sales:by('sales').sort(desc), internal:by('internal').sort(desc),
     shift:by('shift').sort((a, b) => a.k.localeCompare(b.k)).map(x => ({k:/^\d+$/.test(x.k) ? 'Shift ' + x.k : x.k, v:x.v})),
-    ket:ketAgg(c0).map(x => ({...x, k:KET_L[x.k]})),
-    ketDates:[...new Set(c0.map(r => r.tgl))].sort((a, b) => parseDate(a) - parseDate(b)).map(d => { const rs = c0.filter(r => r.tgl === d), x = {k:d}; KET_KEYS.forEach(k => x[k] = sumBy(rs.filter(r => r._ket === k), r => r._ton)); return x; }), sub:{out:sub('out', o), close:sub('close', c)}};
+    ketAll:ketAggR(c0), ket:ketAggR(c0).filter(x => x.key !== 'PD'),
+    ketDates:[...new Set(c0.map(r => r.tgl))].sort((a, b) => parseDate(a) - parseDate(b)).map(d => { const rs = c0.filter(r => r.tgl === d), x = {k:d}; SUBK.forEach(k => x[k] = sumBy(rs.filter(r => subCats(r._ket).includes(k)), r => r._ton)); return x; }), sub:{out:sub('out', o), close:sub('close', c)}};
 }
+function ketAggR(rows){
+  const o = {}; SUBK.forEach(k => o[k] = {key:k, k:SUB_L[k], v:0, q:0, n:0});
+  rows.forEach(r => subCats(r._ket).forEach(k => { const x = o[k]; x.v += r._ton; x.q += r._qty; x.n++; }));
+  return SUBK.map(k => o[k]);
+}
+const DK = ['MASUK','DESTROY','PENGAJUAN','SISA'];
+const chH = (min, max, f) => Math.max(min, Math.min(max, Math.round(window.innerHeight * f)));
 const dState = {m:'ton', hide:{out:false, close:false}};
 const kdState = {t:'bar', hide:{}};
 const legendHtml = (keys, hide, extra, cm) => keys.map(k => `<button type="button" class="lg${hide[k] ? ' off' : ''}" data-k="${k}" title="Klik untuk tampil / sembunyikan"><i style="background:${k === 'TOTAL' ? '#7c3aed' : (cm || KET_C)[k]}"></i><span>${k === 'TOTAL' ? 'Total' : (extra || KET_L)[k]}</span></button>`).join('');
 const rState = {scope:'all', ket:''};
 const SCOPE_L = {all:'Semua (WO OS + WO Close)', out:'WO OS', close:'WO Close'};
-const scopeSfx = () => (rState.scope === 'all' ? '' : ' - ' + SCOPE_L[rState.scope]) + (rState.ket ? ' - Ket. ' + KET_L[rState.ket] : '');
+const scopeSfx = () => (rState.scope === 'all' ? '' : ' - ' + SCOPE_L[rState.scope]) + (rState.ket ? ' - Ket. ' + SUB_L[rState.ket] : '');
 const isFsC = id => $(id).closest('.chart-card').classList.contains('cfs');
 const fsH = off => Math.max(260, window.innerHeight - off);
 function setChartFs(card, on){
@@ -1409,7 +1430,7 @@ function drawDates(d, P, w){
   $('dateSub').textContent = 'WO OS vs WO Close · ' + (q ? 'PCS' : 'KG');
   document.querySelectorAll('#metricSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === dState.m));
   document.querySelectorAll('#dateLegend .lg').forEach(b => b.classList.toggle('off', dState.hide[b.dataset.s]));
-  $('chDates').innerHTML = chDates(P, w, d.dates, {m:dState.m, hide:dState.hide, lg:false, H:isFsC('chDates') ? fsH(160) : 250});
+  $('chDates').innerHTML = chDates(P, w, d.dates, {m:dState.m, hide:dState.hide, lg:false, H:isFsC('chDates') ? fsH(160) : chH(250, 400, .36)});
 }
 $('metricSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; dState.m = b.dataset.m; renderReport(); });
 $('dateLegend').addEventListener('click', e => { const b = e.target.closest('.lg'); if (!b) return; const k = b.dataset.s, other = k === 'out' ? 'close' : 'out';
@@ -1421,16 +1442,16 @@ function renderReport(){
   const d = reportData(), P = PAL(), W = id => Math.max(280, Math.floor($(id).clientWidth));
   $('rk1').textContent = fmtDec(d.sub.out.t); $('rk2').textContent = fmtDec(d.sub.close.t);
   $('rk3').textContent = fmtInt(d.sub.out.q); $('rk4').textContent = fmtInt(d.sub.close.q);
-  $('rn1').textContent = $('rn3').textContent = d.o.length + ' baris'; $('rn2').textContent = $('rn4').textContent = d.c.length + ' baris' + (rState.ket ? ' · ' + KET_L[rState.ket] : '');
+  $('rn1').textContent = $('rn3').textContent = d.o.length + ' baris'; $('rn2').textContent = $('rn4').textContent = d.c.length + ' baris' + (rState.ket ? ' · ' + SUB_L[rState.ket] : '');
   const kt = d.ket.reduce((s, x) => s + x.v, 0) || 1;
-  d.ket.forEach((x, i) => { $('rm' + (i + 1)).textContent = fmtDec(x.v); $('rmn' + (i + 1)).textContent = `${x.n} baris · ${fmtInt(x.q)} PCS · ${(x.v / kt * 100).toFixed(1)}%`; });
+  d.ketAll.forEach((x, i) => { $('rm' + (i + 1)).textContent = fmtDec(x.v); $('rmn' + (i + 1)).textContent = `${x.n} baris · ${fmtInt(x.q)} PCS · ${(x.v / kt * 100).toFixed(1)}%`; });
   document.querySelectorAll('#ketSeg button').forEach(b => b.classList.toggle('on', b.dataset.k === rState.ket));
-  $('pKet').textContent = 'Share tonase Masuk / Pengajuan / Destroy / Sisa · KG';
+  $('pKet').textContent = 'Share tonase Masuk / Destroy / Sisa Pengajuan / Sisa · KG (Pengajuan Destroy = Destroy + Sisa Pengajuan)';
   $('pKetD').textContent = 'Tonase WO Close per tanggal · KG';
-  $('chKet').innerHTML = chDonut(P, W('chKet'), d.ket, isFsC('chKet') ? {cols:KET_KEYS.map(k => KET_C[k]), two:true, H:Math.min(fsH(140), 380), R:110, SW:54} : {cols:KET_KEYS.map(k => KET_C[k]), two:true, H:170, R:52, SW:26});
-  $('ketDLg').innerHTML = legendHtml(KET_KEYS, kdState.hide);
+  $('chKet').innerHTML = chDonut(P, W('chKet'), d.ket, isFsC('chKet') ? {cols:DK.map(k => SUB_C[k]), two:true, H:Math.min(fsH(140), 380), R:110, SW:54} : {cols:DK.map(k => SUB_C[k]), two:true, H:170, R:52, SW:26});
+  $('ketDLg').innerHTML = legendHtml(SUBK, kdState.hide, SUB_L, SUB_C);
   document.querySelectorAll('#ketDT button').forEach(b => b.classList.toggle('on', b.dataset.t === kdState.t));
-  $('chKetD').innerHTML = chGroup(P, W('chKetD'), d.ketDates, {H:isFsC('chKetD') ? fsH(190) : 230, hide:kdState.hide, line:kdState.t === 'line', nolg:true});
+  $('chKetD').innerHTML = chGroup(P, W('chKetD'), d.ketDates, {H:isFsC('chKetD') ? fsH(190) : chH(230, 380, .33), hide:kdState.hide, line:kdState.t === 'line', nolg:true});
   drawDates(d, P, W('chDates'));
   const sl = SCOPE_L[rState.scope], col = {all:C.blue, out:C.out, close:C.close}[rState.scope];
   document.querySelectorAll('#scopeSeg button').forEach(b => b.classList.toggle('on', b.dataset.s === rState.scope));
@@ -1491,7 +1512,7 @@ function xlSummary(wb){
   const so = d.sub.out, sc = d.sub.close;
   table('Ringkasan', ['Laporan', 'Baris', 'Qty (PCS)', 'Tonase (KG)'],
     [['WO OS', d.o.length, so.q, so.t], ['WO Close', d.c.length, sc.q, sc.t], ['Total', d.all.length, so.q + sc.q, so.t + sc.t]], [, '#,##0', '#,##0', '#,##0.00']);
-  table('Keterangan WO Close (Masuk / Pengajuan Destroy / Destroy / Sisa)', ['Keterangan', 'Baris', 'Qty (PCS)', 'Tonase (KG)'], d.ket.map(x => [x.k, x.n, x.q, x.v]), [, '#,##0', '#,##0', '#,##0.00']);
+  table('Keterangan WO Close (Pengajuan Destroy = Destroy + Sisa Pengajuan)', ['Keterangan', 'Baris', 'Qty (PCS)', 'Tonase (KG)'], d.ketAll.map(x => [x.k, x.n, x.q, x.v]), [, '#,##0', '#,##0', '#,##0.00']);
   table('Tonase per Tanggal', ['Tanggal', 'WO OS (KG)', 'WO Close (KG)', 'Total (KG)'], d.dates.map(x => [x.k, x.out, x.close, x.out + x.close]));
   table('Top 10 Customer' + scopeSfx(), ['Customer', 'Tonase (KG)'], d.cust.slice(0, 10).map(x => [x.k, x.v]));
   table('Top 10 Sales' + scopeSfx(), ['Sales', 'Tonase (KG)'], d.sales.slice(0, 10).map(x => [x.k, x.v]));
@@ -1582,7 +1603,7 @@ async function pdfReport(docIn){
     doc.addImage(await svgToPng(sv.close, W, H), 'PNG', GX, y + 1.5, CW, mm);
     y += mm + 8;
   }
-  { const ka = d.ket, KH = 170, svA = chDonut(PAL_PDF, W, ka, {cols:KET_KEYS.map(k => KET_C[k]), two:true, H:KH, R:52, SW:26}), svB = chGroup(PAL_PDF, W, d.ketDates, {H:KH}), mm = CW * KH / W;
+  { const ka = d.ket, KH = 170, svA = chDonut(PAL_PDF, W, ka, {cols:DK.map(k => SUB_C[k]), two:true, H:KH, R:52, SW:26}), svB = chGroup(PAL_PDF, W, d.ketDates, {H:KH}), mm = CW * KH / W;
     if (y + mm + 14 > LIM){ doc.addPage('a4', 'landscape'); y = 14; }
     title('Keterangan WO Close - Masuk / Destroy / Sisa', 8, y); y += 5;
     title('Share tonase (KG)', 8, y); title('Tonase per tanggal (KG)', GX, y);
@@ -1732,7 +1753,7 @@ function renderSub(){
   $('subSub').textContent = (m === 'ton' ? 'Tonase KG' : m === 'qty' ? 'Qty PCS' : 'Jumlah baris') + ' · Masuk Gudang / Pengajuan Destroy / Destroy / Sisa Pengajuan / Sisa';
   document.querySelectorAll('#subT button').forEach(b => b.classList.toggle('on', b.dataset.t === state.subT));
   $('subLegend').innerHTML = legendHtml(state.subT === 'line' ? [...SUBK, 'TOTAL'] : SUBK, state.subHide, SUB_L, SUB_C);
-  $('chSub').innerHTML = gs.length ? (state.subT === 'line' ? chLine : chStack)(P, Math.max(280, Math.floor($('chSub').clientWidth || 700)), gs, m, isFsC('chSub') ? fsH(190) : 280, state.subHide) : '<div class="empty-state"><b>Belum ada data</b>Tidak ada baris untuk sub-tab ini.</div>';
+  $('chSub').innerHTML = gs.length ? (state.subT === 'line' ? chLine : chStack)(P, Math.max(280, Math.floor($('chSub').clientWidth || 700)), gs, m, isFsC('chSub') ? fsH(190) : chH(280, 460, .42), state.subHide) : '<div class="empty-state"><b>Belum ada data</b>Tidak ada baris untuk sub-tab ini.</div>';
   $('subTblT').textContent = on ? 'Rekap per Umur WO' : 'Rekap per Minggu'; $('subTblS').textContent = metricName(m);
   const head = `<th>${on ? 'Umur WO' : 'Minggu'}</th>${on ? '<th>Bulan WO</th>' : ''}${SUBK.map(k => `<th class="num">${SUB_L[k]}</th>`).join('')}<th class="num">Total</th><th class="num">Δ vs sebelumnya</th>`;
   let prev = null;
