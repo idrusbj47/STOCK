@@ -455,6 +455,9 @@ html[data-theme="dark"] .badge.warn{ color:#fbbf24; }
 .lg.all:not(.act){opacity:.55}
 svg [data-x]{cursor:pointer}
 #subDet th.sortable{cursor:pointer}
+.stk-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+#stKpis .kpi-value,#sbKpis .kpi-value{font-size:clamp(20px,2.1vw,28px);display:flex;align-items:baseline;flex-wrap:wrap;gap:4px}#stKpis .kpi-value small,#sbKpis .kpi-value small{font-size:13px;margin-left:0}
+.chart-card .sub-note{margin:10px 0 0;padding-right:0}
 /* ===== Sub-tab WO Close ===== */
 .subtabs{display:flex;margin-bottom:14px;max-width:100%;overflow-x:auto}
 .subtabs button{white-space:nowrap}
@@ -543,6 +546,13 @@ svg [data-x]{cursor:pointer}
       <section class="charts"><div class="chart-card wide">
         <div class="ch-head"><div><h3 id="subTitle"></h3><p id="subSub"></p></div><span class="trend" id="subTrend"></span></div>
         <div class="legend" id="subLegend"></div><div id="chSub"></div></div></section>
+      <section class="charts"><div class="chart-card wide">
+        <div class="ch-head"><div><h3 id="sbTitle">Timeline Sisa Stock</h3><p id="sbSub"></p></div>
+          <div class="stk-tools"><div class="seg" id="sbG"><button data-v="day" class="on">Harian</button><button data-v="month">Bulanan</button></div>
+            <div class="seg" id="sbM"><button data-v="ton" class="on">Tonase</button><button data-v="qty">Qty</button></div></div></div>
+        <section class="kpis k5" id="sbKpis" style="margin:12px 0 10px"></section>
+        <div class="legend" id="sbLegend"></div><div id="chSbStock"></div>
+        <div class="sub-note" id="sbNote"></div></div></section>
       <section class="table-card"><div class="table-title"><h3 id="subTblT"></h3><span id="subTblS"></span><button type="button" class="fs-btn tfs-btn" aria-label="Layar penuh" title="Layar penuh"></button></div><div class="table-wrap" id="subSum"></div></section>
       <section class="table-card" id="detCard"><div class="table-title"><h3>Detail Data</h3><span id="subDetS"></span><button type="button" class="fs-btn tfs-btn" aria-label="Layar penuh" title="Layar penuh"></button></div>
       <div class="det-tools" id="detTools"><select id="dfInt" class="field" aria-label="Filter internal"></select><select id="dfSales" class="field" aria-label="Filter sales"></select><select id="dfCust" class="field" aria-label="Filter customer"></select><select id="dfUmur" class="field" aria-label="Filter umur WO"></select><select id="dfKet" class="field" aria-label="Filter keterangan"></select>
@@ -595,6 +605,13 @@ svg [data-x]{cursor:pointer}
           <div class="legend" id="dateLegend"><button class="lg" data-s="out"><i style="background:#f59e0b"></i><span>WO OS</span></button><button class="lg" data-s="close"><i style="background:#0d9488"></i><span>WO Close</span></button><button type="button" class="lg all" id="dateAll" data-s="__all" title="Tampilkan semua"><svg viewBox="0 0 24 24"><path d="M3 12s3.6-7 9-7 9 7 9 7-3.6 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/></svg><span>Tampilkan semua</span></button></div>
           <div id="chDates"></div></div>
         </section>
+      <section class="charts"><div class="chart-card wide">
+        <div class="ch-head"><div><h3>Timeline Sisa Stock Over WO</h3><p id="stSub"></p></div>
+          <div class="stk-tools"><div class="seg" id="stG"><button data-v="day" class="on">Harian</button><button data-v="month">Bulanan</button></div>
+            <div class="seg" id="stM"><button data-v="ton" class="on">Tonase</button><button data-v="qty">Qty</button></div></div></div>
+        <section class="kpis k5" id="stKpis"></section>
+        <div class="legend" id="stLegend"></div><div id="chStock"></div>
+        <div class="sub-note" id="stNote"></div></div></section>
       <section class="charts">
         <div class="chart-card"><h3>Keterangan WO Close</h3><p id="pKet"></p><div id="chKet"></div></div>
         <div class="chart-card"><div class="ch-head"><div><h3>Keterangan per Tanggal</h3><p id="pKetD"></p></div><div class="seg" id="ketDT"><button data-t="bar" class="on">Batang</button><button data-t="line">Garis</button></div></div><div class="legend" id="ketDLg"></div><div id="chKetD"></div></div>
@@ -1402,6 +1419,80 @@ function chGroup(P, W, agg, o = {}){
   if (!o.nolg) SUBK.forEach((k, j) => { const x = l + j * 120; s += `<rect x="${x}" y="4" width="10" height="10" rx="3" fill="${SUB_C[k]}"/><text x="${x+15}" y="13" font-size="11" fill="${P.t}">${SUB_L[k]}</text>`; });
   return svgWrap(P, W, H, s);
 }
+/* ===== Timeline sisa stock Over WO (Masuk Gudang & Destroy selalu mengurangi stok) ===== */
+const stState = {g:'day', m:'ton', hide:{}}, sbState = {g:'day', m:'ton', hide:{}};
+const ST_K = ['STOK','ADD','DESTROY','MASUK'];
+const ST_L = {STOK:'Sisa stok', ADD:'Tambah (over baru)', DESTROY:'Destroy (−)', MASUK:'Masuk Gudang (−)'};
+const ST_C = {STOK:'#1688f8', ADD:'#f59e0b', DESTROY:'#ef3340', MASUK:'#16a34a'};
+function stockSeries(st, src){
+  src = src || {out:realRows('out'), close:realRows('close')};
+  const m = st.m, day = st.g === 'day', val = r => m === 'qty' ? r._qty : r._ton, items = [];
+  src.out.forEach(r => { if (r._date) items.push({v:val(r), a:r._date, rd:0, rt:null}); });
+  src.close.forEach(r => { if (!r._date) return;
+    const wi = woIdx(r), di = monIdx(r._date), a = wi !== null && wi < di ? new Date(Math.floor(wi / 12), wi % 12, 1).getTime() : r._date;
+    items.push({v:val(r), a, rd:r._date, rt:r._ket === 'DESTROY' ? 'dest' : r._ket === 'MASUK' ? 'masuk' : null}); });
+  if (!items.length) return {pts:[], open:0, m, g:st.g};
+  const dates = items.flatMap(x => x.rd ? [x.rd] : [x.a]), minT = Math.min(...dates), maxT = Math.max(...dates);
+  let n, idxOf, labelOf;
+  if (day){ const st0 = new Date(minT); st0.setHours(0, 0, 0, 0); const t0 = st0.getTime(); n = Math.round((new Date(maxT).setHours(0, 0, 0, 0) - t0) / 864e5) + 1;
+    idxOf = ts => Math.round((new Date(ts).setHours(0, 0, 0, 0) - t0) / 864e5); labelOf = i => { const d = new Date(t0); d.setDate(d.getDate() + i); return d.getDate() + ' ' + MN[d.getMonth()]; }; }
+  else { const eM = monIdx(maxT), sM = Math.max(Math.min(...items.map(x => monIdx(x.a))), eM - 11); n = eM - sM + 1;
+    idxOf = ts => monIdx(ts) - sM; labelOf = i => monLbl(sM + i); }
+  const pts = Array.from({length:n}, (_, i) => ({k:i, label:labelOf(i), add:0, dest:0, masuk:0, stock:0})); let open = 0;
+  items.forEach(x => { const ai = idxOf(x.a); if (ai < 0) open += x.v; else if (ai < n) pts[ai].add += x.v;
+    if (x.rt){ const ri = idxOf(x.rd); if (ri < 0) open -= x.v; else if (ri < n) pts[ri][x.rt] += x.v; } });
+  let cur = open; pts.forEach(p => { cur += p.add - p.dest - p.masuk; p.stock = cur; });
+  return {pts, open, m, g:st.g};
+}
+function chStock(P, W, S, o = {}){
+  const H = o.H || 380, hide = o.hide || {}, pts = S.pts, n = pts.length, l = 54, r = 12, t = 16, bt = 30, gap = 22, body = H - t - bt - gap, hs = Math.round(body * .6), hd = body - hs;
+  const gw = (W - l - r) / Math.max(n, 1), cx = i => l + gw * i + gw / 2, u = S.m === 'qty' ? 'PCS' : 'KG', f = v => S.m === 'qty' ? fmtInt(v) : fmtDec(v);
+  const sv = [S.open, ...pts.map(p => p.stock)], mn = Math.min(0, ...sv), mx = niceMax(Math.max(1, ...sv)), lo = mn < 0 ? -niceMax(-mn) : 0, yS = v => t + hs - hs * (v - lo) / (mx - lo);
+  let s = '';
+  for (let i = 0; i <= 4; i++){ const v = lo + (mx - lo) * i / 4, y = yS(v); s += `<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" stroke="${P.g}"/><text x="${l-6}" y="${y+4}" text-anchor="end" font-size="10" fill="${P.m}">${short(v)}</text>`; }
+  if (!hide.STOK){
+    const line = [[l, S.open], ...pts.map((p, i) => [cx(i), p.stock])].map(q => q[0] + ',' + yS(q[1])).join(' ');
+    s += `<polygon points="${l},${yS(0)} ${line} ${cx(n-1)},${yS(0)}" fill="${ST_C.STOK}" opacity=".13"/><polyline fill="none" stroke="${ST_C.STOK}" stroke-width="2.6" stroke-linejoin="round" points="${line}"/>`;
+    s += `<circle cx="${l}" cy="${yS(S.open)}" r="3.5" fill="${P.bg || '#fff'}" stroke="${ST_C.STOK}" stroke-width="2"><title>Stok awal: ${f(S.open)} ${u}</title></circle>`;
+    pts.forEach((p, i) => { s += `<circle cx="${cx(i)}" cy="${yS(p.stock)}" r="${n > 40 ? 2.2 : 3.4}" fill="${ST_C.STOK}"><title>${p.label} · Sisa stok: ${f(p.stock)} ${u}</title></circle>`; });
+    const lp = pts[n - 1]; if (lp) s += `<text x="${Math.min(cx(n-1), W - r - 2)}" y="${yS(lp.stock) - 9}" text-anchor="end" font-size="11" font-weight="700" fill="${ST_C.STOK}">${f(lp.stock)}</text>`; }
+  const dtop = t + hs + gap, zero = dtop + hd / 2, half = hd / 2 - 2;
+  const dm = niceMax(Math.max(1, ...pts.map(p => hide.ADD ? 0 : p.add), ...pts.map(p => (hide.DESTROY ? 0 : p.dest) + (hide.MASUK ? 0 : p.masuk)))), ys = v => half * v / dm, bw = Math.min(22, gw * .7);
+  s += `<line x1="${l}" x2="${W-r}" y1="${zero}" y2="${zero}" stroke="${P.m}" stroke-width=".8"/><text x="${l-6}" y="${dtop+8}" text-anchor="end" font-size="9" fill="${P.m}">+${short(dm)}</text><text x="${l-6}" y="${dtop+hd}" text-anchor="end" font-size="9" fill="${P.m}">−${short(dm)}</text><text x="${l-6}" y="${zero+3}" text-anchor="end" font-size="9" fill="${P.m}">0</text>`;
+  pts.forEach((p, i) => { const x = cx(i) - bw / 2;
+    if (!hide.ADD && p.add > 0) s += `<rect x="${x}" y="${zero-ys(p.add)}" width="${bw}" height="${ys(p.add)}" rx="2" fill="${ST_C.ADD}"><title>${p.label} · Tambah: +${f(p.add)} ${u}</title></rect>`;
+    let yy = zero;
+    if (!hide.DESTROY && p.dest > 0){ s += `<rect x="${x}" y="${yy}" width="${bw}" height="${ys(p.dest)}" rx="2" fill="${ST_C.DESTROY}"><title>${p.label} · Destroy: −${f(p.dest)} ${u}</title></rect>`; yy += ys(p.dest); }
+    if (!hide.MASUK && p.masuk > 0) s += `<rect x="${x}" y="${yy}" width="${bw}" height="${ys(p.masuk)}" rx="2" fill="${ST_C.MASUK}"><title>${p.label} · Masuk Gudang: −${f(p.masuk)} ${u}</title></rect>`; });
+  const step = Math.max(1, Math.ceil(n / Math.max(4, Math.floor((W - l - r) / (S.g === 'day' ? 46 : 62)))));
+  pts.forEach((p, i) => { if (i % step === 0 || i === n - 1) s += `<text x="${cx(i)}" y="${H-10}" text-anchor="middle" font-size="10" fill="${P.m}">${p.label}</text>`; });
+  return svgWrap(P, W, H, s);
+}
+function stockKpis(S){
+  const sum = k => sumBy(S.pts, p => p[k]), end = S.pts.length ? S.pts[S.pts.length - 1].stock : S.open, u = S.m === 'qty' ? 'PCS' : 'KG', f = v => S.m === 'qty' ? fmtInt(v) : fmtDec(v);
+  return [['Stok awal', S.open, '100,116,139', 'sebelum periode grafik'], ['Tambah', sum('add'), '245,158,11', 'over baru tercatat'], ['Destroy', -sum('dest'), '239,51,64', 'mengurangi stok'], ['Masuk Gudang', -sum('masuk'), '22,163,74', 'mengurangi stok'], ['Sisa stok akhir', end, '22,136,248', 'posisi terakhir']]
+    .map(([l, v, rgb, n]) => ({l, v, rgb, n, t:(v > 0 && l !== 'Stok awal' && l !== 'Sisa stok akhir' ? '+' : v < 0 ? '−' : '') + f(Math.abs(v)), u}));
+}
+const NOTE_REP = 'Cara hitung: sisa stok = WO OS + semua WO Close, dikurangi Destroy dan Masuk Gudang pada tanggal barisnya (barang yang masuk gudang tidak ada lagi di gudang over). Barang WO Close yang nomor WO-nya berbulan lebih lama dihitung sudah ada sejak awal bulan WO tersebut, sehingga pengurangannya terlihat di tanggalnya.';
+const STK = {
+  rep:{st:stState, pre:'st', ch:'chStock', src:() => null, sub:'', note:() => NOTE_REP},
+  sub:{st:sbState, pre:'sb', ch:'chSbStock', src:() => ({out:[], close:subRows()}), sub:() => (state.sub === 'onim' ? 'Monitoring ONIM' : 'Mingguan') + ' · ',
+    note:() => 'Hanya WO Close ' + (state.sub === 'onim' ? 'ONIM' : 'non-ONIM') + (state.subMonth ? ' bulan ' + monLbl(+state.subMonth) : '') + ' (WO OS tidak ikut). Sisa stok = semua baris, dikurangi Destroy dan Masuk Gudang pada tanggal barisnya; yang tersisa adalah Sisa + Pengajuan Destroy. ' + 'Barang yang nomor WO-nya berbulan lebih lama dihitung sudah ada sejak awal bulan WO tersebut.'}
+};
+function drawStock(P, w, c = STK.rep){
+  const st = c.st, p = c.pre, S = stockSeries(st, c.src());
+  document.querySelectorAll('#' + p + 'G button').forEach(b => b.classList.toggle('on', b.dataset.v === st.g));
+  document.querySelectorAll('#' + p + 'M button').forEach(b => b.classList.toggle('on', b.dataset.v === st.m));
+  $(p + 'Sub').textContent = (typeof c.sub === 'function' ? c.sub() : '') + (st.g === 'day' ? 'Harian' : 'Bulanan') + ' · ' + (S.m === 'qty' ? 'PCS' : 'KG') + ' · stok naik-turun menurut tanggal';
+  $(p + 'Kpis').innerHTML = stockKpis(S).map(k => `<div class="kpi" style="--accent:rgb(${k.rgb});--accent-rgb:${k.rgb}"><div class="kpi-label">${k.l}</div><div class="kpi-value"><span>${k.t}</span><small>${k.u}</small></div><div class="kpi-note">${k.n}</div></div>`).join('');
+  $(p + 'Legend').innerHTML = legendHtml(ST_K, st.hide, ST_L, ST_C, Object.values(st.hide).some(Boolean));
+  $(p + 'Note').textContent = c.note();
+  $(c.ch).innerHTML = S.pts.length ? chStock(P, w, S, {H:isFsC(c.ch) ? fsH(250) : chH(340, 480, .5), hide:st.hide}) : '<div class="empty-state"><b>Belum ada data</b></div>';
+}
+Object.values(STK).forEach(c => { const redraw = () => drawStock(PAL(), Math.max(280, Math.floor($(c.ch).clientWidth || 700)), c);
+  [[c.pre + 'G', 'g'], [c.pre + 'M', 'm']].forEach(([id, k]) => $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; c.st[k] = b.dataset.v; redraw(); }));
+  $(c.pre + 'Legend').addEventListener('click', e => { const b = e.target.closest('.lg'); if (!b) return;
+    if (b.dataset.k === '__all') c.st.hide = {}; else soloToggle(c.st.hide, ST_K, b.dataset.k); redraw(); }); });
 function reportData(){
   const dsel = r => !dSel.size || dSel.has(r.tgl), oA = realRows('out'), c0A = realRows('close'), o = oA.filter(dsel), c0 = c0A.filter(dsel), kf = rs => rState.ket ? rs.filter(r => subCats(r._ket).includes(rState.ket)) : rs, c = kf(c0), all = [...o, ...c], allFull = [...oA, ...kf(c0A)], base = rState.scope === 'out' ? o : rState.scope === 'close' ? c : all;
   const by = k => { const m = new Map(); base.forEach(r => m.set(r[k] || '-', (m.get(r[k] || '-') || 0) + r._ton)); return [...m].map(([k, v]) => ({k, v})); };
@@ -1490,6 +1581,7 @@ function renderReport(){
   $('chSales').innerHTML = chBars(P, W('chSales'), d.sales.slice(0, nb('chSales')), col, bo('chSales'));
   $('chInt').innerHTML = chBars(P, W('chInt'), d.internal.slice(0, nb('chInt')), col, bo('chInt'));
   $('chShift').innerHTML = chDonut(P, W('chShift'), d.shift, isFsC('chShift') ? {H:Math.min(fsH(140), 380), R:110, SW:54} : {});
+  drawStock(P, W('chStock'));
 }
 $('ketDLg').addEventListener('click', e => { const b = e.target.closest('.lg'); if (!b) return;
   if (b.dataset.k === '__all'){ kdState.hide = {}; dSel.clear(); } else soloToggle(kdState.hide, SUBK, b.dataset.k); renderReport(); });
@@ -1615,6 +1707,16 @@ async function pdfReport(docIn){
   if (y + dmm + 8 > LIM){ doc.addPage('a4', 'landscape'); y = 16; }
   title((dState.m === 'qty' ? 'Qty (PCS)' : 'Tonase (KG)') + ' per Tanggal', 8, y);
   doc.addImage(await svgToPng(chDates(PAL_PDF, DW, d.dates, {m:dState.m, hide:dState.hide, xs:dSel, lg:true, H:DH}), DW, DH), 'PNG', 8, y + 2, PW - 16, dmm);
+  { const S = stockSeries(stState); if (S.pts.length){
+      const SW = 900, SH = 400, smm = (PW - 16) * SH / SW; doc.addPage('a4', 'landscape'); let sy = 14;
+      title('Timeline Sisa Stock Over WO · ' + (S.g === 'day' ? 'Harian' : 'Bulanan') + ' · ' + (S.m === 'qty' ? 'PCS' : 'KG'), 8, sy);
+      const kk = stockKpis(S);
+      doc.autoTable({startY:sy + 3, theme:'grid', margin:{left:8, right:8}, styles:{fontSize:8, cellPadding:1.5, halign:'center'}, headStyles:{fillColor:[22, 136, 248], textColor:255},
+        head:[kk.map(k => k.l)], body:[kk.map(k => k.t + ' ' + k.u)]});
+      sy = doc.lastAutoTable.finalY + 4;
+      doc.addImage(await svgToPng(chStock(PAL_PDF, SW, S, {H:SH, hide:stState.hide}), SW, SH), 'PNG', 8, sy, PW - 16, smm);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100);
+      doc.text(doc.splitTextToSize(NOTE_REP, PW - 16), 8, sy + smm + 4); } }
   /* Top 10 & komposisi: WO OS dan WO Close ditampilkan berdampingan, ringkas */
   const CW = 136.5, GX = 8 + CW + 8, W = 460, B = {rh:17, fs:10};
   const rows = [
@@ -1682,6 +1784,15 @@ async function pdfSub(){
   ks.forEach(k => { doc.setFillColor(...hex(k === 'TOTAL' ? '#7c3aed' : SUB_C[k])); doc.rect(lx, y - 3, 3, 3, 'F'); doc.setTextColor(15, 23, 42); const lb = k === 'TOTAL' ? 'Total' : SUB_L[k]; doc.text(lb, lx + 4.5, y - .3); lx += doc.getTextWidth(lb) + 11; });
   const svg = (state.subT === 'line' ? chLine : chStack)(PAL_PDF, CW, gs, m, CH, state.subHide, state.subSel);
   doc.addImage(await svgToPng(svg, CW, CH), 'PNG', 8, y + 2, PW - 16, cmm);
+  { const S = stockSeries(sbState, STK.sub.src());
+    if (S.pts.length){ const SW = 900, SH = 400, smm = (PW - 16) * SH / SW; doc.addPage('a4', 'landscape'); let sy = 14;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(15, 23, 42);
+      doc.text('Timeline Sisa Stock · ' + (on ? 'Monitoring ONIM' : 'Mingguan') + ' · ' + (S.g === 'day' ? 'Harian' : 'Bulanan') + ' · ' + (S.m === 'qty' ? 'PCS' : 'KG'), 8, sy);
+      const kk = stockKpis(S);
+      doc.autoTable({startY:sy + 3, theme:'grid', margin:{left:8, right:8}, styles:{fontSize:8, cellPadding:1.5, halign:'center'}, headStyles:{fillColor:[22, 136, 248], textColor:255}, head:[kk.map(k => k.l)], body:[kk.map(k => k.t + ' ' + k.u)]});
+      sy = doc.lastAutoTable.finalY + 4;
+      doc.addImage(await svgToPng(chStock(PAL_PDF, SW, S, {H:SH, hide:sbState.hide}), SW, SH), 'PNG', 8, sy, PW - 16, smm);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100); doc.text(doc.splitTextToSize(STK.sub.note(), PW - 16), 8, sy + smm + 4); } }
   doc.addPage('a4', 'landscape');
   const right = {}; const numFrom = on ? 2 : 1;
   doc.autoTable({startY:14, theme:'grid', margin:{left:8, right:8, bottom:14}, showFoot:'lastPage',
@@ -1866,6 +1977,7 @@ function renderSub(){
     let v = r[k]; if (!v) return `<td class="empty dim ${c}" data-label="${l}">–</td>`; if (k === 'qty') v = fmtInt(num(v)); else if (k === 'tonase') v = fmtDec(num(v));
     return `<td class="${c}" data-label="${l}">${esc(v)}</td>`; }).join('')}</tr>`).join('')}</tbody></table>` : '<div class="empty-state"><b>Data tidak ditemukan</b>Coba ubah kata kunci / filter.</div>';
   wrap.scrollTop = keep;
+  drawStock(P, Math.max(280, Math.floor($('chSbStock').clientWidth || 700)), STK.sub);
 }
 const metricName = m => m === 'ton' ? 'Tonase · KG' : m === 'qty' ? 'Qty · PCS' : 'Jumlah baris';
 $('subTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.sub = b.dataset.sub; state.subMonth = ''; state.detF = detF0(); state.subSel.clear(); state.detSort = {k:null, dir:1};
