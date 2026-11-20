@@ -547,7 +547,7 @@ td.clk:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
         <button id="btnPdfAll" class="xbtn all" title="Satu file PDF berisi WO OS, WO Close &amp; Laporan"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 12h6M9 15h6M9 18h4"/></svg>PDF Semua</button>
       </div>
     </div>
-    <div class="seg subtabs" id="subTabs" hidden><button data-sub="all" class="on">Semua Data</button><button data-sub="onim">Monitoring ONIM</button><button data-sub="week">Mingguan · Shift 1/2/3</button></div>
+    <div class="seg subtabs" id="subTabs" hidden><button data-sub="all" class="on">Semua Data</button><button data-sub="onim">Monitoring Sep-Okt</button><button data-sub="week">Mingguan · Shift 1/2/3</button></div>
     <div id="subView" hidden>
       <p class="sub-note" id="subNote"></p>
       <section class="toolbar">
@@ -1785,7 +1785,7 @@ async function pdfSub(){
   const X = subCtx(), {gs, gsS, T, A, katK, dr, m} = X, on = state.sub === 'onim';
   if (!gs.length) throw new Error('tidak ada data untuk diekspor');
   const doc = new window.jspdf.jsPDF({orientation:'landscape', unit:'mm', format:'a4'}), PW = 297, rgb = [13, 148, 136];
-  pdfBand(doc, PW, rgb, (on ? 'MONITORING ONIM PER UMUR WO' : 'LAPORAN MINGGUAN SHIFT 1/2/3') + ' · WO CLOSE', personOf(state.data.close.title) + (state.subSel.size ? '  |  Terpilih: ' + gsS.map(g => g.lbl).join(', ') : ''));
+  pdfBand(doc, PW, rgb, (on ? 'MONITORING SEP-OKT' : 'LAPORAN MINGGUAN SHIFT 1/2/3') + ' · WO CLOSE', personOf(state.data.close.title) + (state.subSel.size ? '  |  Terpilih: ' + gsS.map(g => g.lbl).join(', ') : ''));
   const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
   doc.autoTable({startY:27, theme:'grid', margin:{left:8, right:8}, styles:{fontSize:8, cellPadding:1.6, halign:'center'},
     head:[[...katK.map(k => SUB_L[k]), 'Total']], body:[[...katK.map(k => fmtDec(A[k].ton) + ' KG'), fmtDec(T.ton) + ' KG'], [...katK.map(k => `${A[k].n} baris · ${fmtInt(A[k].qty)} PCS`), `${T.n} baris · ${fmtInt(T.qty)} PCS`]],
@@ -1803,7 +1803,7 @@ async function pdfSub(){
   { const S = stockSeries(sbState, STK.sub.src());
     if (S.pts.length){ const SW = 900, SH = 400, smm = (PW - 16) * SH / SW; doc.addPage('a4', 'landscape'); let sy = 14;
       doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(15, 23, 42);
-      doc.text('Timeline Sisa Stock · ' + (on ? 'Monitoring ONIM' : 'Mingguan') + ' · ' + (S.g === 'day' ? 'Harian' : 'Bulanan') + ' · ' + (S.m === 'qty' ? 'PCS' : 'KG'), 8, sy);
+      doc.text('Timeline Sisa Stock · ' + (on ? 'Monitoring Sep-Okt' : 'Mingguan') + ' · ' + (S.g === 'day' ? 'Harian' : 'Bulanan') + ' · ' + (S.m === 'qty' ? 'PCS' : 'KG'), 8, sy);
       const kk = stockKpis(S);
       doc.autoTable({startY:sy + 3, theme:'grid', margin:{left:8, right:8}, styles:{fontSize:8, cellPadding:1.5, halign:'center'}, headStyles:{fillColor:[22, 136, 248], textColor:255}, head:[kk.map(k => k.l)], body:[kk.map(k => k.t + ' ' + k.u)]});
       sy = doc.lastAutoTable.finalY + 4;
@@ -1967,7 +1967,7 @@ function renderSub(){
   $('subKpis').innerHTML = katK.map(k => `<div class="kchip st" style="--kc:${SUB_C[k]}"><div class="kl"><i></i>${SUB_L[k]}</div><div class="kv">${fmtDec(A[k].ton)}<small>KG</small></div><div class="kn">${A[k].n} baris · ${fmtInt(A[k].qty)} PCS · ${(A[k].ton / (T.ton || 1) * 100).toFixed(1)}%</div></div>`).join('')
     + `<div class="kchip st" style="--kc:#7c3aed"><div class="kl"><i></i>Total</div><div class="kv">${fmtDec(T.ton)}<small>KG</small></div><div class="kn">${T.n} baris · ${fmtInt(T.qty)} PCS</div></div>`;
   const tr = trendOf(gsS, m), te = $('subTrend'); te.className = 'trend ' + tr.c; te.textContent = (on ? 'Makin tua umur WO: ' : 'Tren mingguan: ') + tr.t;
-  $('subTitle').textContent = on ? 'Monitoring ONIM per Umur WO' : 'Laporan Mingguan';
+  $('subTitle').textContent = on ? 'Monitoring Sep-Okt' : 'Laporan Mingguan';
   $('subSub').textContent = (m === 'ton' ? 'Tonase KG' : m === 'qty' ? 'Qty PCS' : 'Jumlah baris') + ' · Masuk Gudang / Pengajuan Destroy / Destroy / Sisa Pengajuan / Sisa' + (state.subSel.size ? ' · terpilih: ' + gsS.map(g => g.lbl).join(', ') : '');
   document.querySelectorAll('#subT button').forEach(b => b.classList.toggle('on', b.dataset.t === state.subT));
   $('subLegend').innerHTML = legendHtml(state.subT === 'line' ? [...SUBK, 'TOTAL'] : SUBK, state.subHide, SUB_L, SUB_C, state.subSel.size > 0 || Object.values(state.subHide).some(Boolean));
