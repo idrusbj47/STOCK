@@ -487,6 +487,21 @@ svg [data-x]{cursor:pointer}
   .charts:has(#chCust){grid-template-columns:repeat(4,minmax(0,1fr))}
   .kpis:not(.k4) .kpi-value{font-size:52px}
 }
+
+/* ===== Rekap -> Detail (klik angka) ===== */
+td.clk{cursor:pointer;transition:background .15s,color .15s}
+td.clk:hover{background:rgba(var(--accent-rgb),.14);color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+td.clk:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.det-chip{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 22px 12px;font:500 11.5px var(--font-mono);letter-spacing:.04em;color:var(--muted);border-bottom:1px solid var(--border)}
+.det-chip b{color:var(--text);font-weight:700}
+.det-chip b.tonase{color:var(--accent)}
+.det-chip .tag{padding:3px 10px;border-radius:999px;background:rgba(var(--accent-rgb),.13);color:var(--accent);font-weight:600;white-space:nowrap}
+.det-chip .sp{flex:1 1 auto}
+.det-chip button{height:30px;padding:0 12px;border:0;border-radius:10px;cursor:pointer;font:700 11.5px var(--font-body);color:var(--accent);background:rgba(var(--accent-rgb),.12);transition:.2s}
+.det-chip button:hover{background:var(--accent);color:#fff}
+@keyframes detFlash{0%{box-shadow:0 0 0 4px rgba(var(--accent-rgb),.6),var(--shadow)}100%{box-shadow:0 0 0 0 rgba(var(--accent-rgb),0),var(--shadow)}}
+.table-card.flash{animation:detFlash 1.4s ease-out}
+@media (max-width:720px){.det-chip{padding:8px 4px 10px;font-size:10.5px}}
 </style>
 </head>
 <body data-tab="out">
@@ -555,6 +570,7 @@ svg [data-x]{cursor:pointer}
         <div class="sub-note" id="sbNote"></div></div></section>
       <section class="table-card"><div class="table-title"><h3 id="subTblT"></h3><span id="subTblS"></span><button type="button" class="fs-btn tfs-btn" aria-label="Layar penuh" title="Layar penuh"></button></div><div class="table-wrap" id="subSum"></div></section>
       <section class="table-card" id="detCard"><div class="table-title"><h3>Detail Data</h3><span id="subDetS"></span><button type="button" class="fs-btn tfs-btn" aria-label="Layar penuh" title="Layar penuh"></button></div>
+      <div class="det-chip" id="detChip"></div>
       <div class="det-tools" id="detTools"><select id="dfInt" class="field" aria-label="Filter internal"></select><select id="dfSales" class="field" aria-label="Filter sales"></select><select id="dfCust" class="field" aria-label="Filter customer"></select><select id="dfUmur" class="field" aria-label="Filter umur WO"></select><select id="dfKet" class="field" aria-label="Filter keterangan"></select>
         <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="dfQ" class="field" type="search" placeholder="Cari…" autocomplete="off"></div><button type="button" id="dfReset" class="btn-reset">Reset</button></div>
       <div class="table-wrap" id="subDet"></div></section>
@@ -1916,6 +1932,7 @@ function dlt(cur, prev){
   const p = (cur - prev) / prev * 100;
   return Math.abs(p) < 5 ? '<span class="dl eq">● tetap</span>' : p > 0 ? `<span class="dl up">▲ ${p.toFixed(0)}%</span>` : `<span class="dl dn">▼ ${Math.abs(p).toFixed(0)}%</span>`;
 }
+function grpKey(r){ if (state.sub === 'onim'){ const a = parseInt(r.umur); return isNaN(a) ? 'x' : a; } return weekStart(r._date); }
 const detF0 = () => ({internal:'', sales:'', cust:'', umur:'', ket:''});
 state.detF = detF0(); state.detSort = {k:null, dir:1}; state.subSel = new Set();
 const DETCOLS = [['tgl','Tgl','nowrap mono'], ['wo','WO','mono'], ['umur','Umur WO','nowrap'], ['_k','Keterangan',''], ['woin','WO In','mono'], ['cust','Customer','cust'], ['nama','Nama Barang','name'], ['internal','Internal','nowrap'], ['sales','Sales','nowrap'], ['qty','Qty','num'], ['tonase','Tonase','num tonase']];
@@ -1934,7 +1951,7 @@ function subCtx(){
   const T = {ton:0, qty:0, n:0}, A = {}; SUBK.forEach(k => A[k] = {ton:0, qty:0, n:0});
   selRows.forEach(r => { [...subCats(r._ket).map(k => A[k]), T].forEach(c => { c.ton += r._ton; c.qty += r._qty; c.n++; }); });
   const terms = state.subQ.toLowerCase().split(/\s+/).filter(Boolean);
-  const dr = detSortRows(selRows.filter(r => terms.every(t => r._search.includes(t)) && Object.entries(state.detF).every(([k, v]) => !v || (k === 'ket' ? subCats(r._ket).includes(v) : r[k] === v))));
+  const dr = detSortRows(selRows.filter(r => terms.every(t => r._search.includes(t)) && Object.entries(state.detF).every(([k, v]) => !v || (k === 'ket' ? subCats(r._ket).includes(v) : k === 'umur' ? String(grpKey(r)) === v : r[k] === v))));
   return {m, katK, base, rows, gs, gsS, selRows, T, A, dr};
 }
 function renderSub(){
@@ -1957,25 +1974,35 @@ function renderSub(){
   $('chSub').innerHTML = gs.length ? (state.subT === 'line' ? chLine : chStack)(P, Math.max(280, Math.floor($('chSub').clientWidth || 700)), gs, m, isFsC('chSub') ? fsH(190) : chH(280, 460, .42), state.subHide, state.subSel) : '<div class="empty-state"><b>Belum ada data</b>Tidak ada baris untuk pilihan ini.</div>';
   $('subTblT').textContent = on ? 'Rekap per Umur WO' : 'Rekap per Minggu'; $('subTblS').textContent = metricName(m);
   const head = `<th>${on ? 'Umur WO' : 'Minggu'}</th>${on ? '<th>Bulan WO</th>' : ''}${katK.map(k => `<th class="num">${SUB_L[k]}</th>`).join('')}<th class="num">Total</th><th class="num">Δ vs sebelumnya</th>`;
+  const tdc = (cls, lbl, gk, k, n, val) => `<td class="${cls}${n ? ' clk' : ''}" data-label="${lbl}"${n ? ` data-g="${esc(String(gk))}" data-c="${k}" tabindex="0" title="Klik untuk lihat detail (${n} baris)"` : ''}>${val}</td>`;
   let prev = null;
   const body = gsS.map(g => { const d = dlt(g.tot[m], g.key === 'x' ? null : prev); if (g.key !== 'x') prev = g.tot[m];
-    return `<tr><td class="name" data-label="${on ? 'Umur WO' : 'Minggu'}">${esc(g.lbl)}</td>${on ? `<td class="mono" data-label="Bulan WO">${esc(g.sub || '–')}</td>` : ''}${katK.map(k => `<td class="num" data-label="${SUB_L[k]}">${fmtN(g[k][m], m)}</td>`).join('')}<td class="num tonase" data-label="Total">${fmtN(g.tot[m], m)}</td><td class="num" data-label="Δ">${d}</td></tr>`; }).join('');
-  const ft = `<tr><td class="lbl" colspan="${on ? 2 : 1}">Total · ${gsS.length} kelompok</td>${katK.map(k => `<td class="num">${fmtN(A[k][m], m)}</td>`).join('')}<td class="num tonase">${fmtN(T[m], m)}</td><td></td></tr>`;
+    return `<tr>${tdc('name', on ? 'Umur WO' : 'Minggu', g.key, 'TOT', g.tot.n, esc(g.lbl))}${on ? `<td class="mono" data-label="Bulan WO">${esc(g.sub || '–')}</td>` : ''}${katK.map(k => tdc('num', SUB_L[k], g.key, k, g[k].n, fmtN(g[k][m], m))).join('')}${tdc('num tonase', 'Total', g.key, 'TOT', g.tot.n, fmtN(g.tot[m], m))}<td class="num" data-label="Δ">${d}</td></tr>`; }).join('');
+  const ft = `<tr><td class="lbl" colspan="${on ? 2 : 1}">Total · ${gsS.length} kelompok</td>${katK.map(k => tdc('num', SUB_L[k], '', k, A[k].n, fmtN(A[k][m], m))).join('')}${tdc('num tonase', 'Total', '', 'TOT', T.n, fmtN(T[m], m))}<td></td></tr>`;
   $('subSum').innerHTML = gsS.length ? `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot>${ft}</tfoot></table>` : '';
-  [['dfInt','internal','Semua Internal'], ['dfSales','sales','Semua Sales'], ['dfCust','cust','Semua Customer'], ['dfUmur','umur','Semua Umur WO']].forEach(([id, k, lb]) => {
+  [['dfInt','internal','Semua Internal'], ['dfSales','sales','Semua Sales'], ['dfCust','cust','Semua Customer']].forEach(([id, k, lb]) => {
     const v = [...new Set(selRows.map(r => r[k]).filter(Boolean))].sort((x, y) => x.localeCompare(y, undefined, {numeric:true}));
     if (!v.includes(state.detF[k])) state.detF[k] = '';
     $(id).innerHTML = `<option value="">${lb}</option>` + v.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join(''); $(id).value = state.detF[k]; });
+  if (!gsS.some(g => String(g.key) === state.detF.umur)) state.detF.umur = '';
+  $('dfUmur').innerHTML = `<option value="">${on ? 'Semua Umur WO' : 'Semua Minggu'}</option>` + gsS.map(g => `<option value="${esc(String(g.key))}">${esc(g.lbl)}${g.sub ? ' · WO ' + esc(g.sub) : ''}</option>`).join(''); $('dfUmur').value = state.detF.umur;
+  $('dfUmur').setAttribute('aria-label', on ? 'Filter umur WO' : 'Filter minggu');
   $('dfKet').innerHTML = '<option value="">Semua Keterangan</option>' + SUBK.map(k => `<option value="${k}">${SUB_L[k]}</option>`).join(''); $('dfKet').value = state.detF.ket;
   const X2 = subCtx(), dr = X2.dr;
   if (document.activeElement !== $('dfQ')) $('dfQ').value = state.subQ;
   const fAct = Object.values(state.detF).some(Boolean);
   $('subCount').textContent = `${dr.length} / ${selRows.length} DATA`; $('subDetS').textContent = personOf(state.data.close.title) + (fAct ? ' · filter aktif' : '');
   const {k: sk, dir: sd} = state.detSort, wrap = $('subDet'), keep = wrap.scrollTop;
+  const dQ = dr.reduce((a, r) => a + r._qty, 0), dT = dr.reduce((a, r) => a + r._ton, 0), iQ = DETCOLS.findIndex(c => c[0] === 'qty');
+  const fg = state.detF.umur ? gs.find(g => String(g.key) === state.detF.umur) : null;
+  $('detChip').innerHTML = (fAct ? `<span class="tag">${[fg && fg.lbl, state.detF.ket && SUB_L[state.detF.ket], state.detF.internal, state.detF.sales, state.detF.cust].filter(Boolean).map(esc).join(' · ')}</span>` : '<span>Semua data</span>')
+    + `<span><b>${fmtInt(dr.length)}</b> baris</span><span>Total Qty <b>${fmtInt(dQ)}</b> PCS</span><span>Total Tonase <b class="tonase">${fmtDec(dT)}</b> KG</span><span class="sp"></span>`
+    + `<button type="button" data-a="rekap">↑ Ke rekap</button>` + (fAct ? `<button type="button" data-a="reset">Reset filter</button>` : '');
+  const dFoot = `<tfoot><tr><td class="lbl" colspan="${iQ}">Total · ${fmtInt(dr.length)} baris</td><td class="num">${fmtInt(dQ)}</td><td class="num tonase">${fmtDec(dT)}</td></tr></tfoot>`;
   wrap.innerHTML = dr.length ? `<table><thead><tr>${DETCOLS.map(c => `<th class="sortable${/num/.test(c[2]) ? ' num' : ''}" tabindex="0" data-k="${c[0]}">${c[1]}<span class="arr">${sk === c[0] ? (sd > 0 ? '▲' : '▼') : ''}</span></th>`).join('')}</tr></thead><tbody>${dr.map(r => `<tr>${DETCOLS.map(([k, l, c]) => {
     if (k === '_k') return `<td data-label="${l}"><span class="badge ${BADGE[r._ket]}">${SUB_L[r._ket]}</span></td>`;
     let v = r[k]; if (!v) return `<td class="empty dim ${c}" data-label="${l}">–</td>`; if (k === 'qty') v = fmtInt(num(v)); else if (k === 'tonase') v = fmtDec(num(v));
-    return `<td class="${c}" data-label="${l}">${esc(v)}</td>`; }).join('')}</tr>`).join('')}</tbody></table>` : '<div class="empty-state"><b>Data tidak ditemukan</b>Coba ubah kata kunci / filter.</div>';
+    return `<td class="${c}" data-label="${l}">${esc(v)}</td>`; }).join('')}</tr>`).join('')}</tbody>${dFoot}</table>` : '<div class="empty-state"><b>Data tidak ditemukan</b>Coba ubah kata kunci / filter.</div>';
   wrap.scrollTop = keep;
   drawStock(P, Math.max(280, Math.floor($('chSbStock').clientWidth || 700)), STK.sub);
 }
@@ -1989,6 +2016,20 @@ $('chSub').addEventListener('click', e => xClick(e, state.subSel, renderSub));
 $('subDet').addEventListener('click', e => { const th = e.target.closest('th.sortable'); if (!th) return; const k = th.dataset.k;
   state.detSort = state.detSort.k === k ? {k, dir:-state.detSort.dir} : {k, dir:1}; renderSub(); });
 $('subDet').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('th.sortable')){ e.preventDefault(); e.target.click(); } });
+function goDetail(td){
+  const g = td.dataset.g, c = td.dataset.c;
+  state.detF = detF0(); state.detF.umur = g; state.detF.ket = c === 'TOT' ? '' : c;
+  state.detSort = {k:null, dir:1}; state.subQ = ''; $('subQ').value = ''; $('dfQ').value = '';
+  const fs = document.querySelector('#subView .table-card.fs'); if (fs) setTblFs(fs, false);
+  renderSub();
+  const card = $('detCard'); card.scrollIntoView({behavior:'smooth', block:'start'});
+  card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+}
+$('subSum').addEventListener('click', e => { const td = e.target.closest('td[data-g]'); if (td) goDetail(td); });
+$('subSum').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('td[data-g]')){ e.preventDefault(); goDetail(e.target); } });
+$('detChip').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.a === 'reset') $('dfReset').click();
+  else $('subSum').closest('.table-card').scrollIntoView({behavior:'smooth', block:'start'}); });
 function setTblFs(card, on){
   document.querySelectorAll('#subView .table-card.fs').forEach(c => { if (c !== card) c.classList.remove('fs'); });
   card.classList.toggle('fs', on); document.body.classList.toggle('fs-lock', on);
