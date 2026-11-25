@@ -1138,6 +1138,7 @@ function buildDataset(text){
       const o = {};
       KEYS[tab].forEach((k, j) => o[k] = part[j + 1] || '');
       o._date = parseDate(o.tgl);
+      { const dm = o.tgl.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/); if (dm && o._date) o.tgl = dm[1].padStart(2, '0') + ' ' + dm[2] + ' ' + dm[3]; }   // samakan "5 Nov" = "05 Nov"
       o._qty = num(o.qty); o._ton = num(o.tonase);
       o._ket = tab === 'close' ? ketCat(o.ketint) : '';
       o._note = !o.cust && !o.nama && !o._qty;       // baris catatan (mis. "TIDAK DAPAT")
@@ -1172,7 +1173,7 @@ function rebuildFilters(){
   state.fSales = fillSelect($('fSales'), 'Semua Sales',   distinct(rows,'sales'), state.fSales);
   state.fMesin = fillSelect($('fMesin'), 'Semua Mesin',   distinct(rows,'mesin'), state.fMesin);
   const kEl = $('fKet'); kEl.hidden = state.tab !== 'close';
-  kEl.innerHTML = '<option value="">Semua Keterangan</option>' + KET_KEYS.map(k => `<option value="${k}">${KET_L[k]}</option>`).join('');
+  kEl.innerHTML = '<option value="">Semua Keterangan</option>' + SUBK_ALL.map(k => `<option value="${k}">${SUB_L[k]}</option>`).join('');
   kEl.value = state.fKet;
 }
 
@@ -1185,7 +1186,7 @@ function filtered(skipKet){
     (!state.fInternal || r.internal === state.fInternal) &&
     (!state.fSales || r.sales === state.fSales) &&
     (!state.fMesin || r.mesin === state.fMesin) &&
-    (skipKet || state.tab !== 'close' || !state.fKet || r._ket === state.fKet) &&
+    (skipKet || state.tab !== 'close' || !state.fKet || subCats(r._ket).includes(state.fKet)) &&
     terms.every(t => r._search.includes(t)));
   const {k, dir} = state.sort;
   if (k){
@@ -1276,21 +1277,24 @@ function render(){
   wrap.scrollTop = keepTop;
 }
 
-function ketAgg(rows){
-  const o = {}; KET_KEYS.forEach(k => o[k] = {k, v:0, q:0, n:0});
-  rows.forEach(r => { const x = o[r._ket || ketCat(r.ketint)]; x.v += r._ton; x.q += r._qty; x.n++; });
-  return KET_KEYS.map(k => o[k]);
+function ketAgg(rows){   // bertingkat, sama dengan sub-tab Monitoring & Mingguan
+  const o = {}; SUBK_ALL.forEach(k => o[k] = {k, v:0, q:0, n:0});
+  rows.forEach(r => subCats(r._ket || ketCat(r.ketint)).forEach(k => { const x = o[k]; x.v += r._ton; x.q += r._qty; x.n++; }));
+  return SUBK_ALL.map(k => o[k]);
 }
 function renderKet(){
   const box = $('ketKpis'), on = state.tab === 'close';
   box.hidden = !on; if (!on) return;
-  const agg = ketAgg(filtered(true).filter(r => !r._note)), tot = agg.reduce((s, x) => s + x.v, 0) || 1;
-  box.innerHTML = agg.map(x => `<button type="button" class="kchip${state.fKet === x.k ? ' on' : ''}" data-ket="${x.k}" style="--kc:${KET_C[x.k]}" title="Klik untuk filter ${KET_L[x.k]}">
-    <div class="kl"><i></i>${KET_L[x.k]}</div><div class="kv">${fmtDec(x.v)}<small>KG</small></div>
-    <div class="kn">${x.n} baris · ${fmtInt(x.q)} PCS · ${(x.v / tot * 100).toFixed(1)}%</div></button>`).join('');
+  const rows = filtered(true).filter(r => !r._note), A = {}; ketAgg(rows).forEach(x => A[x.k] = x);
+  const tot = rows.reduce((s, r) => s + r._ton, 0) || 1, SRM = {PD:'PENGAJUAN', ACC:'DESTROY'};
+  box.innerHTML = SUBK.map(k => { const x = A[k], s = SRM[k] && A[SRM[k]];
+    return `<div class="kchip${state.fKet === k ? ' on' : ''}" role="button" tabindex="0" data-ket="${k}" style="--kc:${SUB_C[k]}" title="Klik untuk filter ${SUB_L[k]}">
+    <div class="kl"><i></i>${SUB_L[k]}</div><div class="kv">${fmtDec(x.v)}<small>KG</small></div>
+    <div class="kn">${x.n} baris · ${fmtInt(x.q)} PCS · ${(x.v / tot * 100).toFixed(1)}%</div>${s ? `<button type="button" class="kmini" data-sk="${SRM[k]}" title="Klik untuk filter ${SUB_L[SRM[k]]}">↳ ${SUB_L[SRM[k]]} <b>${fmtDec(s.v)} KG</b> · ${s.n} baris</button>` : ''}</div>`; }).join('');
 }
-$('ketKpis').addEventListener('click', e => { const b = e.target.closest('.kchip'); if (!b) return;
-  state.fKet = state.fKet === b.dataset.ket ? '' : b.dataset.ket; $('fKet').value = state.fKet; render(); });
+$('ketKpis').addEventListener('click', e => { const m = e.target.closest('.kmini'), b = m || e.target.closest('.kchip'); if (!b) return;
+  const k = m ? m.dataset.sk : b.dataset.ket;
+  state.fKet = state.fKet === k ? '' : k; $('fKet').value = state.fKet; render(); });
 
 /* ===== Events ===== */
 document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => {
@@ -1742,7 +1746,7 @@ function pdfTableInto(doc, tab, rows, isF){
   doc.text(`Jumlah baris: ${rows.length}     Total Qty: ${fmtInt(q)} PCS     Total Tonase: ${fmtDec(t)} KG${isF ? '     (sesuai filter)' : ''}`, 10, 29);
   let sy = 33;
   if (tab === 'close'){ const ka = ketAgg(rows); doc.setFontSize(8.5);
-    doc.text('Keterangan:   ' + ka.map(x => `${KET_L[x.k]} ${fmtDec(x.v)} KG (${x.n} baris)`).join('     '), 10, 34); sy = 38; }
+    doc.text('Keterangan:   ' + ka.filter(x => SUBK.includes(x.k)).map(x => `${SUB_L[x.k]} ${fmtDec(x.v)} KG (${x.n} baris)`).join('     '), 10, 34); sy = 38; }
   const right = {}; cols.forEach((c, i) => { if (['berat', 'qty', 'tonase'].includes(c.k)) right[i + 1] = {halign:'right'}; });
   const body = rows.map((r, i) => [i + 1, ...cols.map(c => c.f ? c.f(num(r[c.k])) : (r[c.k] || '-'))]);
   const foot = [['TOTAL', ...cols.map(c => c.k === 'qty' ? fmtInt(q) : c.k === 'tonase' ? fmtDec(t) : '')]];
