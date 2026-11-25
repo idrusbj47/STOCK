@@ -415,7 +415,7 @@ body.fs-lock{overflow:hidden}
 .badge.in{ background:rgba(22,163,74,.13); color:#16a34a; }
 .badge.warn{ background:rgba(245,158,11,.16); color:#b45309; }
 html[data-theme="dark"] .badge.warn{ color:#fbbf24; }
-.ketkpis{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+.ketkpis{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
 .ketkpis[hidden]{ display:none; }
 .kchip{
   position:relative; overflow:hidden; text-align:left; cursor:pointer; padding:14px 18px 16px; border-radius:20px;
@@ -461,7 +461,7 @@ svg [data-x]{cursor:pointer}
 /* ===== Sub-tab WO Close ===== */
 .subtabs{display:flex;margin-bottom:14px;max-width:100%;overflow-x:auto}
 .subtabs button{white-space:nowrap}
-.badge.pg{background:rgba(245,158,11,.16);color:#b45309}.badge.sisa{background:rgba(22,136,248,.13);color:#1688f8}
+.badge.pg{background:rgba(245,158,11,.16);color:#b45309}.badge.dd{background:rgba(127,29,29,.14);color:#7f1d1d}html[data-theme="dark"] .badge.dd{background:rgba(248,113,113,.16);color:#fca5a5}.badge.sisa{background:rgba(22,136,248,.13);color:#1688f8}
 .ketkpis.sub4{grid-template-columns:repeat(auto-fit,minmax(165px,1fr))}
 .det-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:6px 16px 12px}
 .table-card.fs .det-tools{display:flex;padding:6px 12px 10px}
@@ -477,6 +477,9 @@ svg [data-x]{cursor:pointer}
 .kpis.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
 @media (max-width:1100px){.kpis.k5{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:720px){.kpis.k5{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpis.k6{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media (max-width:1280px){.kpis.k6{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:720px){.kpis.k6{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* ===== Layar komputer: pakai lebar penuh ===== */
 @media (min-width:901px){
   .page{max-width:none;padding-inline:clamp(24px,2.6vw,56px)}
@@ -607,12 +610,13 @@ td.clk:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
     </div>
     <div id="reportView" hidden>
       <section class="kpis k4"><div class="kpi"><div class="kpi-label">Tonase WO OS</div><div class="kpi-value"><span id="rk1">0</span><small>KG</small></div><div class="kpi-note" id="rn1"></div></div><div class="kpi"><div class="kpi-label">Tonase WO Close</div><div class="kpi-value"><span id="rk2">0</span><small>KG</small></div><div class="kpi-note" id="rn2"></div></div><div class="kpi"><div class="kpi-label">Qty WO OS</div><div class="kpi-value"><span id="rk3">0</span><small>PCS</small></div><div class="kpi-note" id="rn3"></div></div><div class="kpi"><div class="kpi-label">Qty WO Close</div><div class="kpi-value"><span id="rk4">0</span><small>PCS</small></div><div class="kpi-note" id="rn4"></div></div></section>
-      <section class="kpis k4 k5" id="ketKpisR">
+      <section class="kpis k4 k5 k6" id="ketKpisR">
         <div class="kpi" style="--accent:#16a34a;--accent-rgb:22,163,74"><div class="kpi-label">Masuk Gudang · WO Close</div><div class="kpi-value"><span id="rm1">0</span><small>KG</small></div><div class="kpi-note" id="rmn1"></div></div>
         <div class="kpi" style="--accent:#f59e0b;--accent-rgb:245,158,11"><div class="kpi-label">Pengajuan Destroy · WO Close</div><div class="kpi-value"><span id="rm2">0</span><small>KG</small></div><div class="kpi-note" id="rmn2"></div></div>
-        <div class="kpi" style="--accent:#ef3340;--accent-rgb:239,51,64"><div class="kpi-label">Destroy · WO Close</div><div class="kpi-value"><span id="rm3">0</span><small>KG</small></div><div class="kpi-note" id="rmn3"></div></div>
-        <div class="kpi" style="--accent:#ec4899;--accent-rgb:236,72,153"><div class="kpi-label">Sisa Pengajuan · WO Close</div><div class="kpi-value"><span id="rm4">0</span><small>KG</small></div><div class="kpi-note" id="rmn4"></div></div>
-        <div class="kpi" style="--accent:#1688f8;--accent-rgb:22,136,248"><div class="kpi-label">Sisa · WO Close</div><div class="kpi-value"><span id="rm5">0</span><small>KG</small></div><div class="kpi-note" id="rmn5"></div></div>
+        <div class="kpi" style="--accent:#ef3340;--accent-rgb:239,51,64"><div class="kpi-label">ACC Destroy · WO Close</div><div class="kpi-value"><span id="rm3">0</span><small>KG</small></div><div class="kpi-note" id="rmn3"></div></div>
+        <div class="kpi" style="--accent:#7f1d1d;--accent-rgb:127,29,29"><div class="kpi-label">Destroyed · WO Close</div><div class="kpi-value"><span id="rm4">0</span><small>KG</small></div><div class="kpi-note" id="rmn4"></div></div>
+        <div class="kpi" style="--accent:#ec4899;--accent-rgb:236,72,153"><div class="kpi-label">Sisa Pengajuan · WO Close</div><div class="kpi-value"><span id="rm5">0</span><small>KG</small></div><div class="kpi-note" id="rmn5"></div></div>
+        <div class="kpi" style="--accent:#1688f8;--accent-rgb:22,136,248"><div class="kpi-label">Sisa · WO Close</div><div class="kpi-value"><span id="rm6">0</span><small>KG</small></div><div class="kpi-note" id="rmn6"></div></div>
       </section>
       <section class="charts">
         <div class="chart-card wide">
@@ -635,7 +639,7 @@ td.clk:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
       <div class="scope glass"><span class="scope-l">Tampilkan grafik</span>
         <div class="seg" id="scopeSeg"><button data-s="all" class="on">Semua</button><button data-s="out">OS</button><button data-s="close">CL</button></div>
         <span class="scope-l">Ket. WO Close</span>
-        <div class="seg" id="ketSeg"><button data-k="" class="on">Semua</button><button data-k="MASUK">Masuk</button><button data-k="PD">Pengajuan Destroy</button><button data-k="DESTROY">Destroy</button><button data-k="PENGAJUAN">Sisa Pengajuan</button><button data-k="SISA">Sisa</button></div>
+        <div class="seg" id="ketSeg"><button data-k="" class="on">Semua</button><button data-k="MASUK">Masuk</button><button data-k="PD">Pengajuan Destroy</button><button data-k="DESTROY">ACC Destroy</button><button data-k="DESTROYED">Destroyed</button><button data-k="PENGAJUAN">Sisa Pengajuan</button><button data-k="SISA">Sisa</button></div>
         <span class="scope-n">Filter keterangan berlaku untuk data WO Close di semua grafik (kecuali grafik Keterangan)</span></div>
       <section class="charts">
         <div class="chart-card"><h3 id="tCust">Top 10 Customer</h3><p id="pCust"></p><div id="chCust"></div></div>
@@ -1012,12 +1016,12 @@ const GSHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2vEALIhk4j
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
 const BLOCK = {out:16, close:19}; // jumlah kolom per tabel (WO Close kini +1: KET. INT & WO IN, tanpa KETERANGAN lama)
 const RIGHT_START = 17; // kolom awal tabel kanan (WO Close), kolom 16 = pemisah
-const KET_L = {MASUK:'Masuk', PENGAJUAN:'Pengajuan Destroy', DESTROY:'Destroy', SISA:'Sisa'};
-const BADGE = {MASUK:'in', PENGAJUAN:'pg', DESTROY:'over', SISA:'sisa'};
-const KET_C = {MASUK:'#16a34a', PENGAJUAN:'#f59e0b', DESTROY:'#ef3340', SISA:'#1688f8'};
-const KET_KEYS = ['MASUK','PENGAJUAN','DESTROY','SISA'];
-// sesuai kolom KET. INT: MASUK, DESTROY, PENGAJUAN DESTROY; selain itu (HABIS / kosong) dihitung SISA
-const ketCat = v => { v = String(v||'').trim().toUpperCase(); return v === 'MASUK' ? 'MASUK' : v === 'DESTROY' ? 'DESTROY' : /^PENGAJUAN/.test(v) ? 'PENGAJUAN' : 'SISA'; };
+const KET_L = {MASUK:'Masuk', PENGAJUAN:'Pengajuan Destroy', DESTROY:'ACC Destroy', DESTROYED:'Destroyed', SISA:'Sisa'};
+const BADGE = {MASUK:'in', PENGAJUAN:'pg', DESTROY:'over', DESTROYED:'dd', SISA:'sisa'};
+const KET_C = {MASUK:'#16a34a', PENGAJUAN:'#f59e0b', DESTROY:'#ef3340', DESTROYED:'#7f1d1d', SISA:'#1688f8'};
+const KET_KEYS = ['MASUK','PENGAJUAN','DESTROY','DESTROYED','SISA'];
+// sesuai kolom KET. INT: MASUK, PENGAJUAN DESTROY, ACC DESTROY (barang disetujui untuk dimusnahkan), DESTROYED (barang ACC DESTROY yang sudah dimusnahkan); selain itu (HABIS / kosong) dihitung SISA. Tulisan lama "DESTROY" tetap dibaca sebagai ACC DESTROY
+const ketCat = v => { v = String(v||'').trim().toUpperCase().replace(/\s+/g, ' '); return v === 'MASUK' ? 'MASUK' : /^DESTROYED/.test(v) ? 'DESTROYED' : /^(ACC )?DESTROY$/.test(v) ? 'DESTROY' : /^PENGAJUAN/.test(v) ? 'PENGAJUAN' : 'SISA'; };
 
 const $ = id => document.getElementById(id);
 const html = document.documentElement;
@@ -1435,10 +1439,10 @@ function chGroup(P, W, agg, o = {}){
   if (!o.nolg) SUBK.forEach((k, j) => { const x = l + j * 120; s += `<rect x="${x}" y="4" width="10" height="10" rx="3" fill="${SUB_C[k]}"/><text x="${x+15}" y="13" font-size="11" fill="${P.t}">${SUB_L[k]}</text>`; });
   return svgWrap(P, W, H, s);
 }
-/* ===== Timeline sisa stock Over WO (Masuk Gudang & Destroy selalu mengurangi stok) ===== */
+/* ===== Timeline sisa stock Over WO (Masuk Gudang, ACC Destroy & Destroyed selalu mengurangi stok) ===== */
 const stState = {g:'day', m:'ton', hide:{}}, sbState = {g:'day', m:'ton', hide:{}};
 const ST_K = ['STOK','ADD','DESTROY','MASUK'];
-const ST_L = {STOK:'Sisa stok', ADD:'Tambah (over baru)', DESTROY:'Destroy (−)', MASUK:'Masuk Gudang (−)'};
+const ST_L = {STOK:'Sisa stok', ADD:'Tambah (over baru)', DESTROY:'ACC Destroy + Destroyed (−)', MASUK:'Masuk Gudang (−)'};
 const ST_C = {STOK:'#1688f8', ADD:'#f59e0b', DESTROY:'#ef3340', MASUK:'#16a34a'};
 function stockSeries(st, src){
   src = src || {out:realRows('out'), close:realRows('close')};
@@ -1446,7 +1450,7 @@ function stockSeries(st, src){
   src.out.forEach(r => { if (r._date) items.push({v:val(r), a:r._date, rd:0, rt:null}); });
   src.close.forEach(r => { if (!r._date) return;
     const wi = woIdx(r), di = monIdx(r._date), a = wi !== null && wi < di ? new Date(Math.floor(wi / 12), wi % 12, 1).getTime() : r._date;
-    items.push({v:val(r), a, rd:r._date, rt:r._ket === 'DESTROY' ? 'dest' : r._ket === 'MASUK' ? 'masuk' : null}); });
+    items.push({v:val(r), a, rd:r._date, rt:(r._ket === 'DESTROY' || r._ket === 'DESTROYED') ? 'dest' : r._ket === 'MASUK' ? 'masuk' : null}); });
   if (!items.length) return {pts:[], open:0, m, g:st.g};
   const dates = items.flatMap(x => x.rd ? [x.rd] : [x.a]), minT = Math.min(...dates), maxT = Math.max(...dates);
   let n, idxOf, labelOf;
@@ -1478,7 +1482,7 @@ function chStock(P, W, S, o = {}){
   pts.forEach((p, i) => { const x = cx(i) - bw / 2;
     if (!hide.ADD && p.add > 0) s += `<rect x="${x}" y="${zero-ys(p.add)}" width="${bw}" height="${ys(p.add)}" rx="2" fill="${ST_C.ADD}"><title>${p.label} · Tambah: +${f(p.add)} ${u}</title></rect>`;
     let yy = zero;
-    if (!hide.DESTROY && p.dest > 0){ s += `<rect x="${x}" y="${yy}" width="${bw}" height="${ys(p.dest)}" rx="2" fill="${ST_C.DESTROY}"><title>${p.label} · Destroy: −${f(p.dest)} ${u}</title></rect>`; yy += ys(p.dest); }
+    if (!hide.DESTROY && p.dest > 0){ s += `<rect x="${x}" y="${yy}" width="${bw}" height="${ys(p.dest)}" rx="2" fill="${ST_C.DESTROY}"><title>${p.label} · ACC Destroy + Destroyed: −${f(p.dest)} ${u}</title></rect>`; yy += ys(p.dest); }
     if (!hide.MASUK && p.masuk > 0) s += `<rect x="${x}" y="${yy}" width="${bw}" height="${ys(p.masuk)}" rx="2" fill="${ST_C.MASUK}"><title>${p.label} · Masuk Gudang: −${f(p.masuk)} ${u}</title></rect>`; });
   const step = Math.max(1, Math.ceil(n / Math.max(4, Math.floor((W - l - r) / (S.g === 'day' ? 46 : 62)))));
   pts.forEach((p, i) => { if (i % step === 0 || i === n - 1) s += `<text x="${cx(i)}" y="${H-10}" text-anchor="middle" font-size="10" fill="${P.m}">${p.label}</text>`; });
@@ -1486,14 +1490,14 @@ function chStock(P, W, S, o = {}){
 }
 function stockKpis(S){
   const sum = k => sumBy(S.pts, p => p[k]), end = S.pts.length ? S.pts[S.pts.length - 1].stock : S.open, u = S.m === 'qty' ? 'PCS' : 'KG', f = v => S.m === 'qty' ? fmtInt(v) : fmtDec(v);
-  return [['Stok awal', S.open, '100,116,139', 'sebelum periode grafik'], ['Tambah', sum('add'), '245,158,11', 'over baru tercatat'], ['Destroy', -sum('dest'), '239,51,64', 'mengurangi stok'], ['Masuk Gudang', -sum('masuk'), '22,163,74', 'mengurangi stok'], ['Sisa stok akhir', end, '22,136,248', 'posisi terakhir']]
+  return [['Stok awal', S.open, '100,116,139', 'sebelum periode grafik'], ['Tambah', sum('add'), '245,158,11', 'over baru tercatat'], ['ACC Destroy + Destroyed', -sum('dest'), '239,51,64', 'mengurangi stok'], ['Masuk Gudang', -sum('masuk'), '22,163,74', 'mengurangi stok'], ['Sisa stok akhir', end, '22,136,248', 'posisi terakhir']]
     .map(([l, v, rgb, n]) => ({l, v, rgb, n, t:(v > 0 && l !== 'Stok awal' && l !== 'Sisa stok akhir' ? '+' : v < 0 ? '−' : '') + f(Math.abs(v)), u}));
 }
-const NOTE_REP = 'Cara hitung: sisa stok = WO OS + semua WO Close, dikurangi Destroy dan Masuk Gudang pada tanggal barisnya (barang yang masuk gudang tidak ada lagi di gudang over). Barang WO Close yang nomor WO-nya berbulan lebih lama dihitung sudah ada sejak awal bulan WO tersebut, sehingga pengurangannya terlihat di tanggalnya.';
+const NOTE_REP = 'Cara hitung: sisa stok = WO OS + semua WO Close, dikurangi ACC Destroy, Destroyed dan Masuk Gudang pada tanggal barisnya (barang yang masuk gudang tidak ada lagi di gudang over). Barang WO Close yang nomor WO-nya berbulan lebih lama dihitung sudah ada sejak awal bulan WO tersebut, sehingga pengurangannya terlihat di tanggalnya.';
 const STK = {
   rep:{st:stState, pre:'st', ch:'chStock', src:() => null, sub:'', note:() => NOTE_REP},
   sub:{st:sbState, pre:'sb', ch:'chSbStock', src:() => ({out:[], close:subRows()}), sub:() => (state.sub === 'onim' ? 'Monitoring ONIM' : 'Mingguan') + ' · ',
-    note:() => 'Hanya WO Close ' + (state.sub === 'onim' ? 'ONIM' : 'non-ONIM') + (state.subMonth ? ' bulan ' + monLbl(+state.subMonth) : '') + ' (WO OS tidak ikut). Sisa stok = semua baris, dikurangi Destroy dan Masuk Gudang pada tanggal barisnya; yang tersisa adalah Sisa + Pengajuan Destroy. ' + 'Barang yang nomor WO-nya berbulan lebih lama dihitung sudah ada sejak awal bulan WO tersebut.'}
+    note:() => 'Hanya WO Close ' + (state.sub === 'onim' ? 'ONIM' : 'non-ONIM') + (state.subMonth ? ' bulan ' + monLbl(+state.subMonth) : '') + ' (WO OS tidak ikut). Sisa stok = semua baris, dikurangi ACC Destroy, Destroyed dan Masuk Gudang pada tanggal barisnya; yang tersisa adalah Sisa + Pengajuan Destroy. ' + 'Barang yang nomor WO-nya berbulan lebih lama dihitung sudah ada sejak awal bulan WO tersebut.'}
 };
 function drawStock(P, w, c = STK.rep){
   const st = c.st, p = c.pre, S = stockSeries(st, c.src());
@@ -1525,7 +1529,7 @@ function ketAggR(rows){
   rows.forEach(r => subCats(r._ket).forEach(k => { const x = o[k]; x.v += r._ton; x.q += r._qty; x.n++; }));
   return SUBK.map(k => o[k]);
 }
-const DK = ['MASUK','DESTROY','PENGAJUAN','SISA'];
+const DK = ['MASUK','DESTROY','DESTROYED','PENGAJUAN','SISA'];
 const chH = (min, max, f) => Math.max(min, Math.min(max, Math.round(window.innerHeight * f)));
 const dState = {m:'ton', hide:{out:false, close:false}};
 const kdState = {t:'bar', hide:{}};
@@ -1581,7 +1585,7 @@ function renderReport(){
   const kt = d.ket.reduce((s, x) => s + x.v, 0) || 1;
   d.ketAll.forEach((x, i) => { $('rm' + (i + 1)).textContent = fmtDec(x.v); $('rmn' + (i + 1)).textContent = `${x.n} baris · ${fmtInt(x.q)} PCS · ${(x.v / kt * 100).toFixed(1)}%`; });
   document.querySelectorAll('#ketSeg button').forEach(b => b.classList.toggle('on', b.dataset.k === rState.ket));
-  $('pKet').textContent = 'Share tonase Masuk / Destroy / Sisa Pengajuan / Sisa · KG (Pengajuan Destroy = Destroy + Sisa Pengajuan)';
+  $('pKet').textContent = 'Share tonase Masuk / ACC Destroy / Destroyed / Sisa Pengajuan / Sisa · KG (Pengajuan Destroy = Sisa Pengajuan + ACC Destroy + Destroyed)';
   $('pKetD').textContent = 'Tonase WO Close per tanggal · KG';
   $('chKet').innerHTML = chDonut(P, W('chKet'), d.ket, isFsC('chKet') ? {cols:DK.map(k => SUB_C[k]), two:true, H:Math.min(fsH(140), 380), R:110, SW:54} : {cols:DK.map(k => SUB_C[k]), two:true, H:170, R:52, SW:26});
   $('ketDLg').innerHTML = legendHtml(SUBK, kdState.hide, SUB_L, SUB_C, dSel.size > 0 || Object.values(kdState.hide).some(Boolean));
@@ -1649,7 +1653,7 @@ function xlSummary(wb){
   const so = d.sub.out, sc = d.sub.close;
   table('Ringkasan', ['Laporan', 'Baris', 'Qty (PCS)', 'Tonase (KG)'],
     [['WO OS', d.o.length, so.q, so.t], ['WO Close', d.c.length, sc.q, sc.t], ['Total', d.all.length, so.q + sc.q, so.t + sc.t]], [, '#,##0', '#,##0', '#,##0.00']);
-  table('Keterangan WO Close (Pengajuan Destroy = Destroy + Sisa Pengajuan)', ['Keterangan', 'Baris', 'Qty (PCS)', 'Tonase (KG)'], d.ketAll.map(x => [x.k, x.n, x.q, x.v]), [, '#,##0', '#,##0', '#,##0.00']);
+  table('Keterangan WO Close (Pengajuan Destroy = Sisa Pengajuan + ACC Destroy + Destroyed)', ['Keterangan', 'Baris', 'Qty (PCS)', 'Tonase (KG)'], d.ketAll.map(x => [x.k, x.n, x.q, x.v]), [, '#,##0', '#,##0', '#,##0.00']);
   table('Tonase per Tanggal', ['Tanggal', 'WO OS (KG)', 'WO Close (KG)', 'Total (KG)'], d.dates.map(x => [x.k, x.out, x.close, x.out + x.close]));
   table('Top 10 Customer' + scopeSfx(), ['Customer', 'Tonase (KG)'], d.cust.slice(0, 10).map(x => [x.k, x.v]));
   table('Top 10 Sales' + scopeSfx(), ['Sales', 'Tonase (KG)'], d.sales.slice(0, 10).map(x => [x.k, x.v]));
@@ -1752,7 +1756,7 @@ async function pdfReport(docIn){
   }
   { const ka = d.ket, KH = 170, svA = chDonut(PAL_PDF, W, ka, {cols:DK.map(k => SUB_C[k]), two:true, H:KH, R:52, SW:26}), svB = chGroup(PAL_PDF, W, d.ketDates, {H:KH, hide:kdState.hide, xs:dSel}), mm = CW * KH / W;
     if (y + mm + 14 > LIM){ doc.addPage('a4', 'landscape'); y = 14; }
-    title('Keterangan WO Close - Masuk / Destroy / Sisa', 8, y); y += 5;
+    title('Keterangan WO Close - Masuk / ACC Destroy / Destroyed / Sisa', 8, y); y += 5;
     title('Share tonase (KG)', 8, y); title('Tonase per tanggal (KG)', GX, y);
     doc.addImage(await svgToPng(svA, W, KH), 'PNG', 8, y + 1.5, CW, mm);
     doc.addImage(await svgToPng(svB, W, KH), 'PNG', GX, y + 1.5, CW, mm);
@@ -1853,11 +1857,11 @@ document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (
 
 /* ===== Sub-tab WO Close: Monitoring ONIM & Mingguan ===== */
 state.sub = 'all'; state.subT = 'bar'; state.subHide = {}; state.subM = 'ton'; state.subMonth = ''; state.subQ = '';
-const SUBK = ['MASUK','PD','DESTROY','PENGAJUAN','SISA'];
-const SUB_L = {MASUK:'Masuk Gudang', PD:'Pengajuan Destroy', DESTROY:'Destroy', PENGAJUAN:'Sisa Pengajuan', SISA:'Sisa'};
-const SUB_C = {MASUK:'#16a34a', PD:'#f59e0b', DESTROY:'#ef3340', PENGAJUAN:'#ec4899', SISA:'#1688f8'};
-// Pengajuan Destroy = PENGAJUAN DESTROY + DESTROY di csv; Sisa Pengajuan = hanya PENGAJUAN DESTROY
-const subCats = k => k === 'DESTROY' ? ['DESTROY','PD'] : k === 'PENGAJUAN' ? ['PENGAJUAN','PD'] : [k];
+const SUBK = ['MASUK','PD','DESTROY','DESTROYED','PENGAJUAN','SISA'];
+const SUB_L = {MASUK:'Masuk Gudang', PD:'Pengajuan Destroy', DESTROY:'ACC Destroy', DESTROYED:'Destroyed', PENGAJUAN:'Sisa Pengajuan', SISA:'Sisa'};
+const SUB_C = {MASUK:'#16a34a', PD:'#f59e0b', DESTROY:'#ef3340', DESTROYED:'#7f1d1d', PENGAJUAN:'#ec4899', SISA:'#1688f8'};
+// Pengajuan Destroy = PENGAJUAN DESTROY + ACC DESTROY + DESTROYED di csv (semua yang pernah diajukan); Sisa Pengajuan = hanya PENGAJUAN DESTROY
+const subCats = k => k === 'DESTROY' ? ['DESTROY','PD'] : k === 'DESTROYED' ? ['DESTROYED','PD'] : k === 'PENGAJUAN' ? ['PENGAJUAN','PD'] : [k];
 state.detF = {internal:'', sales:'', cust:'', umur:''};
 const MN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 const isOnim = r => /onim/i.test(r.shift);
@@ -1962,13 +1966,13 @@ function renderSub(){
   document.querySelectorAll('#subM button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
   const X = subCtx(), {gs, gsS, T, A, katK, selRows} = X;
   $('subNote').textContent = on
-    ? 'Per Umur WO (kolom UMUR WO di sheet). Pengajuan Destroy = PENGAJUAN DESTROY + DESTROY; Sisa Pengajuan = hanya PENGAJUAN DESTROY; Sisa = kosong / HABIS. Karena Pengajuan Destroy mencakup Destroy, kolom Total ≠ jumlah kolom. Klik keterangan di legenda atau label umur/minggu pada grafik untuk menampilkan hanya itu.'
-    : 'Shift 1/2/3 per minggu (Senin–Minggu). Pengajuan Destroy = PENGAJUAN DESTROY + DESTROY; Sisa Pengajuan = hanya PENGAJUAN DESTROY; Sisa = kosong / HABIS. Karena Pengajuan Destroy mencakup Destroy, kolom Total ≠ jumlah kolom. Klik keterangan di legenda atau label minggu pada grafik untuk menampilkan hanya itu.';
+    ? 'Per Umur WO (kolom UMUR WO di sheet). Pengajuan Destroy = PENGAJUAN DESTROY + ACC DESTROY + DESTROYED; ACC Destroy = disetujui, belum dimusnahkan; Destroyed = sudah dimusnahkan; Sisa Pengajuan = hanya PENGAJUAN DESTROY; Sisa = kosong / HABIS. Karena Pengajuan Destroy mencakup ACC Destroy dan Destroyed, kolom Total ≠ jumlah kolom. Klik keterangan di legenda atau label umur/minggu pada grafik untuk menampilkan hanya itu.'
+    : 'Shift 1/2/3 per minggu (Senin–Minggu). Pengajuan Destroy = PENGAJUAN DESTROY + ACC DESTROY + DESTROYED; ACC Destroy = disetujui, belum dimusnahkan; Destroyed = sudah dimusnahkan; Sisa Pengajuan = hanya PENGAJUAN DESTROY; Sisa = kosong / HABIS. Karena Pengajuan Destroy mencakup ACC Destroy dan Destroyed, kolom Total ≠ jumlah kolom. Klik keterangan di legenda atau label minggu pada grafik untuk menampilkan hanya itu.';
   $('subKpis').innerHTML = katK.map(k => `<div class="kchip st" style="--kc:${SUB_C[k]}"><div class="kl"><i></i>${SUB_L[k]}</div><div class="kv">${fmtDec(A[k].ton)}<small>KG</small></div><div class="kn">${A[k].n} baris · ${fmtInt(A[k].qty)} PCS · ${(A[k].ton / (T.ton || 1) * 100).toFixed(1)}%</div></div>`).join('')
     + `<div class="kchip st" style="--kc:#7c3aed"><div class="kl"><i></i>Total</div><div class="kv">${fmtDec(T.ton)}<small>KG</small></div><div class="kn">${T.n} baris · ${fmtInt(T.qty)} PCS</div></div>`;
   const tr = trendOf(gsS, m), te = $('subTrend'); te.className = 'trend ' + tr.c; te.textContent = (on ? 'Makin tua umur WO: ' : 'Tren mingguan: ') + tr.t;
   $('subTitle').textContent = on ? 'Monitoring Sep-Okt' : 'Laporan Mingguan';
-  $('subSub').textContent = (m === 'ton' ? 'Tonase KG' : m === 'qty' ? 'Qty PCS' : 'Jumlah baris') + ' · Masuk Gudang / Pengajuan Destroy / Destroy / Sisa Pengajuan / Sisa' + (state.subSel.size ? ' · terpilih: ' + gsS.map(g => g.lbl).join(', ') : '');
+  $('subSub').textContent = (m === 'ton' ? 'Tonase KG' : m === 'qty' ? 'Qty PCS' : 'Jumlah baris') + ' · Masuk Gudang / Pengajuan Destroy / ACC Destroy / Destroyed / Sisa Pengajuan / Sisa' + (state.subSel.size ? ' · terpilih: ' + gsS.map(g => g.lbl).join(', ') : '');
   document.querySelectorAll('#subT button').forEach(b => b.classList.toggle('on', b.dataset.t === state.subT));
   $('subLegend').innerHTML = legendHtml(state.subT === 'line' ? [...SUBK, 'TOTAL'] : SUBK, state.subHide, SUB_L, SUB_C, state.subSel.size > 0 || Object.values(state.subHide).some(Boolean));
   $('chSub').innerHTML = gs.length ? (state.subT === 'line' ? chLine : chStack)(P, Math.max(280, Math.floor($('chSub').clientWidth || 700)), gs, m, isFsC('chSub') ? fsH(190) : chH(280, 460, .42), state.subHide, state.subSel) : '<div class="empty-state"><b>Belum ada data</b>Tidak ada baris untuk pilihan ini.</div>';
