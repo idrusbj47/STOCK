@@ -1505,11 +1505,12 @@ function extractMasterRecords(rows) {
   const iFlute = colIndexByName(header, ['FLUTE'], 11);
 
   const records = [];
+  const stats = { totalRows: rows.length, headerRow: headerIdx + 1, skippedShort: 0, skippedNoMc: 0 };
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i];
-    if (!r || r.length < 2) continue;
+    if (!r || r.length < 2) { stats.skippedShort++; continue; }
     const mc = String(r[iMc] || '').trim();
-    if (mc === '') continue;
+    if (mc === '') { stats.skippedNoMc++; continue; }
 
     records.push({
       mc: r[iMc] || '', so: r[iSo] || '', customer: r[iCustomer] || '', model: r[iModel] || '',
@@ -1517,6 +1518,7 @@ function extractMasterRecords(rows) {
       ukuran: r[iUkuran] || '', flute: r[iFlute] || '',
     });
   }
+  state.masterStats = stats;
   return records;
 }
 
@@ -2775,10 +2777,18 @@ el.btnClearMasterSearch.addEventListener('click', () => {
   updateClearBtn(el.masterSearchInput, el.btnClearMasterSearch);
   el.masterResults.innerHTML = '';
   el.masterSummary.textContent = state.masterLoaded
-    ? state.masterRows.length + ' item Master MC siap dicari.'
+    ? masterLoadInfo()
     : 'Ketik kata kunci lalu tekan Cari';
   el.masterSearchInput.focus();
 });
+
+function masterLoadInfo() {
+  const n = state.masterRows.length;
+  const st = state.masterStats;
+  if (!st) return n + ' item Master MC siap dicari.';
+  return n + ' item Master MC dimuat (CSV ' + st.totalRows + ' baris, header di baris ' + st.headerRow
+    + ', dilewati: ' + st.skippedNoMc + ' tanpa MC, ' + st.skippedShort + ' baris kosong).';
+}
 
 async function openMaster() {
   showOverlay(el.masterOverlay);
@@ -2796,14 +2806,14 @@ async function openMaster() {
       const text = await res.text();
       state.masterRows = extractMasterRecords(parseCSV(text));
       state.masterLoaded = true;
-      el.masterSummary.textContent = state.masterRows.length + ' item Master MC siap dicari.';
+      el.masterSummary.textContent = masterLoadInfo();
       if (el.masterSearchInput.value.trim().length >= 2) runMasterSearch();
     } catch (err) {
       console.error(err);
       el.masterSummary.textContent = 'Gagal memuat Master MC. Cek link CSV di Pengaturan & koneksi internet.';
     }
   } else {
-    el.masterSummary.textContent = state.masterRows.length + ' item Master MC siap dicari.';
+    el.masterSummary.textContent = masterLoadInfo();
     if (el.masterSearchInput.value.trim().length >= 2) runMasterSearch();
   }
 }
@@ -2844,10 +2854,11 @@ function runMasterSearch() {
 
   el.masterResults.innerHTML = '';
   if (shown.length === 0) {
-    el.masterSummary.textContent = 'Tidak ada hasil';
+    el.masterSummary.textContent = 'Tidak ada hasil · dari ' + state.masterRows.length + ' baris Master MC yang dimuat'
+      + (state.masterStats ? ' (CSV ' + state.masterStats.totalRows + ' baris, ' + state.masterStats.skippedNoMc + ' dilewati tanpa MC)' : '');
     return;
   }
-  el.masterSummary.textContent = matches.length + ' hasil ditemukan' + (truncated ? ' (ditampilkan 200 pertama)' : '');
+  el.masterSummary.textContent = matches.length + ' hasil ditemukan' + (truncated ? ' (ditampilkan 200 pertama)' : '') + ' · dari ' + state.masterRows.length + ' baris dimuat';
 
   shown.forEach((rec) => {
     const node = el.masterCardTemplate.content.cloneNode(true);
