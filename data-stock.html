@@ -2965,12 +2965,22 @@ function runMasterSearch() {
 function useMasterRecord(rec, viaKeyboard) {
   if (!isAdminMode()) { showToast('Login sebagai Admin dulu untuk input barang baru'); return; }
   closeMaster();
+  // lokasi rak otomatis: ambil LOC# dari data stock yang MC#-nya sama (kalau ada)
+  const mcKey = String(rec.mc || '').trim().toLowerCase();
+  const locs = [];
+  (state.allRows || []).forEach((r) => {
+    if (String(r.mcs || '').trim().toLowerCase() !== mcKey) return;
+    const l = String(r.loc || '').trim();
+    if (l && !locs.includes(l)) locs.push(l);
+  });
+  const autoLoc = locs[0] || '';
   const newItem = {
     no: '', mcs: rec.mc, so: rec.so, ref: '', model: rec.model,
-    loc: '', c: '', bal: 0, customer: rec.customer,
+    loc: autoLoc, c: '', bal: 0, customer: rec.customer,
     internal: rec.internal, sales: rec.sales,
   };
   openEditSheet(newItem, true);
+  if (autoLoc) showToast('LOC# terisi otomatis: ' + autoLoc + (locs.length > 1 ? ' (ada ' + locs.length + ' lokasi di stock: ' + locs.join(', ') + ')' : ''));
   // lewat keyboard: langsung masuk field paling atas (REF#); ↑ ↓ pindah field.
   // Jeda singkat supaya event Enter tadi selesai dulu (tidak ikut men-submit form).
   if (viaKeyboard) setTimeout(focusTopFormField, 80);
