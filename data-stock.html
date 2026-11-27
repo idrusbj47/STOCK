@@ -341,6 +341,10 @@ body.overlay-open{ overflow:hidden; }
 .model{ font-size:13px; color: var(--text); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .card-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:10px; }
 .card-grid > div{ display:flex; justify-content:space-between; font-size:12.5px; }
+.so-wrap{ display:inline-flex; align-items:center; gap:4px; min-width:0; }
+.copy-so{ display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; padding:0; border:0; border-radius:4px; background:transparent; color:var(--muted); opacity:.55; cursor:pointer; flex:none; }
+.copy-so:hover,.copy-so:focus-visible{ opacity:1; background:color-mix(in srgb,var(--muted) 18%,transparent); }
+.copy-so.copied{ opacity:1; color:#16a34a; }
 .card-grid.extra-grid{ margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); }
 .card-grid.extra-grid > div{ font-size:11.5px; }
 .card-grid.extra-grid .k{ opacity:.8; }
@@ -836,7 +840,7 @@ html.overlay-open, html.overlay-open body{ overflow:hidden !important; }
         <div class="card-grid">
           <div><span class="k">LOC#</span><span class="v mono loc"></span></div>
           <div><span class="k">C#</span><span class="v mono c"></span></div>
-          <div><span class="k">SO#</span><span class="v mono so"></span></div>
+          <div><span class="k">SO#</span><span class="so-wrap"><span class="v mono so"></span><button type="button" class="copy-so" title="Salin No SO" aria-label="Salin No SO"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button></span></div>
           <div><span class="k">REF#</span><span class="v mono ref"></span></div>
         </div>
         <div class="card-grid extra-grid">
@@ -2399,6 +2403,30 @@ function renderResults(truncated, totalCount) {
     node.querySelector('.loc').textContent = item.loc || '—';
     node.querySelector('.c').textContent = item.c || '—';
     node.querySelector('.so').textContent = item.so || '—';
+    const copyBtn = node.querySelector('.copy-so');
+    if (copyBtn) {
+      if (!item.so) { copyBtn.style.display = 'none'; }
+      copyBtn.addEventListener('click', async (e) => {
+        e.stopPropagation(); e.preventDefault();
+        const text = String(item.so || '').trim();
+        let ok = false;
+        try { await navigator.clipboard.writeText(text); ok = true; }
+        catch (err) {
+          try {
+            const ta = document.createElement('textarea');
+            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            ok = document.execCommand('copy'); ta.remove();
+          } catch (e2) {}
+        }
+        if (ok) {
+          copyBtn.classList.add('copied');
+          setTimeout(() => copyBtn.classList.remove('copied'), 1200);
+          showToast('SO# disalin: ' + text);
+        } else { showToast('Gagal menyalin'); }
+      });
+      copyBtn.addEventListener('keydown', (e) => e.stopPropagation());
+    }
     node.querySelector('.ref').textContent = item.ref || '—';
     node.querySelector('.bal').textContent = item.bal;
     node.querySelector('.in').textContent = item.in;
