@@ -1164,7 +1164,7 @@ html.overlay-open, html.overlay-open body{ overflow:hidden !important; }
       <div class="card-grid">
         <div><span class="k">LOC#</span><span class="v mono kx-loc"></span></div>
         <div><span class="k">C#</span><span class="v mono kx-c"></span></div>
-        <div><span class="k">SO#</span><span class="v mono kx-so"></span></div>
+        <div><span class="k">SO#</span><span class="so-wrap"><span class="v mono kx-so"></span><button type="button" class="copy-so" title="Salin No SO" aria-label="Salin No SO"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button></span></div>
         <div><span class="k">REF#</span><span class="v mono kx-ref"></span></div>
       </div>
       <div class="card-grid extra-grid">
@@ -1195,7 +1195,7 @@ html.overlay-open, html.overlay-open body{ overflow:hidden !important; }
       </div>
       <div class="model mc-model"></div>
       <div class="card-grid">
-        <div><span class="k">SO#</span><span class="v mono mc-so"></span></div>
+        <div><span class="k">SO#</span><span class="so-wrap"><span class="v mono mc-so"></span><button type="button" class="copy-so" title="Salin No SO" aria-label="Salin No SO"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button></span></div>
         <div><span class="k">UKURAN</span><span class="v mono mc-ukuran"></span></div>
       </div>
       <div class="card-grid extra-grid">
@@ -2156,6 +2156,33 @@ el.searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSe
 //  Alt+3 → di dalam dialog input: mulai isi field (↑ ↓ pindah field, Enter simpan)
 //  Alt+Q → buka pencarian Master MC (kalau sudah terbuka: fokus ke kolom cari)
 //  Alt+W → pilih hasil pencarian Master MC (↑ ↓ geser, Enter pakai → langsung masuk field REF#)
+// ---------- salin No SO (dipakai kartu Master MC & Koreksi) ----------
+function wireCopySo(node, so) {
+  const b = node.querySelector('.copy-so');
+  if (!b) return;
+  const text = String(so || '').trim();
+  if (!text) { b.style.display = 'none'; return; }
+  b.addEventListener('click', async (e) => {
+    e.stopPropagation(); e.preventDefault();
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; }
+    catch (err) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        ok = document.execCommand('copy'); ta.remove();
+      } catch (e2) {}
+    }
+    if (ok) {
+      b.classList.add('copied');
+      setTimeout(() => b.classList.remove('copied'), 1200);
+      showToast('SO# disalin: ' + text);
+    } else { showToast('Gagal menyalin'); }
+  });
+  b.addEventListener('keydown', (e) => e.stopPropagation());
+}
+
 function closeAllPanels(exceptEl) {
   // hanya tutup overlay yang memang sedang terbuka (biar penghitung overlay tidak keliru)
   const pairs = [
@@ -2167,6 +2194,54 @@ function closeAllPanels(exceptEl) {
     if (ov && !ov.classList.contains('hidden')) { try { fn(); } catch (err) {} }
   });
 }
+
+// ---------- tombol BACK: tutup jendela satu per satu, sampai beranda ----------
+// Tiap jendela (Master MC, Koreksi, Edit, Pengaturan, Login, dst) yang dibuka
+// menambah 1 entri riwayat; tombol Back (HP / browser) menutup jendela paling atas.
+(function setupBackButton() {
+  const closers = {
+    'sheet-overlay': () => closeEditSheet(), 'master-overlay': () => closeMaster(),
+    'koreksi-overlay': () => closeKoreksi(), 'settings-overlay': () => closeSettings(),
+    'login-overlay': () => closeLogin(), 'change-password-overlay': () => closeChangePassword(),
+  };
+  const stack = [];      // id jendela yang terbuka, urutan buka
+  let histDepth = 0;     // jumlah entri riwayat yang kita tambahkan
+  let ignorePop = 0;     // popstate hasil history.go() buatan kita sendiri
+  let timer = null;
+  try { history.replaceState(null, ''); } catch (e) {}
+
+  function reconcile() {
+    timer = null;
+    if (histDepth < stack.length) {
+      while (histDepth < stack.length) { try { history.pushState({ ov: 1 }, ''); } catch (e) {} histDepth++; }
+    } else if (histDepth > stack.length) {
+      const n = histDepth - stack.length;
+      histDepth = stack.length;
+      ignorePop++;
+      history.go(-n);
+    }
+  }
+  function schedule() { if (timer === null) timer = setTimeout(reconcile, 0); }
+
+  document.querySelectorAll('.sheet-overlay').forEach((ov) => {
+    if (!closers[ov.id]) return;
+    new MutationObserver(() => {
+      const open = !ov.classList.contains('hidden');
+      const idx = stack.indexOf(ov.id);
+      if (open && idx === -1) { stack.push(ov.id); schedule(); }
+      else if (!open && idx !== -1) { stack.splice(idx, 1); schedule(); }
+    }).observe(ov, { attributes: true, attributeFilter: ['class'] });
+  });
+
+  window.addEventListener('popstate', () => {
+    if (ignorePop > 0) { ignorePop--; return; }
+    if (stack.length === 0) return;       // sudah di beranda → Back normal (keluar)
+    const id = stack.pop();               // keluarkan dulu supaya tidak memicu Back ganda
+    histDepth = Math.max(0, histDepth - 1);
+    try { closers[id](); } catch (e) {}
+  });
+})();
+
 function shortcutOpenMaster() {
   closeAllPanels(el.masterOverlay);
   if (el.masterOverlay.classList.contains('hidden')) openMaster();
@@ -2865,6 +2940,7 @@ function runMasterSearch() {
     node.querySelector('.mc-mc').textContent = 'MC# ' + rec.mc;
     node.querySelector('.mc-model').textContent = rec.model || '';
     node.querySelector('.mc-so').textContent = rec.so || '—';
+    wireCopySo(node, rec.so);
     node.querySelector('.mc-ukuran').textContent = rec.ukuran || '—';
     node.querySelector('.mc-berat').textContent = rec.berat || '—';
     node.querySelector('.mc-flute').textContent = rec.flute || '—';
@@ -3062,6 +3138,7 @@ function runKoreksiSearch(keepLimit) {
     node.querySelector('.kx-loc').textContent = rec.loc || '—';
     node.querySelector('.kx-c').textContent = rec.c || '—';
     node.querySelector('.kx-so').textContent = rec.so || '—';
+    wireCopySo(node, rec.so);
     node.querySelector('.kx-ref').textContent = rec.ref || '—';
     node.querySelector('.kx-internal').textContent = rec.internal || '—';
     node.querySelector('.kx-sales').textContent = rec.sales || '—';
